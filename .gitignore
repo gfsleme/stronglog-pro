@@ -1,0 +1,17 @@
+# Mission Control Files
+task_plan.md
+progress.md
+prompts-refinados.md
+findings.md
+design-system.md
+security-report.md
+testing-report.md
+final-report.md
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environments
+.env
+*.json.backup
