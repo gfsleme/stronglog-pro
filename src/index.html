@@ -10,7 +10,7 @@
     <!-- Security: CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com; connect-src 'self' https://assets.mixkit.co;">
 
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
     
     <title>StrongLog Pro</title>
@@ -179,19 +179,25 @@
     </div>
 
     <script>
-        // PWA Service Worker Registration with Update Logic
+        // PWA Service Worker Registration with Enhanced Update Logic
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').then(reg => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+                    console.log('[App] SW registrado com sucesso');
+                    
+                    // Verifica atualizações periodicamente
+                    setInterval(() => { reg.update(); }, 60 * 60 * 1000); // A cada hora
+
                     reg.addEventListener('updatefound', () => {
                         const newWorker = reg.installing;
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('[App] Nova versão detectada!');
                                 document.getElementById('update-toast').classList.remove('hidden');
                             }
                         });
                     });
-                }).catch(() => {});
+                }).catch(err => console.error('[App] Erro ao registrar SW:', err));
             });
         }
 
