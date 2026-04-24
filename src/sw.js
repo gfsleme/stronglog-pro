@@ -1,7 +1,7 @@
 /* StrongLog Pro - Service Worker v4.3 */
 /* Release Date: 2026-04-16 */
 
-const CACHE_NAME = 'stronglog-pro-v4.3';
+const CACHE_NAME = 'stronglog-pro-v4.4';
 const ASSETS = [
   './',
   './index.html',
@@ -48,7 +48,9 @@ self.addEventListener('fetch', (e) => {
       caches.open(CACHE_NAME).then(cache => {
         return cache.match(e.request).then(response => {
           const fetchPromise = fetch(e.request).then(networkResponse => {
-            cache.put(e.request, networkResponse.clone());
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(e.request, networkResponse.clone());
+            }
             return networkResponse;
           });
           return response || fetchPromise;

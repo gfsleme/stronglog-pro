@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#0a0a0a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Security: CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com; connect-src 'self' https://assets.mixkit.co;">
+
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
     
@@ -29,9 +33,16 @@
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 24px); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        #update-toast { box-shadow: 0 0 50px rgba(0,255,65,0.2); }
     </style>
 </head>
 <body class="min-h-screen pb-32">
+
+    <!-- Update Toast -->
+    <div id="update-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[500] glass p-4 px-6 flex items-center gap-4 border-[#00ff41]/30 hidden animate-fade">
+        <span class="text-xs font-black uppercase tracking-widest text-white">Nova Versão Disponível</span>
+        <button onclick="window.location.reload()" class="bg-[#00ff41] text-black text-[10px] font-black p-2 px-4 rounded-full uppercase italic">Atualizar</button>
+    </div>
 
     <header class="p-6 pb-2 flex justify-between items-center sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[100] border-b border-white/5">
         <div>
@@ -153,7 +164,7 @@
                     <input type="file" id="import-input" class="hidden" accept=".json" onchange="app.importData(event)">
                     <button onclick="app.clearAllData()" class="w-full p-5 glass text-red-500 text-[10px] font-black uppercase tracking-widest border-red-500/10 active:bg-red-500/10">Limpar todo o App</button>
                 </div>
-                <p class="text-[9px] text-center text-gray-700 font-bold tracking-[0.4em]">STRONGLOG PRO PWA v4.1</p>
+                <p class="text-[9px] text-center text-gray-700 font-bold tracking-[0.4em]">STRONGLOG PRO PWA v4.2</p>
             </div>
         </div>
     </div>
@@ -168,9 +179,26 @@
     </div>
 
     <script>
-        // PWA Service Worker Registration
+        // PWA Service Worker Registration with Enhanced Update Logic
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(() => {});
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+                    console.log('[App] SW registrado com sucesso');
+                    
+                    // Verifica atualizações periodicamente
+                    setInterval(() => { reg.update(); }, 60 * 60 * 1000); // A cada hora
+
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('[App] Nova versão detectada!');
+                                document.getElementById('update-toast').classList.remove('hidden');
+                            }
+                        });
+                    });
+                }).catch(err => console.error('[App] Erro ao registrar SW:', err));
+            });
         }
 
         const db = new Dexie("StrongLog_v4_Pro");
@@ -222,7 +250,6 @@
                 lucide.createIcons();
             },
 
-            // --- PERSISTENCE: CUSTOM EXERCISES (CORRECTION) ---
             showCustomExerciseForm: () => {
                 const name = prompt('Nome do Exercício:');
                 const group = prompt('Grupo Muscular (Peito, Costas, etc):');
@@ -246,7 +273,6 @@
                 app.showExerciseLibrary('manager');
             },
 
-            // --- PLANS ---
             renderPlans: async () => {
                 const plans = await db.plans.toArray();
                 const list = document.getElementById('workout-list');
@@ -290,7 +316,6 @@
                 app.renderPlans();
             },
 
-            // --- LIVE WORKOUT & UX INTELLIGENCE ---
             startWorkout: async (planId) => {
                 const plan = await db.plans.get(planId);
                 const workoutExercises = [];
@@ -402,7 +427,6 @@
                 app.activeWorkout = null; app.setView('dashboard'); app.renderHistory(); app.initCharts();
             },
 
-            // --- LIBRARY MODAL ---
             showExerciseLibrary: (ctx) => { app.libraryContext = ctx; app.filterExerciseLibrary(); document.getElementById('exercise-library-modal').classList.remove('hidden'); },
             filterExerciseLibrary: async () => {
                 const s = document.getElementById('search-exercise').value.toLowerCase();
@@ -431,7 +455,6 @@
                 app.closeModal('exercise-library-modal');
             },
 
-            // --- APP UTILS ---
             startTimer: () => {
                 app.startTime = Date.now();
                 if(app.timerInterval) clearInterval(app.timerInterval);
