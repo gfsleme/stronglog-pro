@@ -41,18 +41,28 @@
     <main id="app-container" class="px-4 py-4 space-y-8">
         <!-- Dashboard -->
         <section id="view-dashboard" class="space-y-8 animate-fade">
-            <div class="glass p-6 space-y-5">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Performance Semanal</h2>
-                    <span id="weekly-total" class="text-xs font-black text-[#00ff41] bg-[#00ff41]/10 px-3 py-1 rounded-full">-- kg</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass p-6 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Volume Semanal</h2>
+                        <span id="weekly-total" class="text-xs font-black text-[#00ff41] bg-[#00ff41]/10 px-3 py-1 rounded-full">-- kg</span>
+                    </div>
+                    <div class="h-32 w-full"><canvas id="volumeChart"></canvas></div>
                 </div>
-                <div class="h-32 w-full"><canvas id="volumeChart"></canvas></div>
+
+                <div class="glass p-6 space-y-5">
+                    <h2 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Distribuição por Músculo</h2>
+                    <div class="h-32 w-full"><canvas id="muscleGroupChart"></canvas></div>
+                </div>
             </div>
 
             <div class="space-y-4">
                 <div class="flex justify-between items-center px-1">
                     <h2 class="text-lg font-black tracking-tight uppercase italic text-white">Minhas Rotinas</h2>
-                    <button onclick="app.showPlanEditor()" class="text-[9px] font-black text-black bg-[#00ff41] px-4 py-2 rounded-full uppercase tracking-tighter">Novo Plano</button>
+                    <div class="flex gap-2">
+                        <button onclick="app.showRecords()" class="p-2 glass text-[#00ff41]"><i data-lucide="trophy" class="w-4 h-4"></i></button>
+                        <button onclick="app.showPlanEditor()" class="text-[9px] font-black text-black bg-[#00ff41] px-4 py-2 rounded-full uppercase tracking-tighter">Novo Plano</button>
+                    </div>
                 </div>
                 <div id="workout-list" class="grid grid-cols-1 gap-3"></div>
             </div>
@@ -111,6 +121,16 @@
     </nav>
 
     <!-- Modals -->
+    <div id="records-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden">
+        <div class="absolute bottom-0 left-0 right-0 glass h-[85vh] rounded-t-[45px] p-8 space-y-6 flex flex-col shadow-2xl border-white/10">
+            <div class="flex justify-between items-center text-white">
+                <h2 class="text-3xl font-black italic tracking-tighter uppercase">Hall of Fame</h2>
+                <button onclick="app.closeModal('records-modal')" class="p-3 glass"><i data-lucide="x"></i></button>
+            </div>
+            <div id="records-list" class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2 pb-20"></div>
+        </div>
+    </div>
+
     <div id="exercise-library-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden">
         <div class="absolute bottom-0 left-0 right-0 glass h-[92vh] rounded-t-[45px] p-8 space-y-6 flex flex-col shadow-2xl border-white/10">
             <div class="flex justify-between items-center text-white">

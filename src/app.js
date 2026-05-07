@@ -21,10 +21,11 @@ if ('serviceWorker' in navigator) {
 }
 
 const db = new Dexie("StrongLog_v4_Pro");
-db.version(1).stores({ 
+db.version(2).stores({ 
     plans: '++id, name', 
     sessions: '++id, planName, date', 
-    templates: '++id, name, muscleGroup' 
+    templates: '++id, name, muscleGroup',
+    records: 'name' // Exercise name as key
 });
 
 const app = {
@@ -50,10 +51,34 @@ const app = {
     init: async () => {
         app.updateDate();
         await app.seedTemplates();
+        await app.rebuildRecords();
         await app.renderPlans();
         await app.renderHistory();
         app.initCharts();
         lucide.createIcons();
+    },
+
+    rebuildRecords: async () => {
+        const count = await db.records.count();
+        if (count > 0) return; // Only run once or if empty
+
+        console.log('[App] Reconstruindo recordes históricos...');
+        const sessions = await db.sessions.toArray();
+        const recs = {};
+        
+        sessions.forEach(s => {
+            s.exercises.forEach(ex => {
+                const bestSet = ex.sets.filter(x => x.completed).sort((a,b) => b.weight - a.weight)[0];
+                if (bestSet) {
+                    if (!recs[ex.name] || bestSet.weight > recs[ex.name].weight) {
+                        recs[ex.name] = { name: ex.name, weight: bestSet.weight, reps: bestSet.reps, date: s.date };
+                    }
+                }
+            });
+        });
+
+        const recordsToSave = Object.values(recs);
+        if (recordsToSave.length > 0) await db.records.bulkAdd(recordsToSave);
     },
 
     // Security: Sanitization
@@ -285,7 +310,21 @@ const app = {
     finishWorkout: async () => {
         clearInterval(app.timerInterval);
         let vol = 0;
-        app.activeWorkout.exercises.forEach(e => e.sets.forEach(s => { if(s.completed) vol += (s.weight * s.reps); }));
+        const newPRs = [];
+        
+        for (const ex of app.activeWorkout.exercises) {
+            const bestSet = ex.sets.filter(s => s.completed).sort((a,b) => b.weight - a.weight)[0];
+            if (bestSet) {
+                const existingRecord = await db.records.get(ex.name);
+                if (!existingRecord || bestSet.weight > existingRecord.weight) {
+                    const recordData = { name: ex.name, weight: bestSet.weight, reps: bestSet.reps, date: new Date() };
+                    await db.records.put(recordData);
+                    newPRs.push(recordData);
+                }
+            }
+            ex.sets.forEach(s => { if(s.completed) vol += (s.weight * s.reps); });
+        }
+
         await db.sessions.add({ 
             planName: app.activeWorkout.name, 
             date: new Date(), 
@@ -293,10 +332,57 @@ const app = {
             volume: vol, 
             exercises: app.activeWorkout.exercises 
         });
+
+        if (newPRs.length > 0) {
+            app.showPRNotification(newPRs);
+        }
+
         app.activeWorkout = null; 
         app.setView('dashboard'); 
         app.renderHistory(); 
         app.initCharts();
+    },
+
+    showPRNotification: (prs) => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 z-[600] glass p-6 border-[#00ff41]/50 animate-fade w-[90%] max-w-xs';
+        toast.innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-[#00ff41]/20 rounded-full"><i data-lucide="trophy" class="text-[#00ff41] w-6 h-6"></i></div>
+                <div>
+                    <h4 class="font-black italic uppercase text-[10px] tracking-widest text-[#00ff41]">Novo Recorde!</h4>
+                    ${prs.map(p => `<p class="text-xs font-bold text-white">${p.name}: ${p.weight}kg</p>`).join('')}
+                </div>
+            </div>
+            <button onclick="this.parentElement.remove()" class="w-full mt-4 py-2 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-500">Fechar</button>
+        `;
+        document.body.appendChild(toast);
+        lucide.createIcons();
+        setTimeout(() => toast.remove(), 6000);
+    },
+
+    showRecords: async () => {
+        await app.renderRecords();
+        document.getElementById('records-modal').classList.remove('hidden');
+    },
+
+    renderRecords: async () => {
+        const recs = await db.records.toArray();
+        const list = document.getElementById('records-list');
+        if (!list) return;
+
+        list.innerHTML = recs.length ? recs.sort((a,b) => b.date - a.date).map(r => `
+            <div class="glass p-5 flex justify-between items-center bg-white/[0.01]">
+                <div>
+                    <h4 class="font-black text-sm text-[#00ff41] uppercase italic tracking-tighter">${app.sanitize(r.name)}</h4>
+                    <p class="text-[9px] text-gray-700 font-black uppercase tracking-widest">${new Date(r.date).toLocaleDateString('pt-BR')}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-xl font-black text-white italic tracking-tighter">${r.weight}<span class="text-[10px] text-gray-700 not-italic ml-1">KG</span></div>
+                    <div class="text-[9px] text-gray-700 font-black uppercase">${r.reps} REPS</div>
+                </div>
+            </div>
+        `).join('') : `<div class="p-10 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum recorde ainda. Treine pesado!</div>`;
     },
 
     showExerciseLibrary: (ctx) => { 
@@ -436,37 +522,65 @@ const app = {
     initCharts: async () => {
         const s = await db.sessions.orderBy('date').reverse().limit(7).toArray();
         const sessions = s.reverse();
-        const canvas = document.getElementById('volumeChart');
-        if (!canvas) return;
+        const templates = await db.templates.toArray();
+        const exToGroup = Object.fromEntries(templates.map(t => [t.name, t.muscleGroup]));
 
-        const ctx = canvas.getContext('2d');
-        if(window.myChart) window.myChart.destroy();
+        const canvas1 = document.getElementById('volumeChart');
+        const canvas2 = document.getElementById('muscleGroupChart');
+        if (!canvas1 || !canvas2) return;
+
+        const ctx1 = canvas1.getContext('2d');
+        const ctx2 = canvas2.getContext('2d');
+        
+        if(window.volChart) window.volChart.destroy();
+        if(window.muscleChart) window.muscleChart.destroy();
         
         const totalEl = document.getElementById('weekly-total');
         if (totalEl) totalEl.innerText = sessions.reduce((a,b)=>a+b.volume,0).toLocaleString() + ' kg';
         
-        window.myChart = new Chart(ctx, {
+        window.volChart = new Chart(ctx1, {
             type: 'bar',
             data: {
                 labels: sessions.map(x => new Date(x.date).toLocaleDateString('pt-BR', {day:'numeric', month:'short'})),
                 datasets: [{ 
                     data: sessions.map(x => x.volume), 
                     backgroundColor: '#00ff41', 
-                    borderRadius: 12, 
-                    barThickness: 10 
+                    borderRadius: 8, 
+                    barThickness: 8 
                 }]
             },
             options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
+                responsive: true, maintainAspectRatio: false, 
                 plugins: { legend: { display: false } }, 
-                scales: { 
-                    y: { display: false }, 
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#444', font: { size: 8, weight: '900' } } 
-                    } 
-                } 
+                scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#444', font: { size: 8, weight: '900' } } } } 
+            }
+        });
+
+        // Muscle Group Data
+        const muscleData = {};
+        sessions.forEach(sess => {
+            sess.exercises.forEach(ex => {
+                const group = exToGroup[ex.name] || 'Outros';
+                let vol = 0;
+                ex.sets.forEach(st => { if(st.completed) vol += (st.weight * st.reps); });
+                muscleData[group] = (muscleData[group] || 0) + vol;
+            });
+        });
+
+        window.muscleChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(muscleData),
+                datasets: [{
+                    data: Object.values(muscleData),
+                    backgroundColor: ['#00ff41', '#00cc33', '#009926', '#00661a', '#1a1a1a'],
+                    borderWidth: 0,
+                    cutout: '80%'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
             }
         });
     }
