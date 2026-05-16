@@ -1,12 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
 
 :root {
-    --bg: #0a0a0a;
-    --accent: #00ff41;
-    --accent-glow: rgba(0, 255, 65, 0.4);
-    --glass: rgba(255, 255, 255, 0.03);
-    --glass-heavy: rgba(255, 255, 255, 0.06);
-    --border: rgba(255, 255, 255, 0.08);
+    --bg: #070709;
+    --accent: #00FF9D;
+    --accent-glow: rgba(0, 255, 157, 0.5);
+    --glass: rgba(255, 255, 255, 0.04);
+    --glass-heavy: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-glow: rgba(0, 255, 157, 0.2);
 }
 
 * {
@@ -26,16 +27,18 @@ body {
 /* Glassmorphism Refined */
 .glass {
     background: var(--glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--border);
     border-radius: 24px;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass:hover {
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--border-glow);
     background: var(--glass-heavy);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px var(--border-glow);
 }
 
 /* Premium Accents */
@@ -45,23 +48,23 @@ body {
     font-weight: 900;
     border-radius: 20px;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
 }
 
 .btn-accent:active {
-    transform: scale(0.92);
-    box-shadow: 0 0 40px rgba(0, 255, 65, 0.3);
+    transform: scale(0.94);
+    box-shadow: 0 0 40px rgba(0, 255, 157, 0.4);
 }
 
 .nav-item {
     transition: all 0.3s ease;
-    color: #444;
+    color: #555;
 }
 
 .nav-item.active {
     color: var(--accent);
     transform: translateY(-4px);
-    filter: drop-shadow(0 0 8px var(--accent-glow));
+    filter: drop-shadow(0 0 10px var(--accent-glow));
 }
 
 /* Typography Enhancements */
@@ -75,13 +78,23 @@ h1, h2, h3, h4 {
 
 /* Inputs */
 input[type="number"], input[type="text"] {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.05);
     color: white;
+    border-radius: 12px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s ease;
+}
+
+input[type="number"]:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 input::placeholder {
-    color: #333;
-    font-weight: 900;
+    color: #555;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
 }

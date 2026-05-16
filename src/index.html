@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -23,14 +23,14 @@
 <body class="min-h-screen pb-32">
 
     <!-- Update Toast -->
-    <div id="update-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[500] glass p-4 px-6 flex items-center gap-4 border-[#00ff41]/30 hidden animate-fade">
-        <span class="text-xs font-black uppercase tracking-widest text-white">Nova Versão Disponível</span>
-        <button onclick="window.location.reload()" class="bg-[#00ff41] text-black text-[10px] font-black p-2 px-4 rounded-full uppercase italic">Atualizar</button>
+    <div id="update-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[500] glass p-4 px-6 flex items-center gap-4 border-[#00FF9D]/30 hidden animate-fade">
+        <span class="text-xs font-black uppercase tracking-widest text-white">Nova VersÃ£o DisponÃ­vel</span>
+        <button onclick="window.location.reload()" class="bg-[#00FF9D] text-black text-[10px] font-black p-2 px-4 rounded-full uppercase italic">Atualizar</button>
     </div>
 
     <header class="p-6 pb-2 flex justify-between items-center sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[100] border-b border-white/5">
         <div>
-            <h1 class="text-2xl font-black italic tracking-tighter">STRONG<span class="text-[#00ff41]">LOG</span></h1>
+            <h1 class="text-2xl font-black italic tracking-tighter">STRONG<span class="text-[#00FF9D]">LOG</span></h1>
             <p id="current-date" class="text-[9px] text-gray-500 font-bold uppercase tracking-[0.3em]"></p>
         </div>
         <div class="flex gap-3">
@@ -45,13 +45,13 @@
                 <div class="glass p-6 space-y-5">
                     <div class="flex justify-between items-center">
                         <h2 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Volume Semanal</h2>
-                        <span id="weekly-total" class="text-xs font-black text-[#00ff41] bg-[#00ff41]/10 px-3 py-1 rounded-full">-- kg</span>
+                        <span id="weekly-total" class="text-xs font-black text-[#00FF9D] bg-[#00FF9D]/10 px-3 py-1 rounded-full">-- kg</span>
                     </div>
                     <div class="h-32 w-full"><canvas id="volumeChart"></canvas></div>
                 </div>
 
                 <div class="glass p-6 space-y-5">
-                    <h2 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Distribuição por Músculo</h2>
+                    <h2 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">DistribuiÃ§Ã£o por MÃºsculo</h2>
                     <div class="h-32 w-full"><canvas id="muscleGroupChart"></canvas></div>
                 </div>
             </div>
@@ -60,8 +60,8 @@
                 <div class="flex justify-between items-center px-1">
                     <h2 class="text-lg font-black tracking-tight uppercase italic text-white">Minhas Rotinas</h2>
                     <div class="flex gap-2">
-                        <button onclick="app.showRecords()" class="p-2 glass text-[#00ff41]"><i data-lucide="trophy" class="w-4 h-4"></i></button>
-                        <button onclick="app.showPlanEditor()" class="text-[9px] font-black text-black bg-[#00ff41] px-4 py-2 rounded-full uppercase tracking-tighter">Novo Plano</button>
+                        <button onclick="app.showRecords()" class="p-2 glass text-[#00FF9D]"><i data-lucide="trophy" class="w-4 h-4"></i></button>
+                        <button onclick="app.showPlanEditor()" class="text-[9px] font-black text-black bg-[#00FF9D] px-4 py-2 rounded-full uppercase tracking-tighter">Novo Plano</button>
                     </div>
                 </div>
                 <div id="workout-list" class="grid grid-cols-1 gap-3"></div>
@@ -74,7 +74,7 @@
                 <div class="flex flex-col">
                     <h2 id="active-workout-name" class="text-2xl font-black tracking-tighter italic text-white">--</h2>
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 bg-[#00ff41] rounded-full animate-pulse"></span>
+                        <span class="w-2 h-2 bg-[#00FF9D] rounded-full animate-pulse"></span>
                         <span id="timer-display" class="text-xs font-mono text-gray-400 font-bold tracking-widest uppercase">00:00:00</span>
                     </div>
                 </div>
@@ -82,14 +82,14 @@
             </div>
             <div id="exercise-list" class="space-y-6"></div>
             <div class="space-y-3 pt-8 pb-10">
-                <button onclick="app.showExerciseLibrary('workout')" class="w-full py-5 glass text-gray-500 text-[10px] font-black tracking-[0.2em] border-dashed border-2 border-white/5 uppercase">+ Injetar Exercício</button>
-                <button onclick="app.finishWorkout()" class="w-full btn-accent p-6 rounded-[24px] text-sm tracking-[0.2em] uppercase">Finalizar Sessão</button>
+                <button onclick="app.showExerciseLibrary('workout')" class="w-full py-5 glass text-gray-500 text-[10px] font-black tracking-[0.2em] border-dashed border-2 border-white/5 uppercase">+ Injetar ExercÃ­cio</button>
+                <button onclick="app.finishWorkout()" class="w-full btn-accent p-6 rounded-[24px] text-sm tracking-[0.2em] uppercase">Finalizar SessÃ£o</button>
             </div>
         </section>
 
         <!-- History -->
         <section id="view-history" class="hidden space-y-6 animate-fade">
-            <h2 class="text-2xl font-black italic tracking-tighter uppercase px-1 text-white">Histórico</h2>
+            <h2 class="text-2xl font-black italic tracking-tighter uppercase px-1 text-white">HistÃ³rico</h2>
             <div id="history-list" class="space-y-3 pb-10"></div>
         </section>
 
@@ -105,7 +105,7 @@
                     <input id="plan-name-input" type="text" class="w-full glass p-5 font-bold text-white focus:outline-none" placeholder="Ex: Treino A">
                 </div>
                 <div class="space-y-4">
-                    <label class="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-1 text-white">Exercícios</label>
+                    <label class="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-1 text-white">ExercÃ­cios</label>
                     <div id="selected-exercises-list" class="space-y-2"></div>
                     <button onclick="app.showExerciseLibrary('editor')" class="w-full py-5 border-2 border-dashed border-white/5 rounded-[22px] text-gray-600 font-black text-[10px] tracking-widest uppercase active:bg-white/5">+ Buscar na Biblioteca</button>
                 </div>
@@ -142,7 +142,7 @@
                     <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600"></i>
                     <input id="search-exercise" type="text" oninput="app.filterExerciseLibrary()" class="w-full bg-white/5 p-5 pl-14 rounded-2xl focus:outline-none font-bold text-sm text-white" placeholder="Pesquisar...">
                 </div>
-                <button onclick="app.showCustomExerciseForm()" class="p-5 glass text-[#00ff41] active:bg-[#00ff41]/10"><i data-lucide="plus"></i></button>
+                <button onclick="app.showCustomExerciseForm()" class="p-5 glass text-[#00FF9D] active:bg-[#00FF9D]/10"><i data-lucide="plus"></i></button>
             </div>
             <div id="library-list" class="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2 pb-20"></div>
         </div>
@@ -160,10 +160,10 @@
                         <i data-lucide="library" class="w-5 h-5 text-gray-400"></i> Gerenciar Biblioteca
                     </button>
                     <button onclick="app.exportData()" class="w-full p-5 glass flex items-center gap-4 text-xs font-black uppercase active:bg-white/5">
-                        <i data-lucide="database" class="w-5 h-5 text-[#00ff41]"></i> Exportar Backup
+                        <i data-lucide="database" class="w-5 h-5 text-[#00FF9D]"></i> Exportar Backup
                     </button>
                     <button onclick="app.importDataTrigger()" class="w-full p-5 glass flex items-center gap-4 text-xs font-black uppercase active:bg-white/5">
-                        <i data-lucide="refresh-cw" class="w-5 h-5 text-[#00ff41]"></i> Importar Backup
+                        <i data-lucide="refresh-cw" class="w-5 h-5 text-[#00FF9D]"></i> Importar Backup
                     </button>
                     <input type="file" id="import-input" class="hidden" accept=".json" onchange="app.importData(event)">
                     <button onclick="app.clearAllData()" class="w-full p-5 glass text-red-500 text-[10px] font-black uppercase tracking-widest border-red-500/10 active:bg-red-500/10">Limpar todo o App</button>
@@ -174,9 +174,9 @@
     </div>
 
     <!-- Rest Overlay -->
-    <div id="rest-timer-overlay" class="fixed top-24 right-6 translate-x-[200%] transition-transform duration-500 glass p-6 flex items-center gap-6 z-[200] shadow-2xl border-[#00ff41]/20">
+    <div id="rest-timer-overlay" class="fixed top-24 right-6 translate-x-[200%] transition-transform duration-500 glass p-6 flex items-center gap-6 z-[200] shadow-2xl border-[#00FF9D]/20">
         <div class="flex flex-col">
-            <span class="text-[9px] text-[#00ff41] font-black uppercase tracking-[0.2em]">Descanso</span>
+            <span class="text-[9px] text-[#00FF9D] font-black uppercase tracking-[0.2em]">Descanso</span>
             <div class="text-4xl font-mono font-black italic text-white" id="overlay-timer">01:30</div>
         </div>
         <button onclick="app.stopRestTimer()" class="text-red-500 glass p-4 active:bg-red-500/10"><i data-lucide="circle-stop" class="w-6 h-6"></i></button>

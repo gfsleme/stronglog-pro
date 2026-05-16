@@ -1,17 +1,17 @@
-// PWA Service Worker Registration with Enhanced Update Logic
+﻿// PWA Service Worker Registration with Enhanced Update Logic
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
             console.log('[App] SW registrado com sucesso');
             
-            // Verifica atualizações periodicamente
+            // Verifica atualizaÃ§Ãµes periodicamente
             setInterval(() => { reg.update(); }, 60 * 60 * 1000); // A cada hora
 
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[App] Nova versão detectada!');
+                        console.log('[App] Nova versÃ£o detectada!');
                         document.getElementById('update-toast').classList.remove('hidden');
                     }
                 });
@@ -43,9 +43,9 @@ const app = {
         { name: 'Agachamento Livre', muscleGroup: 'Pernas' }, 
         { name: 'Leg Press 45', muscleGroup: 'Pernas' },
         { name: 'Desenvolvimento Militar', muscleGroup: 'Ombros' }, 
-        { name: 'Elevação Lateral', muscleGroup: 'Ombros' },
-        { name: 'Rosca Martelo', muscleGroup: 'Bíceps' }, 
-        { name: 'Tríceps Testa', muscleGroup: 'Tríceps' }
+        { name: 'ElevaÃ§Ã£o Lateral', muscleGroup: 'Ombros' },
+        { name: 'Rosca Martelo', muscleGroup: 'BÃ­ceps' }, 
+        { name: 'TrÃ­ceps Testa', muscleGroup: 'TrÃ­ceps' }
     ],
 
     init: async () => {
@@ -62,7 +62,7 @@ const app = {
         const count = await db.records.count();
         if (count > 0) return; // Only run once or if empty
 
-        console.log('[App] Reconstruindo recordes históricos...');
+        console.log('[App] Reconstruindo recordes histÃ³ricos...');
         const sessions = await db.sessions.toArray();
         const recs = {};
         
@@ -112,7 +112,7 @@ const app = {
     },
 
     showCustomExerciseForm: () => {
-        const name = prompt('Nome do Exercício:');
+        const name = prompt('Nome do ExercÃ­cio:');
         const group = prompt('Grupo Muscular (Peito, Costas, etc):');
         if(name && group) app.saveCustomExercise(name, group);
     },
@@ -123,7 +123,7 @@ const app = {
     },
 
     deleteTemplate: async (id) => {
-        if(confirm('Apagar exercício da biblioteca?')) {
+        if(confirm('Apagar exercÃ­cio da biblioteca?')) {
             await db.templates.delete(id);
             app.filterExerciseLibrary();
         }
@@ -143,9 +143,9 @@ const app = {
             <div class="glass p-6 flex justify-between items-center active:scale-[0.98] transition-all animate-fade bg-white/[0.01]">
                 <div class="flex-1 cursor-pointer" onclick="app.startWorkout(${p.id})">
                     <h3 class="font-black text-xl tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
-                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${p.exercises.length} EXERCÍCIOS</p>
+                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${p.exercises.length} EXERCÃCIOS</p>
                 </div>
-                <button onclick="app.showPlanEditor(${p.id})" class="p-3 glass text-gray-500 active:text-[#00ff41]"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                <button onclick="app.showPlanEditor(${p.id})" class="p-3 glass text-gray-500 active:text-[#00FF9D]"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
             </div>
         `).join('') : `<div class="glass p-12 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhuma rotina ativa</div>`;
         lucide.createIcons();
@@ -226,16 +226,16 @@ const app = {
             <div class="glass p-6 space-y-5 animate-fade">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="font-black text-[#00ff41] uppercase tracking-tighter text-lg italic leading-tight">${app.sanitize(ex.name)}</h4>
+                        <h4 class="font-black text-[#00FF9D] uppercase tracking-tighter text-lg italic leading-tight">${app.sanitize(ex.name)}</h4>
                         <div class="flex items-center gap-2 mt-1">
                             <div class="text-[9px] font-black text-gray-600 uppercase tracking-widest">Base: ${ex.historyPreview}</div>
-                            <div class="text-[9px] font-black text-[#00ff41]/40 uppercase tracking-widest cursor-pointer" onclick="app.setRest(${exIdx})">Descanso: ${ex.restTime}s</div>
+                            <div class="text-[9px] font-black text-[#00FF9D]/40 uppercase tracking-widest cursor-pointer" onclick="app.setRest(${exIdx})">Descanso: ${ex.restTime}s</div>
                         </div>
                     </div>
                     <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-800 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
                 <div class="space-y-3">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
-                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-4 bg-white/5 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-600 active:bg-white/10 uppercase">+ Add Série</button>
+                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-4 bg-white/5 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-600 active:bg-white/10 uppercase">+ Add SÃ©rie</button>
             </div>
         `).join('');
         lucide.createIcons();
@@ -243,14 +243,14 @@ const app = {
 
     renderSetRow: (exI, sI, s) => `
         <div class="flex items-center gap-3 ${s.completed ? 'opacity-20 grayscale' : ''} transition-all">
-            <button onclick="app.cycleSetType(${exI},${sI})" class="w-10 h-10 flex items-center justify-center glass text-[10px] font-black text-[#00ff41] uppercase italic">${s.type[0]}</button>
+            <button onclick="app.cycleSetType(${exI},${sI})" class="w-10 h-10 flex items-center justify-center glass text-[10px] font-black text-[#00FF9D] uppercase italic">${s.type[0]}</button>
             <div class="flex-1 grid grid-cols-3 gap-2 h-12">
                 <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-sm font-black focus:outline-none text-white"></div>
                 <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-sm font-black focus:outline-none text-white"></div>
                 <div class="flex items-center glass px-1 bg-white/[0.01]"><input onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="numeric" value="${s.rpe}" class="w-full text-center text-[10px] font-black text-gray-600 focus:outline-none" placeholder="RPE"></div>
             </div>
-            <button onclick="app.toggleSet(${exI},${sI})" class="p-3.5 glass ${s.completed ? 'bg-[#00ff41]/20 border-[#00ff41]' : 'active:scale-90'}">
-                <i data-lucide="check" class="w-5 h-5 ${s.completed ? 'text-[#00ff41]' : 'text-gray-800'}"></i>
+            <button onclick="app.toggleSet(${exI},${sI})" class="p-3.5 glass ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}">
+                <i data-lucide="check" class="w-5 h-5 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
             </button>
         </div>
     `,
@@ -345,12 +345,12 @@ const app = {
 
     showPRNotification: (prs) => {
         const toast = document.createElement('div');
-        toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 z-[600] glass p-6 border-[#00ff41]/50 animate-fade w-[90%] max-w-xs';
+        toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 z-[600] glass p-6 border-[#00FF9D]/50 animate-fade w-[90%] max-w-xs';
         toast.innerHTML = `
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-[#00ff41]/20 rounded-full"><i data-lucide="trophy" class="text-[#00ff41] w-6 h-6"></i></div>
+                <div class="p-3 bg-[#00FF9D]/20 rounded-full"><i data-lucide="trophy" class="text-[#00FF9D] w-6 h-6"></i></div>
                 <div>
-                    <h4 class="font-black italic uppercase text-[10px] tracking-widest text-[#00ff41]">Novo Recorde!</h4>
+                    <h4 class="font-black italic uppercase text-[10px] tracking-widest text-[#00FF9D]">Novo Recorde!</h4>
                     ${prs.map(p => `<p class="text-xs font-bold text-white">${p.name}: ${p.weight}kg</p>`).join('')}
                 </div>
             </div>
@@ -374,7 +374,7 @@ const app = {
         list.innerHTML = recs.length ? recs.sort((a,b) => b.date - a.date).map(r => `
             <div class="glass p-5 flex justify-between items-center bg-white/[0.01]">
                 <div>
-                    <h4 class="font-black text-sm text-[#00ff41] uppercase italic tracking-tighter">${app.sanitize(r.name)}</h4>
+                    <h4 class="font-black text-sm text-[#00FF9D] uppercase italic tracking-tighter">${app.sanitize(r.name)}</h4>
                     <p class="text-[9px] text-gray-700 font-black uppercase tracking-widest">${new Date(r.date).toLocaleDateString('pt-BR')}</p>
                 </div>
                 <div class="text-right">
@@ -494,7 +494,7 @@ const app = {
     },
 
     clearAllData: async () => { 
-        if(confirm('Apagar tudo? Isso deletará todos os seus treinos e planos permanentemente.')) { 
+        if(confirm('Apagar tudo? Isso deletarÃ¡ todos os seus treinos e planos permanentemente.')) { 
             await db.delete(); 
             location.reload(); 
         } 
@@ -512,7 +512,7 @@ const app = {
                     <div class="font-black text-sm uppercase text-white italic">${app.sanitize(s.planName)}</div>
                 </div>
                 <div class="text-right">
-                    <div class="text-xl font-black text-[#00ff41] italic tracking-tighter">${s.volume.toLocaleString()}<span class="text-[10px] text-gray-700 not-italic ml-1">KG</span></div>
+                    <div class="text-xl font-black text-[#00FF9D] italic tracking-tighter">${s.volume.toLocaleString()}<span class="text-[10px] text-gray-700 not-italic ml-1">KG</span></div>
                     <div class="text-[9px] text-gray-700 font-black uppercase">${Math.floor(s.duration/60)} MIN</div>
                 </div>
             </div>
@@ -544,7 +544,7 @@ const app = {
                 labels: sessions.map(x => new Date(x.date).toLocaleDateString('pt-BR', {day:'numeric', month:'short'})),
                 datasets: [{ 
                     data: sessions.map(x => x.volume), 
-                    backgroundColor: '#00ff41', 
+                    backgroundColor: '#00FF9D', 
                     borderRadius: 8, 
                     barThickness: 8 
                 }]
@@ -573,7 +573,7 @@ const app = {
                 labels: Object.keys(muscleData),
                 datasets: [{
                     data: Object.values(muscleData),
-                    backgroundColor: ['#00ff41', '#00cc33', '#009926', '#00661a', '#1a1a1a'],
+                    backgroundColor: ['#00FF9D', '#00cc33', '#009926', '#00661a', '#1a1a1a'],
                     borderWidth: 0,
                     cutout: '80%'
                 }]
