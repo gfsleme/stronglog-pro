@@ -2,6 +2,11 @@
 
 PWA premium de rastreamento de treinos de musculação com base científica completa de exercícios, service worker offline, banco de dados local indexado e visual moderno de alto apelo estético.
 
+## 🔗 Link do App Publicado
+👉 **[https://gfsleme.github.io/stronglog-pro/](https://gfsleme.github.io/stronglog-pro/)**
+
+Para instruções detalhadas de como instalar e configurar no seu celular Android ou iOS, consulte o [Manual de Instalação e Atualização (INSTALLATION.md)](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/INSTALLATION.md).
+
 ## 🚀 Arquitetura e Stack
 *   **Aparência & Design:** Interface escura moderna com paleta Neon Mint (`#00FF9D`), Glassmorphism refinado, bordas suaves, efeitos de brilho/glow e micro-animações aceleradas por GPU.
 *   **Lógica de Dados:** Banco de dados IndexedDB via **Dexie.js** para buscas instantâneas e sem congelamento (lag) de tela.
