@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Security: CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com; connect-src 'self' https://assets.mixkit.co;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com https://static.exercisedb.dev; connect-src 'self' https://assets.mixkit.co;">
 
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
@@ -140,11 +140,77 @@
             <div class="flex gap-2">
                 <div class="relative flex-1">
                     <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600"></i>
-                    <input id="search-exercise" type="text" oninput="app.filterExerciseLibrary()" class="w-full bg-white/5 p-5 pl-14 rounded-2xl focus:outline-none font-bold text-sm text-white" placeholder="Pesquisar...">
+                    <input id="search-exercise" type="text" oninput="app.filterExerciseLibrary()" class="w-full bg-white/5 p-5 pl-14 rounded-2xl focus:outline-none font-bold text-sm text-white" placeholder="Pesquisar por nome ou músculo...">
                 </div>
                 <button onclick="app.showCustomExerciseForm()" class="p-5 glass text-[#00FF9D] active:bg-[#00FF9D]/10"><i data-lucide="plus"></i></button>
             </div>
+            <div class="grid grid-cols-2 gap-2">
+                <select id="filter-body-part" onchange="app.filterExerciseLibrary()" class="bg-[#111] border border-white/5 p-4 rounded-xl focus:outline-none text-xs font-bold text-gray-300 appearance-none">
+                    <option value="" class="bg-[#0a0a0a] text-white">Todos os Músculos</option>
+                    <option value="Braços" class="bg-[#0a0a0a] text-white">Braços</option>
+                    <option value="Antebraços" class="bg-[#0a0a0a] text-white">Antebraços</option>
+                    <option value="Costas" class="bg-[#0a0a0a] text-white">Costas</option>
+                    <option value="Peito" class="bg-[#0a0a0a] text-white">Peito</option>
+                    <option value="Ombros" class="bg-[#0a0a0a] text-white">Ombros</option>
+                    <option value="Pernas" class="bg-[#0a0a0a] text-white">Pernas</option>
+                    <option value="Panturrilhas" class="bg-[#0a0a0a] text-white">Panturrilhas</option>
+                    <option value="Cintura" class="bg-[#0a0a0a] text-white">Cintura/Abdômen</option>
+                    <option value="Cardio" class="bg-[#0a0a0a] text-white">Cardio</option>
+                    <option value="Pescoço" class="bg-[#0a0a0a] text-white">Pescoço</option>
+                </select>
+                <select id="filter-equipment" onchange="app.filterExerciseLibrary()" class="bg-[#111] border border-white/5 p-4 rounded-xl focus:outline-none text-xs font-bold text-gray-300 appearance-none">
+                    <option value="" class="bg-[#0a0a0a] text-white">Equipamentos (Todos)</option>
+                    <option value="Peso Corporal" class="bg-[#0a0a0a] text-white">Peso Corporal</option>
+                    <option value="Halter" class="bg-[#0a0a0a] text-white">Halter</option>
+                    <option value="Barra" class="bg-[#0a0a0a] text-white">Barra</option>
+                    <option value="Cabo" class="bg-[#0a0a0a] text-white">Cabo/Polia</option>
+                    <option value="Máquina" class="bg-[#0a0a0a] text-white">Máquina</option>
+                    <option value="Elástico" class="bg-[#0a0a0a] text-white">Elástico</option>
+                    <option value="Smith" class="bg-[#0a0a0a] text-white">Smith</option>
+                    <option value="Kettlebell" class="bg-[#0a0a0a] text-white">Kettlebell</option>
+                    <option value="Barra W" class="bg-[#0a0a0a] text-white">Barra W</option>
+                </select>
+            </div>
             <div id="library-list" class="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2 pb-20"></div>
+        </div>
+    </div>
+    
+    <!-- Exercise Detail Modal -->
+    <div id="exercise-detail-modal" class="fixed inset-0 z-[400] bg-black/95 backdrop-blur-xl hidden text-white">
+        <div class="absolute bottom-0 left-0 right-0 glass h-[92vh] rounded-t-[45px] p-8 space-y-6 flex flex-col shadow-2xl border-white/10">
+            <div class="flex justify-between items-center">
+                <span class="text-[9px] text-[#00FF9D] font-black uppercase tracking-[0.2em]" id="detail-exercise-category">CATEGORIA</span>
+                <button onclick="app.closeModal('exercise-detail-modal')" class="p-3 glass"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="space-y-2">
+                <h2 id="detail-exercise-name" class="text-2xl font-black italic tracking-tighter uppercase leading-tight text-white">--</h2>
+                <div class="flex flex-wrap gap-2 animate-fade" id="detail-exercise-tags">
+                    <!-- Tags de Equipamento e Músculo Alvo virão aqui -->
+                </div>
+            </div>
+
+            <!-- GIF de Execução -->
+            <div class="w-full h-48 bg-white/5 rounded-2xl overflow-hidden flex items-center justify-center border border-white/5 relative">
+                <div id="detail-gif-loading" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10">
+                    <div class="w-8 h-8 border-4 border-[#00FF9D]/30 border-t-[#00FF9D] rounded-full animate-spin"></div>
+                </div>
+                <img id="detail-exercise-gif" src="" alt="Execução do exercício" class="h-full w-auto object-contain hidden" onload="document.getElementById('detail-gif-loading').classList.add('hidden'); this.classList.remove('hidden');" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2964/2964514.png'; document.getElementById('detail-gif-loading').classList.add('hidden'); this.classList.remove('hidden');">
+            </div>
+
+            <!-- Instruções -->
+            <div class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-10">
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Como Executar</h3>
+                    <ol id="detail-exercise-steps" class="space-y-3 list-decimal list-inside text-sm text-gray-300 font-medium leading-relaxed">
+                        <!-- Passos da instrução virão aqui -->
+                    </ol>
+                </div>
+                <div id="detail-secondary-muscles-container" class="hidden">
+                    <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Músculos Secundários</h3>
+                    <p id="detail-exercise-secondary" class="text-xs text-gray-400 font-bold uppercase tracking-wide"></p>
+                </div>
+            </div>
         </div>
     </div>
 

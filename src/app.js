@@ -1,4 +1,4 @@
-﻿// PWA Service Worker Registration with Enhanced Update Logic
+// PWA Service Worker Registration with Enhanced Update Logic
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
@@ -21,10 +21,10 @@ if ('serviceWorker' in navigator) {
 }
 
 const db = new Dexie("StrongLog_v4_Pro");
-db.version(2).stores({ 
+db.version(3).stores({ 
     plans: '++id, name', 
     sessions: '++id, planName, date', 
-    templates: '++id, name, muscleGroup',
+    templates: '++id, name, body_part, equipment, target',
     records: 'name' // Exercise name as key
 });
 
@@ -94,8 +94,38 @@ const app = {
     },
 
     seedTemplates: async () => {
-        const count = await db.templates.count();
-        if (count === 0) await db.templates.bulkAdd(app.exerciseTemplates);
+        try {
+            const count = await db.templates.count();
+            // Se tiver menos de 100 exercícios, consideramos a base antiga e sobrescrevemos
+            if (count < 100) {
+                console.log('[App] Atualizando base de dados de exercícios científica...');
+                if (count > 0) {
+                    await db.templates.clear();
+                }
+                const res = await fetch('./data/exercises.min.json');
+                if (!res.ok) throw new Error('Falha ao baixar exercises.min.json');
+                const data = await res.json();
+                
+                // Salva no banco de dados local
+                await db.templates.bulkAdd(data);
+                console.log(`[App] ${data.length} exercícios semeados com sucesso!`);
+            }
+        } catch (err) {
+            console.error('[App] Erro no seed de exercícios:', err);
+            // Fallback estático caso o fetch falhe no primeiro boot offline
+            const count = await db.templates.count();
+            if (count === 0) {
+                await db.templates.bulkAdd(app.exerciseTemplates.map(ex => ({
+                    name: ex.name,
+                    body_part: ex.muscleGroup,
+                    equipment: 'Barra/Halter',
+                    target: ex.muscleGroup,
+                    secondary_muscles: [],
+                    media_id: '',
+                    instruction_steps: ['Execute o exercício com a postura adequada.']
+                })));
+            }
+        }
     },
 
     setView: (view) => {
@@ -392,24 +422,75 @@ const app = {
     },
 
     filterExerciseLibrary: async () => {
-        const s = document.getElementById('search-exercise').value.toLowerCase();
-        const t = await db.templates.toArray();
+        const searchInput = document.getElementById('search-exercise').value.toLowerCase().trim();
+        const filterBodyPart = document.getElementById('filter-body-part').value;
+        const filterEquipment = document.getElementById('filter-equipment').value;
+        
+        let exercises = await db.templates.toArray();
+        
+        // Aplicar filtros
+        if (filterBodyPart) {
+            exercises = exercises.filter(x => x.body_part === filterBodyPart);
+        }
+        if (filterEquipment) {
+            exercises = exercises.filter(x => x.equipment === filterEquipment);
+        }
+        if (searchInput) {
+            exercises = exercises.filter(x => 
+                x.name.toLowerCase().includes(searchInput) || 
+                x.target.toLowerCase().includes(searchInput) ||
+                (x.name_en && x.name_en.toLowerCase().includes(searchInput))
+            );
+        }
+        
+        // Limitar renderização para 60 resultados por performance
+        const limit = 60;
+        const count = exercises.length;
+        const displayList = exercises.slice(0, limit);
+        
         const groups = {};
-        t.filter(x => x.name.toLowerCase().includes(s)).forEach(x => {
-            if(!groups[x.muscleGroup]) groups[x.muscleGroup] = [];
-            groups[x.muscleGroup].push(x);
+        displayList.forEach(x => {
+            const grp = x.body_part || 'Outros';
+            if (!groups[grp]) groups[grp] = [];
+            groups[grp].push(x);
         });
-        document.getElementById('library-list').innerHTML = Object.keys(groups).sort().map(g => `
-            <div class="pt-6 pb-2 text-[10px] font-black text-gray-700 uppercase tracking-[0.4em] ml-2">${g}</div>
-            ${groups[g].map(x => `
-                <div class="w-full glass p-5 flex justify-between items-center bg-white/[0.01]">
-                    <div class="flex-1 cursor-pointer" onclick="app.selectExercise('${x.name}')">
-                        <div class="font-black text-sm uppercase tracking-tight text-white">${app.sanitize(x.name)}</div>
+        
+        const listContainer = document.getElementById('library-list');
+        if (!listContainer) return;
+        
+        let html = '';
+        if (displayList.length === 0) {
+            html = `<div class="p-10 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum exercício encontrado</div>`;
+        } else {
+            html = Object.keys(groups).sort().map(g => `
+                <div class="pt-6 pb-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-2">${g}</div>
+                ${groups[g].map(x => `
+                    <div class="w-full glass p-5 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.02] transition-all">
+                        <div class="flex-1 cursor-pointer" onclick="app.showExerciseDetails('${x.id}')">
+                            <div class="font-black text-sm uppercase tracking-tight text-white leading-tight">${app.sanitize(x.name)}</div>
+                            <div class="flex gap-2 mt-1">
+                                <span class="text-[8px] font-black text-gray-500 uppercase tracking-widest">${app.sanitize(x.target)}</span>
+                                <span class="text-[8px] font-black text-[#00FF9D]/60 uppercase tracking-widest">${app.sanitize(x.equipment)}</span>
+                            </div>
+                        </div>
+                        ${app.libraryContext === 'manager' 
+                            ? `<button onclick="app.deleteTemplate('${x.id}')" class="p-2 text-red-900 active:scale-95"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
+                            : `<button onclick="app.selectExercise('${x.name}')" class="p-3.5 glass text-[#00FF9D] active:scale-95"><i data-lucide="plus" class="w-4 h-4"></i></button>`
+                        }
                     </div>
-                    ${app.libraryContext === 'manager' ? `<button onclick="app.deleteTemplate(${x.id})" class="p-2 text-red-900"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : `<i data-lucide="plus" class="w-4 h-4 text-gray-800"></i>`}
-                </div>
-            `).join('')}
-        `).join('');
+                `).join('')}
+            `).join('');
+            
+            if (count > limit) {
+                html += `
+                    <div class="p-6 text-center text-[9px] text-gray-600 font-black uppercase tracking-widest">
+                        Exibindo primeiros ${limit} de ${count} resultados. Refine sua busca.
+                    </div>
+                `;
+            }
+        }
+        
+        listContainer.innerHTML = html;
         lucide.createIcons();
     },
 
@@ -417,6 +498,74 @@ const app = {
         if(app.libraryContext === 'editor') { app.editingPlan.exercises.push(n); app.renderEditorExercises(); }
         else if(app.libraryContext === 'workout') { app.addExerciseToActiveWorkout(n); }
         app.closeModal('exercise-library-modal');
+    },
+
+    showExerciseDetails: async (id) => {
+        const ex = await db.templates.get(id);
+        if (!ex) return;
+        
+        document.getElementById('detail-exercise-category').innerText = ex.body_part || 'Exercício';
+        document.getElementById('detail-exercise-name').innerText = ex.name;
+        
+        // Tags
+        const tagsContainer = document.getElementById('detail-exercise-tags');
+        tagsContainer.innerHTML = `
+            <span class="tag-accent">${app.sanitize(ex.target)}</span>
+            <span class="tag-secondary">${app.sanitize(ex.equipment)}</span>
+        `;
+        
+        // GIF de execução
+        const gifImg = document.getElementById('detail-exercise-gif');
+        const loadingSpinner = document.getElementById('detail-gif-loading');
+        
+        gifImg.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+        
+        if (ex.media_id) {
+            gifImg.src = `https://static.exercisedb.dev/media/${ex.media_id}.gif`;
+        } else {
+            gifImg.src = 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png';
+        }
+        
+        // Passos de instrução
+        const stepsContainer = document.getElementById('detail-exercise-steps');
+        if (ex.instruction_steps && ex.instruction_steps.length > 0) {
+            stepsContainer.innerHTML = ex.instruction_steps.map(step => `
+                <li class="pl-2">${app.sanitize(step)}</li>
+            `).join('');
+        } else {
+            stepsContainer.innerHTML = `<li class="pl-2">Nenhuma instrução cadastrada para este exercício.</li>`;
+        }
+        
+        // Músculos Secundários
+        const secContainer = document.getElementById('detail-secondary-muscles-container');
+        const secText = document.getElementById('detail-exercise-secondary');
+        if (ex.secondary_muscles && ex.secondary_muscles.length > 0) {
+            secContainer.classList.remove('hidden');
+            secText.innerText = ex.secondary_muscles.join(', ');
+        } else {
+            secContainer.classList.add('hidden');
+        }
+        
+        // Adiciona botão "Adicionar ao Treino" se aplicável
+        const detailModal = document.getElementById('exercise-detail-modal');
+        const oldBtn = document.getElementById('detail-action-btn');
+        if (oldBtn) oldBtn.remove();
+        
+        if (app.libraryContext !== 'manager') {
+            const btn = document.createElement('button');
+            btn.id = 'detail-action-btn';
+            btn.className = 'w-full btn-accent p-5 rounded-[22px] text-xs font-black tracking-[0.2em] uppercase shrink-0 mt-4';
+            btn.innerText = 'Adicionar ao Treino';
+            btn.onclick = () => {
+                app.selectExercise(ex.name);
+                app.closeModal('exercise-detail-modal');
+            };
+            detailModal.querySelector('.absolute').appendChild(btn);
+        }
+        
+        detailModal.classList.remove('hidden');
+        lucide.createIcons();
     },
 
     startTimer: () => {
