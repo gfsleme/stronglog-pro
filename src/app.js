@@ -4,19 +4,28 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
             console.log('[App] SW registrado com sucesso');
             
-            // Verifica atualizaÃ§Ãµes periodicamente
+            // Verifica atualizações periodicamente
             setInterval(() => { reg.update(); }, 60 * 60 * 1000); // A cada hora
 
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[App] Nova versÃ£o detectada!');
-                        document.getElementById('update-toast').classList.remove('hidden');
+                        console.log('[App] Nova versão detectada! Forçando skipWaiting...');
+                        newWorker.postMessage({ action: 'skipWaiting' });
                     }
                 });
             });
         }).catch(err => console.error('[App] Erro ao registrar SW:', err));
+    });
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            refreshing = true;
+            console.log('[App] Service Worker atualizado. Recarregando...');
+            window.location.reload();
+        }
     });
 }
 
@@ -45,9 +54,9 @@ const app = {
         { name: 'Agachamento Livre', muscleGroup: 'Pernas' }, 
         { name: 'Leg Press 45', muscleGroup: 'Pernas' },
         { name: 'Desenvolvimento Militar', muscleGroup: 'Ombros' }, 
-        { name: 'ElevaÃ§Ã£o Lateral', muscleGroup: 'Ombros' },
-        { name: 'Rosca Martelo', muscleGroup: 'BÃ­ceps' }, 
-        { name: 'TrÃ­ceps Testa', muscleGroup: 'TrÃ­ceps' }
+        { name: 'Elevação Lateral', muscleGroup: 'Ombros' },
+        { name: 'Rosca Martelo', muscleGroup: 'Bíceps' }, 
+        { name: 'Tríceps Testa', muscleGroup: 'Tríceps' }
     ],
 
     init: async () => {
@@ -64,7 +73,7 @@ const app = {
         const count = await db.records.count();
         if (count > 0) return; // Only run once or if empty
 
-        console.log('[App] Reconstruindo recordes histÃ³ricos...');
+        console.log('[App] Reconstruindo recordes históricos...');
         const sessions = await db.sessions.toArray();
         const recs = {};
         
@@ -143,7 +152,7 @@ const app = {
     },
 
     showCustomExerciseForm: () => {
-        const name = prompt('Nome do ExercÃ­cio:');
+        const name = prompt('Nome do Exercício:');
         const group = prompt('Grupo Muscular (Peito, Costas, etc):');
         if(name && group) app.saveCustomExercise(name, group);
     },
@@ -154,7 +163,7 @@ const app = {
     },
 
     deleteTemplate: async (id) => {
-        if(confirm('Apagar exercÃ­cio da biblioteca?')) {
+        if(confirm('Apagar exercício da biblioteca?')) {
             await db.templates.delete(id);
             app.filterExerciseLibrary();
         }
@@ -174,7 +183,7 @@ const app = {
             <div class="glass p-6 flex justify-between items-center active:scale-[0.98] transition-all animate-fade bg-white/[0.01]">
                 <div class="flex-1 cursor-pointer" onclick="app.startWorkout(${p.id})">
                     <h3 class="font-black text-xl tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
-                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${p.exercises.length} EXERCÃCIOS</p>
+                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${p.exercises.length} EXERCÍCIOS</p>
                 </div>
                 <button onclick="app.showPlanEditor(${p.id})" class="p-3 glass text-gray-500 active:text-[#00FF9D]"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
             </div>
@@ -266,7 +275,7 @@ const app = {
                     <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-800 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
                 <div class="space-y-3">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
-                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-4 bg-white/5 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-600 active:bg-white/10 uppercase">+ Add SÃ©rie</button>
+                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-4 bg-white/5 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-600 active:bg-white/10 uppercase">+ Add Série</button>
             </div>
         `).join('');
         lucide.createIcons();
@@ -677,7 +686,7 @@ const app = {
     },
 
     clearAllData: async () => { 
-        if(confirm('Apagar tudo? Isso deletarÃ¡ todos os seus treinos e planos permanentemente.')) { 
+        if(confirm('Apagar tudo? Isso deletará todos os seus treinos e planos permanentemente.')) { 
             await db.delete(); 
             location.reload(); 
         } 
