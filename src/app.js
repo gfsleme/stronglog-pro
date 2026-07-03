@@ -138,7 +138,6 @@ const app = {
             if(i.dataset.view === view) i.classList.add('active');
         });
         window.scrollTo(0,0);
-        lucide.createIcons();
     },
 
     showCustomExerciseForm: () => {
@@ -522,7 +521,7 @@ const app = {
         loadingSpinner.classList.remove('hidden');
         
         if (ex.media_id) {
-            gifImg.src = `https://static.exercisedb.dev/media/${ex.media_id}.gif`;
+            gifImg.src = `https://raw.githubusercontent.com/bootstrapping-lab/exercisedb-api/main/media/${ex.media_id}.gif`;
         } else {
             gifImg.src = 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png';
         }
@@ -531,7 +530,7 @@ const app = {
         const stepsContainer = document.getElementById('detail-exercise-steps');
         if (ex.instruction_steps && ex.instruction_steps.length > 0) {
             stepsContainer.innerHTML = ex.instruction_steps.map(step => `
-                <li class="pl-2">${app.sanitize(step)}</li>
+                <li class="pl-1">${app.sanitize(step)}</li>
             `).join('');
         } else {
             stepsContainer.innerHTML = `<li class="pl-2">Nenhuma instrução cadastrada para este exercício.</li>`;

@@ -101,17 +101,18 @@ input::placeholder {
 
 /* Animations */
 .animate-fade {
-    animation: premiumFadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation: premiumFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    will-change: opacity, transform;
 }
 
 @keyframes premiumFadeIn {
     from {
         opacity: 0;
-        transform: translateY(20px) scale(0.98);
+        transform: translateY(6px);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
     }
 }
 

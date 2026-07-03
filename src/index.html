@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Security: CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com https://static.exercisedb.dev; connect-src 'self' https://assets.mixkit.co;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com https://static.exercisedb.dev https://raw.githubusercontent.com; connect-src 'self' https://assets.mixkit.co;">
 
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
@@ -191,7 +191,7 @@
             </div>
 
             <!-- GIF de Execução -->
-            <div class="w-full h-48 bg-white/5 rounded-2xl overflow-hidden flex items-center justify-center border border-white/5 relative">
+            <div class="w-full h-56 bg-white/5 rounded-2xl overflow-hidden flex items-center justify-center border border-white/5 relative shrink-0">
                 <div id="detail-gif-loading" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10">
                     <div class="w-8 h-8 border-4 border-[#00FF9D]/30 border-t-[#00FF9D] rounded-full animate-spin"></div>
                 </div>
@@ -202,7 +202,7 @@
             <div class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-10">
                 <div>
                     <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Como Executar</h3>
-                    <ol id="detail-exercise-steps" class="space-y-3 list-decimal list-inside text-sm text-gray-300 font-medium leading-relaxed">
+                    <ol id="detail-exercise-steps" class="space-y-3 list-decimal list-outside pl-6 text-sm text-gray-300 font-medium leading-relaxed">
                         <!-- Passos da instrução virão aqui -->
                     </ol>
                 </div>
