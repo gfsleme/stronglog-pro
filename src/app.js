@@ -33,6 +33,8 @@ const app = {
     timerInterval: null, 
     startTime: null, 
     restTimerInterval: null, 
+    restTotalTime: 0,
+    restRemainingTime: 0,
     editingPlan: null, 
     libraryContext: null,
     exerciseTemplates: [
@@ -305,6 +307,8 @@ const app = {
         if(s.completed) { 
             app.startRestTimer(app.activeWorkout.exercises[exI].restTime); 
             if(navigator.vibrate) navigator.vibrate(40); // Haptic feedback
+        } else {
+            app.stopRestTimer();
         }
         app.renderWorkout();
     },
@@ -334,10 +338,11 @@ const app = {
 
     removeExerciseFromWorkout: (i) => { if(confirm('Remover?')) { app.activeWorkout.exercises.splice(i,1); app.renderWorkout(); } },
     
-    cancelWorkout: () => { if(confirm('Descartar treino?')) { clearInterval(app.timerInterval); app.activeWorkout = null; app.setView('dashboard'); } },
+    cancelWorkout: () => { if(confirm('Descartar treino?')) { clearInterval(app.timerInterval); app.stopRestTimer(); app.activeWorkout = null; app.setView('dashboard'); } },
     
     finishWorkout: async () => {
         clearInterval(app.timerInterval);
+        app.stopRestTimer();
         let vol = 0;
         const newPRs = [];
         
@@ -579,14 +584,22 @@ const app = {
 
     startRestTimer: (s) => {
         clearInterval(app.restTimerInterval);
+        app.restTotalTime = s;
+        app.restRemainingTime = s;
+        
         const overlay = document.getElementById('rest-timer-overlay');
-        if (overlay) overlay.classList.remove('translate-x-[200%]');
-        let rem = s;
+        if (overlay) {
+            overlay.classList.remove('translate-y-[-200%]');
+            overlay.classList.remove('translate-x-[200%]');
+        }
+        
+        app.updateRestTimerUI();
+        
         app.restTimerInterval = setInterval(() => {
-            rem--;
-            const timerEl = document.getElementById('overlay-timer');
-            if (timerEl) timerEl.innerText = app.formatSec(rem);
-            if(rem <= 0) { 
+            app.restRemainingTime--;
+            app.updateRestTimerUI();
+            
+            if(app.restRemainingTime <= 0) { 
                 app.stopRestTimer(); 
                 if(navigator.vibrate) navigator.vibrate([150, 80, 150]); 
                 const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -595,10 +608,32 @@ const app = {
         }, 1000);
     },
 
+    adjustRestTime: (sec) => {
+        app.restRemainingTime = Math.max(0, app.restRemainingTime + sec);
+        if (app.restRemainingTime > app.restTotalTime) {
+            app.restTotalTime = app.restRemainingTime;
+        }
+        app.updateRestTimerUI();
+        if (app.restRemainingTime <= 0) {
+            app.stopRestTimer();
+        }
+    },
+
+    updateRestTimerUI: () => {
+        const timerEl = document.getElementById('overlay-timer');
+        if (timerEl) timerEl.innerText = app.formatSec(app.restRemainingTime);
+        
+        const progressBar = document.getElementById('rest-progress-bar');
+        if (progressBar && app.restTotalTime > 0) {
+            const percent = (app.restRemainingTime / app.restTotalTime) * 100;
+            progressBar.style.width = `${percent}%`;
+        }
+    },
+
     stopRestTimer: () => { 
         clearInterval(app.restTimerInterval); 
         const overlay = document.getElementById('rest-timer-overlay');
-        if (overlay) overlay.classList.add('translate-x-[200%]'); 
+        if (overlay) overlay.classList.add('translate-y-[-200%]'); 
     },
 
     formatSec: (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`,

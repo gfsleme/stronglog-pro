@@ -210,18 +210,18 @@ select:focus {
 
 /* O rest-timer-overlay centralizado no topo */
 #rest-timer-overlay {
-    max-width: 360px !important;
-    width: calc(100% - 48px) !important;
+    max-width: 384px !important;
+    width: calc(100% - 32px) !important;
     left: 50% !important;
     right: auto !important;
-    transform: translateX(-50%) !important;
-    top: 20px !important;
+    transform: translateX(-50%) translateY(0) !important;
+    top: 24px !important;
 }
 
-/* Quando oculto, o rest-timer-overlay usa translate-x-[200%] no Tailwind. 
-   Para funcionar com a nossa centralização, garantimos que ele seja jogado para a direita */
-#rest-timer-overlay.translate-x-[200%] {
-    transform: translateX(200%) !important;
+/* Quando oculto, o rest-timer-overlay usa translate-y-[-200%] no HTML. 
+   Garantimos que ele suba e saia da tela, mantendo o alinhamento horizontal centralizado */
+#rest-timer-overlay.translate-y-\[-200\%\] {
+    transform: translateX(-50%) translateY(-250px) !important;
 }
 
 /* Redução do padding lateral de cartões em telas de celular estreitas */

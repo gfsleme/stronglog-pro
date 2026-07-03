@@ -239,13 +239,24 @@
         </div>
     </div>
 
-    <!-- Rest Overlay -->
-    <div id="rest-timer-overlay" class="fixed top-24 right-6 translate-x-[200%] transition-transform duration-500 glass p-6 flex items-center gap-6 z-[200] shadow-2xl border-[#00FF9D]/20">
-        <div class="flex flex-col">
-            <span class="text-[9px] text-[#00FF9D] font-black uppercase tracking-[0.2em]">Descanso</span>
-            <div class="text-4xl font-mono font-black italic text-white" id="overlay-timer">01:30</div>
+    <!-- Rest Overlay Premium -->
+    <div id="rest-timer-overlay" class="fixed left-1/2 w-[90%] max-w-sm glass px-5 py-4 flex items-center justify-between z-[200] shadow-2xl shadow-black/80 border-[#00FF9D]/10 translate-y-[-200%] transition-all duration-500">
+        <button onclick="app.adjustRestTime(-15)" class="p-2.5 glass text-xs font-bold text-gray-400 active:scale-95 transition-all">-15s</button>
+        
+        <div class="flex flex-col items-center justify-center relative min-w-[100px]">
+            <span class="text-[8px] text-[#00FF9D] font-bold uppercase tracking-[0.22em] mb-0.5">Descanso ativo</span>
+            <div class="text-2xl font-mono font-black text-white leading-none tracking-tight" id="overlay-timer">00:00</div>
         </div>
-        <button onclick="app.stopRestTimer()" class="text-red-500 glass p-4 active:bg-red-500/10"><i data-lucide="circle-stop" class="w-6 h-6"></i></button>
+        
+        <div class="flex items-center gap-1.5">
+            <button onclick="app.adjustRestTime(15)" class="p-2.5 glass text-xs font-bold text-gray-400 active:scale-95 transition-all">+15s</button>
+            <button onclick="app.stopRestTimer()" class="p-2.5 glass text-red-500 active:bg-red-500/10 active:scale-95 transition-all"><i data-lucide="skip-forward" class="w-4 h-4"></i></button>
+        </div>
+        
+        <!-- Linha de progresso animada na base -->
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/5 overflow-hidden rounded-b-3xl">
+            <div id="rest-progress-bar" class="h-full bg-[#00FF9D] transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+        </div>
     </div>
 
     <script src="./app.js"></script>
