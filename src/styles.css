@@ -194,3 +194,44 @@ select:focus {
     letter-spacing: 0.1em;
 }
 
+/* Centralização e largura máxima para modais flutuantes no desktop e mobile */
+#exercise-detail-modal > div,
+#exercise-library-modal > div,
+#records-modal > div {
+    max-width: 400px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: 100% !important;
+    bottom: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+/* O rest-timer-overlay centralizado no topo */
+#rest-timer-overlay {
+    max-width: 360px !important;
+    width: calc(100% - 48px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    top: 20px !important;
+}
+
+/* Quando oculto, o rest-timer-overlay usa translate-x-[200%] no Tailwind. 
+   Para funcionar com a nossa centralização, garantimos que ele seja jogado para a direita */
+#rest-timer-overlay.translate-x-[200%] {
+    transform: translateX(200%) !important;
+}
+
+/* Redução do padding lateral de cartões em telas de celular estreitas */
+@media (max-width: 480px) {
+    #exercise-list > div {
+        padding: 1.25rem !important; /* Mudar de p-6 (24px) para 20px no mobile */
+    }
+    #exercise-detail-modal > div {
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+    }
+}
+

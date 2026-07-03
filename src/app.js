@@ -271,15 +271,15 @@ const app = {
     },
 
     renderSetRow: (exI, sI, s) => `
-        <div class="flex items-center gap-3 ${s.completed ? 'opacity-20 grayscale' : ''} transition-all">
-            <button onclick="app.cycleSetType(${exI},${sI})" class="w-10 h-10 flex items-center justify-center glass text-[10px] font-black text-[#00FF9D] uppercase italic">${s.type[0]}</button>
-            <div class="flex-1 grid grid-cols-3 gap-2 h-12">
-                <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-sm font-black focus:outline-none text-white"></div>
-                <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-sm font-black focus:outline-none text-white"></div>
-                <div class="flex items-center glass px-1 bg-white/[0.01]"><input onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="numeric" value="${s.rpe}" class="w-full text-center text-[10px] font-black text-gray-600 focus:outline-none" placeholder="RPE"></div>
+        <div class="flex items-center gap-2 ${s.completed ? 'opacity-20 grayscale' : ''} transition-all">
+            <button onclick="app.cycleSetType(${exI},${sI})" class="w-9 h-9 flex items-center justify-center glass text-[9px] font-black text-[#00FF9D] uppercase italic shrink-0">${s.type[0]}</button>
+            <div class="flex-1 grid grid-cols-3 gap-1.5 h-10">
+                <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white"></div>
+                <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white"></div>
+                <div class="flex items-center glass px-1 bg-white/[0.01]"><input onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="numeric" value="${s.rpe}" class="w-full text-center text-[9px] font-black text-gray-600 focus:outline-none" placeholder="RPE"></div>
             </div>
-            <button onclick="app.toggleSet(${exI},${sI})" class="p-3.5 glass ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}">
-                <i data-lucide="check" class="w-5 h-5 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
+            <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}">
+                <i data-lucide="check" class="w-4 h-4 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
             </button>
         </div>
     `,
