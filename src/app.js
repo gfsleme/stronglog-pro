@@ -1,21 +1,34 @@
-// PWA Service Worker Registration with Enhanced Update Logic
+// StrongLog Pro v4.12 - PWA Lifecycle & Core Engine
+const APP_VERSION = 'v4.12';
+let swRegistration = null;
+let waitingWorker = null;
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
-            console.log('[App] SW registrado com sucesso');
+            swRegistration = reg;
+            console.log(`[App] SW ${APP_VERSION} registrado com sucesso`);
             
-            // Verifica atualizações periodicamente
-            setInterval(() => { reg.update(); }, 60 * 60 * 1000); // A cada hora
+            // Verifica se há worker em espera (waiting)
+            if (reg.waiting) {
+                waitingWorker = reg.waiting;
+                app.showUpdateAvailableBanner();
+            }
 
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
+                if (!newWorker) return;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[App] Nova versão detectada! Forçando skipWaiting...');
-                        newWorker.postMessage({ action: 'skipWaiting' });
+                        waitingWorker = newWorker;
+                        console.log('[App] Nova versão pronta para ativação!');
+                        app.showUpdateAvailableBanner();
                     }
                 });
             });
+
+            // Polling de verificação periódica a cada 30 minutos
+            setInterval(() => { reg.update().catch(()=>{}); }, 30 * 60 * 1000);
         }).catch(err => console.error('[App] Erro ao registrar SW:', err));
     });
 
@@ -23,7 +36,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
             refreshing = true;
-            console.log('[App] Service Worker atualizado. Recarregando...');
+            console.log('[App] Service Worker assumiu o controle. Recarregando...');
             window.location.reload();
         }
     });
@@ -62,12 +75,179 @@ const app = {
 
     init: async () => {
         app.updateDate();
+        const verEl = document.getElementById('pwa-version-display');
+        if (verEl) verEl.innerText = APP_VERSION;
+        
         await app.seedTemplates();
         await app.rebuildRecords();
         await app.renderPlans();
         await app.renderHistory();
         app.checkActiveWorkoutRecovery();
         app.initCharts();
+        lucide.createIcons();
+    },
+
+    // Toast Notification System
+    toast: (message, type = 'success', duration = 3200) => {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const icons = {
+            success: 'check-circle',
+            info: 'info',
+            warning: 'alert-triangle',
+            error: 'x-circle'
+        };
+        const iconColors = {
+            success: 'text-[#00FF9D]',
+            info: 'text-blue-400',
+            warning: 'text-amber-400',
+            error: 'text-red-400'
+        };
+
+        const iconName = icons[type] || 'info';
+        const iconColor = iconColors[type] || 'text-white';
+
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast-item toast-${type}`;
+        toastEl.innerHTML = `
+            <div class="flex items-center gap-3">
+                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor} shrink-0"></i>
+                <span class="text-xs font-bold text-white leading-tight">${app.sanitize(message)}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="p-1 text-gray-500 hover:text-white"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        `;
+
+        container.appendChild(toastEl);
+        lucide.createIcons();
+
+        setTimeout(() => {
+            toastEl.classList.add('toast-out');
+            setTimeout(() => toastEl.remove(), 250);
+        }, duration);
+    },
+
+    // PWA Lifecycle & 1-Click Update
+    showUpdateAvailableBanner: () => {
+        const banner = document.getElementById('update-toast');
+        if (banner) {
+            banner.classList.remove('hidden');
+            lucide.createIcons();
+        }
+    },
+
+    applyPwaUpdate: () => {
+        app.toast('Aplicando atualização mais recente...', 'info', 2000);
+        if (waitingWorker) {
+            waitingWorker.postMessage({ action: 'skipWaiting' });
+        } else if (navigator.serviceWorker) {
+            navigator.serviceWorker.getRegistration().then(reg => {
+                if (reg && reg.waiting) {
+                    reg.waiting.postMessage({ action: 'skipWaiting' });
+                } else {
+                    window.location.reload();
+                }
+            });
+        } else {
+            window.location.reload();
+        }
+    },
+
+    checkForUpdates: async (isUserTriggered = false) => {
+        if (!('serviceWorker' in navigator)) {
+            app.toast('Service Worker não suportado neste navegador.', 'warning');
+            return;
+        }
+
+        if (isUserTriggered) {
+            app.toast('Buscando atualizações no servidor...', 'info', 2000);
+        }
+
+        try {
+            const reg = swRegistration || await navigator.serviceWorker.getRegistration();
+            if (reg) {
+                await reg.update();
+                if (reg.waiting || (reg.installing && reg.installing.state === 'installed')) {
+                    waitingWorker = reg.waiting || reg.installing;
+                    app.showUpdateAvailableBanner();
+                    app.toast('🚀 Nova versão encontrada! Clique em Atualizar.', 'success', 4000);
+                } else if (isUserTriggered) {
+                    setTimeout(() => {
+                        app.toast(`✅ Seu StrongLog já está na versão mais recente (${APP_VERSION})!`, 'success');
+                    }, 600);
+                }
+            } else if (isUserTriggered) {
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error('[Update] Erro ao verificar atualizações:', err);
+            if (isUserTriggered) {
+                app.toast('Não foi possível verificar no momento (modo offline).', 'warning');
+            }
+        }
+    },
+
+    forcePwaReload: () => {
+        app.showConfirmDialog({
+            title: 'Forçar Atualização Completa',
+            subtitle: 'PWA Cache Clean',
+            message: 'Isso irá limpar os arquivos temporários em cache e recarregar a aplicação para a última versão disponível. Seus treinos, históricos e planos salvos NÃO serão afetados.',
+            confirmText: 'Atualizar Agora',
+            cancelText: 'Voltar',
+            isDanger: false,
+            onConfirm: async () => {
+                app.toast('Limpando cache de aplicação e recarregando...', 'info');
+                try {
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map(k => caches.delete(k)));
+                    }
+                    if (navigator.serviceWorker) {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(regs.map(r => r.unregister()));
+                    }
+                } catch (e) {
+                    console.error('[PWA] Erro na limpeza forçada:', e);
+                }
+                setTimeout(() => {
+                    window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
+                }, 400);
+            }
+        });
+    },
+
+    // Custom Glassmorphism Confirm Dialog
+    showConfirmDialog: ({ title, subtitle = 'Atenção', message, confirmText = 'Confirmar', cancelText = 'Cancelar', isDanger = true, onConfirm }) => {
+        const modal = document.getElementById('confirm-dialog-modal');
+        const titleEl = document.getElementById('confirm-dialog-title');
+        const subEl = document.getElementById('confirm-dialog-subtitle');
+        const msgEl = document.getElementById('confirm-dialog-msg');
+        const iconEl = document.getElementById('confirm-dialog-icon');
+        const btnCancel = document.getElementById('confirm-dialog-btn-cancel');
+        const btnConfirm = document.getElementById('confirm-dialog-btn-confirm');
+
+        if (!modal) return;
+
+        if (titleEl) titleEl.innerText = title;
+        if (subEl) subEl.innerText = subtitle;
+        if (msgEl) msgEl.innerText = message;
+        if (btnCancel) btnCancel.innerText = cancelText;
+        if (btnConfirm) {
+            btnConfirm.innerText = confirmText;
+            if (isDanger) {
+                btnConfirm.className = 'p-3.5 rounded-xl text-xs font-black uppercase tracking-wider bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-95 transition-all';
+                if (iconEl) iconEl.className = 'p-3 rounded-xl bg-red-500/10 text-red-400';
+            } else {
+                btnConfirm.className = 'p-3.5 rounded-xl text-xs font-black uppercase tracking-wider bg-[#00FF9D] text-black shadow-lg shadow-[#00FF9D]/20 active:scale-95 transition-all';
+                if (iconEl) iconEl.className = 'p-3 rounded-xl bg-[#00FF9D]/10 text-[#00FF9D]';
+            }
+            btnConfirm.onclick = () => {
+                app.closeModal('confirm-dialog-modal');
+                if (onConfirm) onConfirm();
+            };
+        }
+
+        modal.classList.remove('hidden');
         lucide.createIcons();
     },
 
@@ -160,15 +340,21 @@ const app = {
     },
 
     saveCustomExerciseFromModal: async () => {
-        const nameInput = document.getElementById('custom-ex-name').value.trim();
+        const nameInput = document.getElementById('custom-ex-name');
+        const name = nameInput ? nameInput.value.trim() : '';
         const groupSelect = document.getElementById('custom-ex-group').value;
-        if (!nameInput) return;
+        if (!name) {
+            app.toast('Informe o nome do exercício.', 'warning');
+            return;
+        }
         
+        const customId = `custom_${Date.now()}`;
         await db.templates.add({
-            name: app.sanitize(nameInput),
-            name_en: nameInput,
+            id: customId,
+            name: app.sanitize(name),
+            name_en: name,
             body_part: groupSelect,
-            equipment: 'Customizado',
+            equipment: 'Personalizado',
             target: groupSelect,
             secondary_muscles: [],
             media_id: '',
@@ -177,13 +363,23 @@ const app = {
         
         app.closeModal('custom-exercise-modal');
         app.filterExerciseLibrary();
+        app.toast(`"${name}" cadastrado com sucesso!`, 'success');
     },
 
-    deleteTemplate: async (id) => {
-        if(confirm('Apagar exercício da biblioteca?')) {
-            await db.templates.delete(id);
-            app.filterExerciseLibrary();
-        }
+    deleteTemplate: (id) => {
+        app.showConfirmDialog({
+            title: 'Excluir Exercício',
+            subtitle: 'Biblioteca',
+            message: 'Tem certeza que deseja apagar este exercício customizado permanentemente?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            isDanger: true,
+            onConfirm: async () => {
+                await db.templates.delete(id);
+                app.filterExerciseLibrary();
+                app.toast('Exercício removido da biblioteca.', 'info');
+            }
+        });
     },
 
     showExerciseManager: () => {
@@ -229,13 +425,39 @@ const app = {
         lucide.createIcons();
     },
 
+    deletePlan: (id) => {
+        app.showConfirmDialog({
+            title: 'Excluir Rotina',
+            subtitle: 'Gerenciador de Planos',
+            message: 'Deseja apagar esta rotina de treino permanentemente?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            isDanger: true,
+            onConfirm: async () => {
+                await db.plans.delete(id);
+                app.setView('dashboard');
+                app.renderPlans();
+                app.toast('Rotina excluída.', 'info');
+            }
+        });
+    },
+
     savePlan: async () => {
         const name = document.getElementById('plan-name-input').value.trim();
-        if (!name || !app.editingPlan.exercises.length) return;
+        if (!name) {
+            app.toast('Informe o nome da rotina.', 'warning');
+            return;
+        }
+        if (!app.editingPlan.exercises.length) {
+            app.toast('Adicione pelo menos 1 exercício à rotina.', 'warning');
+            return;
+        }
+        
         app.editingPlan.name = name;
         await db.plans.put(app.editingPlan);
         app.setView('dashboard');
         app.renderPlans();
+        app.toast(`Rotina "${name}" salva com sucesso!`, 'success');
     },
 
     calculate1RM: (weight, reps) => {
@@ -416,24 +638,48 @@ const app = {
     },
 
     removeExerciseFromWorkout: (i) => { 
-        if(confirm('Remover exercício do treino?')) { 
-            app.activeWorkout.exercises.splice(i,1); 
-            app.renderWorkout(); 
-            app.saveActiveWorkoutState();
-        } 
+        const exName = app.activeWorkout.exercises[i] ? app.activeWorkout.exercises[i].name : 'Exercício';
+        app.showConfirmDialog({
+            title: 'Remover Exercício',
+            subtitle: 'Treino Ativo',
+            message: `Deseja remover "${exName}" desta sessão de treino?`,
+            confirmText: 'Remover',
+            cancelText: 'Manter',
+            isDanger: true,
+            onConfirm: () => {
+                app.activeWorkout.exercises.splice(i, 1); 
+                app.renderWorkout(); 
+                app.saveActiveWorkoutState();
+                app.toast('Exercício removido do treino.', 'info');
+            }
+        });
     },
     
     cancelWorkout: () => { 
-        if(confirm('Descartar treino atual? Todo o progresso desta sessão será perdido.')) { 
-            clearInterval(app.timerInterval); 
-            app.stopRestTimer(); 
-            app.activeWorkout = null; 
-            app.clearActiveWorkoutState();
-            app.setView('dashboard'); 
-        } 
+        app.showConfirmDialog({
+            title: 'Descartar Treino Atual',
+            subtitle: 'Sessão em Andamento',
+            message: 'Tem certeza que deseja cancelar o treino? Todo o progresso registrado nesta sessão será perdido.',
+            confirmText: 'Sim, Cancelar',
+            cancelText: 'Continuar Treinando',
+            isDanger: true,
+            onConfirm: () => {
+                clearInterval(app.timerInterval); 
+                app.stopRestTimer(); 
+                app.activeWorkout = null; 
+                app.clearActiveWorkoutState();
+                app.setView('dashboard'); 
+                app.toast('Treino cancelado.', 'info');
+            }
+        });
     },
     
     finishWorkout: async () => {
+        if (!app.activeWorkout || !app.activeWorkout.exercises || app.activeWorkout.exercises.length === 0) {
+            app.toast('Adicione exercícios antes de finalizar a sessão.', 'warning');
+            return;
+        }
+
         clearInterval(app.timerInterval);
         app.stopRestTimer();
         let vol = 0;
@@ -462,6 +708,8 @@ const app = {
 
         if (newPRs.length > 0) {
             app.showPRNotification(newPRs);
+        } else {
+            app.toast('Treino finalizado com sucesso! Parabéns!', 'success');
         }
 
         app.activeWorkout = null; 
@@ -518,15 +766,27 @@ const app = {
             app.startTimer();
             app.renderWorkout();
             app.setView('active-workout');
+            app.toast('Treino recuperado com sucesso!', 'success');
         } catch (e) {
             console.error('[Recovery] Erro ao retomar treino:', e);
         }
     },
 
     discardRecoveredWorkout: () => {
-        app.clearActiveWorkoutState();
-        const banner = document.getElementById('workout-recovery-banner');
-        if (banner) banner.classList.add('hidden');
+        app.showConfirmDialog({
+            title: 'Descartar Treino Aberto',
+            subtitle: 'Recuperação de Sessão',
+            message: 'Tem certeza que deseja descartar o treino pendente anterior?',
+            confirmText: 'Descartar',
+            cancelText: 'Manter',
+            isDanger: true,
+            onConfirm: () => {
+                app.clearActiveWorkoutState();
+                const banner = document.getElementById('workout-recovery-banner');
+                if (banner) banner.classList.add('hidden');
+                app.toast('Treino anterior descartado.', 'info');
+            }
+        });
     },
 
     showPRNotification: (prs) => {
@@ -631,7 +891,7 @@ const app = {
                         ${app.libraryContext === 'manager' && typeof x.id === 'string' && x.id.startsWith('custom_') ? `
                             <button onclick="app.deleteTemplate('${x.id}')" class="p-2 text-red-500/60 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         ` : ''}
-                        <button onclick="app.selectExercise('${app.sanitize(x.name)}')" class="p-2.5 bg-[#00FF9D]/10 text-[#00FF9D] rounded-xl active:bg-[#00FF9D] active:text-black transition-all">
+                        <button onclick="app.selectExerciseById('${x.id}')" class="p-2.5 bg-[#00FF9D]/10 text-[#00FF9D] rounded-xl active:bg-[#00FF9D] active:text-black transition-all">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -649,6 +909,20 @@ const app = {
         
         listContainer.innerHTML = html;
         lucide.createIcons();
+    },
+
+    selectExerciseById: async (id) => {
+        let ex = await db.templates.get(id);
+        if (!ex && !isNaN(id) && typeof id === 'string') {
+            ex = await db.templates.get(Number(id));
+        }
+        if (ex) {
+            app.selectExercise(ex.name);
+            if (navigator.vibrate) navigator.vibrate(30);
+            app.toast(`"${ex.name}" adicionado!`, 'success', 2000);
+        } else {
+            app.toast('Exercício não encontrado na biblioteca.', 'warning');
+        }
     },
 
     selectExercise: (n) => {
@@ -783,6 +1057,8 @@ const app = {
             btn.innerText = 'Adicionar ao Treino';
             btn.onclick = () => {
                 app.selectExercise(ex.name);
+                if (navigator.vibrate) navigator.vibrate(30);
+                app.toast(`"${ex.name}" adicionado!`, 'success', 2000);
                 app.closeModal('exercise-detail-modal');
             };
             detailModal.querySelector('.absolute').appendChild(btn);
@@ -907,7 +1183,7 @@ const app = {
 
     exportData: async () => {
         const data = { 
-            version: 4.11,
+            version: 4.12,
             timestamp: new Date().toISOString(),
             plans: await db.plans.toArray(), 
             sessions: await db.sessions.toArray(), 
@@ -919,6 +1195,7 @@ const app = {
         a.href = URL.createObjectURL(blob); 
         a.download = `stronglog-pro-backup-${new Date().toISOString().slice(0,10)}.json`; 
         a.click();
+        app.toast('Backup exportado com sucesso!', 'success');
     },
 
     importDataTrigger: () => {
@@ -936,20 +1213,17 @@ const app = {
                 if(d.sessions && Array.isArray(d.sessions)) await db.sessions.bulkPut(d.sessions); 
                 if(d.templates && Array.isArray(d.templates)) await db.templates.bulkPut(d.templates);
                 if(d.records && Array.isArray(d.records)) await db.records.bulkPut(d.records);
-                location.reload();
+                app.toast('Backup importado com sucesso!', 'success');
+                setTimeout(() => location.reload(), 600);
             } catch (err) {
-                alert('Erro ao importar backup: arquivo JSON inválido.');
+                app.toast('Erro ao importar backup: arquivo JSON inválido.', 'error');
             }
         }; 
         r.readAsText(f);
     },
 
-    clearAllData: async () => { 
-        if(confirm('Apagar tudo? Isso deletará todos os seus treinos e planos permanentemente.')) { 
-            await db.delete(); 
-            localStorage.clear();
-            location.reload(); 
-        } 
+    clearAllData: () => { 
+        app.confirmClearAllData();
     },
 
     renderHistory: async () => {

@@ -1,37 +1,36 @@
-# 🔁 Handover — StrongLog
+# 🔁 Handover — StrongLog Pro
 
-> Atualizado em: 2026-08-19 21:30 | Por: Argos (Scout & Memory Keeper)
+> Atualizado em: 2026-08-19 23:25 | Por: Antigravity (Líder Técnico & Maestro)
 
 ## Estado atual do projeto
-O StrongLog Pro teve suas pendências de acentuação de escrita resolvidas e um protocolo robusto de atualização automática do PWA implementado. O aplicativo móvel agora detecta as atualizações ativamente no boot, envia uma mensagem de `skipWaiting` para o Service Worker se ativar em tempo real e recarrega a tela de forma autônoma via evento `controllerchange`. Todos os textos em português foram corrigidos da codificação corrompida. O deploy de produção na branch remota já está no ar.
+O **StrongLog Pro v4.12** foi implementado com sucesso e validado em ambiente E2E. A aplicação conta agora com uma **Central de Atualização PWA (1-Click Update)** nos Ajustes, permitindo que o usuário em qualquer celular ou desktop force a atualização imediata do Service Worker e limpe caches transitórios com segurança (sem afetar os dados do IndexedDB). Todos os diálogos nativos (`alert` e `confirm`) foram eliminados e substituídos por um **Sistema Global de Toasts** e **Modais Customizados em Glassmorphism**, além da consolidação da seleção de exercícios da biblioteca por ID imutável.
 
 ## O que foi feito nesta sessão
-*   **Correção de Codificação (Escrita)**:
-    *   Substituímos todos os caracteres acentuados corrompidos (Double UTF-8) por sua ortografia correta nos arquivos [index.html](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/index.html) e [app.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/app.js) (ex: `DISTRIBUIÇÃO POR MÚSCULO`, `Série`, `Exercício`).
-*   **Orquestração de Auto-Update PWA**:
-    *   Implementamos na inicialização do [app.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/app.js) a detecção de atualizações com envio de mensagem de `skipWaiting` para o novo worker.
-    *   Adicionamos o listener de `controllerchange` para forçar `window.location.reload()` na mesma hora em que o Service Worker atualizado assume o controle.
-    *   Inserimos o listener de `message` para a ação `skipWaiting` em [sw.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/sw.js).
-*   **Deploy de Produção**:
-    *   Incrementamos a versão do Service Worker (`v4.7`) e do cache (`stronglog-pro-v4.10`) em [sw.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/sw.js).
-    *   Realizamos o `git push` atualizando a versão pública online no GitHub Pages.
+*   **Central de Atualização PWA & 1-Click Update (v4.12)**:
+    *   Implementado painel no modal de Ajustes exibindo a versão ativa (`v4.12`) e botões de ação instantânea: `Verificar Atualizações` e `Forçar Reload (Cache Clean)`.
+    *   Banner flutuante de nova versão no topo da tela com botão de ativação em tempo real via `skipWaiting`.
+    *   Suporte a limpeza atômica de `CacheStorage` e reinicialização do Service Worker para dispositivos móveis com cache agressivo.
+*   **Sistema Global de Notificações Toast (Glassmorphism & Neon Mint)**:
+    *   Motor `app.toast(message, type, duration)` com suporte a estados `success`, `info`, `warning` e `error`.
+    *   Animações fluidas de entrada/saída (`toastIn`, `toastOut`) com backdrop blur e ícones semânticos Lucide.
+*   **Modais Customizados de Confirmação**:
+    *   Componente `#confirm-dialog-modal` estilizado em Glassmorphism escuro com botões estilizados conforme criticidade (perigo/vermelho vs ação/verde).
+    *   Substituição completa de chamadas nativas de `confirm()` (descarte de treino, cancelamento de sessão, exclusão de exercício, exclusão de plano e limpeza geral do app).
+*   **Seleção Imutável por ID (`selectExerciseById`)**:
+    *   Seleção de exercícios e injeção em rotinas / treinos ativos vinculada diretamente ao ID no Dexie/IndexedDB, imune a aspas, caracteres especiais ou colisões de nomes.
+*   **Validação E2E Automatizada**:
+    *   Testes completos de ciclo de vida (criação de rotina, treino ao vivo, cálculo de 1RM, volume semanal, toasts e diálogos de confirmação) executados via headless browser DevTools com 100% de sucesso.
 
 ## ⏳ Pendências (prioridade decrescente)
-1.  **Histórico e PRs no Modal:** Adicionar uma seção no modal de detalhes que exiba o histórico recente de carga e repetições e o Recorde Pessoal (PR) do usuário para o exercício selecionado.
-2.  **Modularização do Frontend:** Isolar as funções de visualizadores de gráficos, controle do IndexedDB e componentes de modais do [app.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/app.js) para arquivos separados se o app crescer.
+1.  **Modularização Opcional do Frontend:** Se a aplicação receber novos submódulos analíticos complexos, separar `app.js` em controladores específicos (`controllers/workout.js`, `controllers/library.js`, `controllers/charts.js`).
+2.  **Exportação em Formato CSV / Excel:** Adicionar opção de exportar o histórico de treinos em formato CSV para análise externa.
 
 ## 🔴 Armadilhas e alertas
-> Coisas para NÃO fazer ou ter cuidado:
-*   **Controle de Reload**: O listener do evento `controllerchange` deve conter uma flag de controle (como `let refreshing = false`) para evitar loops infinitos de reload em alguns navegadores móveis durante ativações simultâneas.
+*   **Limpeza de Cache PWA**: A função `forcePwaReload()` limpa apenas o `CacheStorage` do navegador e unregistra o SW antigo; ela NUNCA deve chamar `db.delete()` ou `localStorage.clear()` para não apagar o banco de treinos do usuário.
 
 ## 🧩 Contexto técnico importante
 *   **Deploy Host**: URL de produção `https://gfsleme.github.io/stronglog-pro/`.
+*   **Versão**: v4.12 • Cache: `stronglog-pro-v4.12`.
 
 ## 💡 Próximo passo recomendado
-> Se começar agora, comece por aqui:
-*   Realizar o desenvolvimento do histórico de cargas direto no modal de detalhes consultando a store `sessions`.
-
-## 📎 Arquivos-chave desta sessão
-*   [app.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/app.js) — Registro do SW com auto-update e correção de UTF-8.
-*   [sw.js](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/sw.js) — Controle de mensagens skipWaiting e cache v4.10.
-*   [index.html](file:///c:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/src/index.html) — Estrutura de visualização e textos em UTF-8.
+*   Efetuar o push para o GitHub Pages e validar no dispositivo móvel a nova experiência de atualização com 1 clique e feedback tátil.

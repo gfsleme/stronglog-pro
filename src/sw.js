@@ -1,7 +1,7 @@
-/* StrongLog Pro - Service Worker v4.8 */
+/* StrongLog Pro - Service Worker v4.12 */
 /* Release Date: 2026-08-19 */
 
-const CACHE_NAME = 'stronglog-pro-v4.11';
+const CACHE_NAME = 'stronglog-pro-v4.12';
 const ASSETS = [
   './',
   './index.html',
@@ -73,5 +73,10 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.action === 'skipWaiting') {
     self.skipWaiting();
+  }
+  if (event.data && event.data.action === 'clearCache') {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+      if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: true });
+    });
   }
 });

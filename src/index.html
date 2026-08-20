@@ -11,7 +11,9 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com https://static.exercisedb.dev https://raw.githubusercontent.com; connect-src 'self' https://assets.mixkit.co;">
 
     <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
+    <meta name="mobile-web-app-capable" content="yes">
     
     <title>StrongLog Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,10 +24,16 @@
 </head>
 <body class="min-h-screen pb-32">
 
-    <!-- Update Toast -->
-    <div id="update-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[500] glass p-4 px-6 flex items-center gap-4 border-[#00FF9D]/30 hidden animate-fade">
-        <span class="text-xs font-black uppercase tracking-widest text-white">Nova Versão Disponível</span>
-        <button onclick="window.location.reload()" class="bg-[#00FF9D] text-black text-[10px] font-black p-2 px-4 rounded-full uppercase italic">Atualizar</button>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
+
+    <!-- Update Toast Floating -->
+    <div id="update-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[500] glass p-3 px-5 flex items-center gap-3.5 border-[#00FF9D]/40 shadow-2xl bg-black/90 hidden animate-fade">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-[#00FF9D] rounded-full animate-ping"></span>
+            <span class="text-xs font-black uppercase tracking-wider text-white">Nova Versão Pronta</span>
+        </div>
+        <button onclick="app.applyPwaUpdate()" class="bg-[#00FF9D] text-black text-[10px] font-black py-1.5 px-3 rounded-full uppercase italic active:scale-95 transition-all">Atualizar Agora</button>
     </div>
 
     <header class="p-6 pb-2 flex justify-between items-center sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[100] border-b border-white/5">
@@ -287,25 +295,69 @@
 
     <div id="settings-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden text-white">
         <div class="flex items-center justify-center min-h-screen p-6">
-            <div class="glass w-full max-w-sm p-10 space-y-8">
+            <div class="glass w-full max-w-sm p-8 space-y-6">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-3xl font-black italic tracking-tighter">AJUSTES</h2>
+                    <h2 class="text-2xl font-black italic tracking-tighter uppercase">Ajustes & Sistema</h2>
                     <button onclick="app.closeModal('settings-modal')" class="p-3 glass"><i data-lucide="x"></i></button>
                 </div>
-                <div class="space-y-3">
-                    <button onclick="app.showExerciseManager()" class="w-full p-5 glass flex items-center gap-4 text-xs font-black uppercase active:bg-white/5">
-                        <i data-lucide="library" class="w-5 h-5 text-gray-400"></i> Gerenciar Biblioteca
+
+                <!-- Update & Version Hub -->
+                <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#00FF9D]"></span>
+                            <span class="text-[10px] font-black uppercase text-white tracking-wider">Versão do App</span>
+                        </div>
+                        <span id="pwa-version-display" class="text-[10px] font-mono font-bold text-[#00FF9D] bg-[#00FF9D]/10 px-2.5 py-0.5 rounded-md">v4.12</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="app.checkForUpdates(true)" class="p-2.5 glass flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-wider active:bg-white/10">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-[#00FF9D]"></i> Verificar
+                        </button>
+                        <button onclick="app.forcePwaReload()" class="p-2.5 glass flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-amber-400 border-amber-500/20 active:bg-amber-500/10">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Forçar Reload
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <button onclick="app.showExerciseManager()" class="w-full p-4 glass flex items-center gap-3 text-xs font-black uppercase active:bg-white/5">
+                        <i data-lucide="library" class="w-4 h-4 text-gray-400"></i> Gerenciar Biblioteca
                     </button>
-                    <button onclick="app.exportData()" class="w-full p-5 glass flex items-center gap-4 text-xs font-black uppercase active:bg-white/5">
-                        <i data-lucide="database" class="w-5 h-5 text-[#00FF9D]"></i> Exportar Backup
+                    <button onclick="app.exportData()" class="w-full p-4 glass flex items-center gap-3 text-xs font-black uppercase active:bg-white/5">
+                        <i data-lucide="database" class="w-4 h-4 text-[#00FF9D]"></i> Exportar Backup (JSON)
                     </button>
-                    <button onclick="app.importDataTrigger()" class="w-full p-5 glass flex items-center gap-4 text-xs font-black uppercase active:bg-white/5">
-                        <i data-lucide="refresh-cw" class="w-5 h-5 text-[#00FF9D]"></i> Importar Backup
+                    <button onclick="app.importDataTrigger()" class="w-full p-4 glass flex items-center gap-3 text-xs font-black uppercase active:bg-white/5">
+                        <i data-lucide="download-cloud" class="w-4 h-4 text-[#00FF9D]"></i> Importar Backup
                     </button>
                     <input type="file" id="import-input" class="hidden" accept=".json" onchange="app.importData(event)">
-                    <button onclick="app.clearAllData()" class="w-full p-5 glass text-red-500 text-[10px] font-black uppercase tracking-widest border-red-500/10 active:bg-red-500/10">Limpar todo o App</button>
+                    <button onclick="app.confirmClearAllData()" class="w-full p-4 glass text-red-500 text-[10px] font-black uppercase tracking-widest border-red-500/20 active:bg-red-500/10">
+                        <i data-lucide="trash-2" class="w-4 h-4 inline-block mr-1"></i> Limpar todo o App
+                    </button>
                 </div>
-                <p class="text-[9px] text-center text-gray-700 font-bold tracking-[0.4em]">STRONGLOG PRO PWA v4.11</p>
+                <p class="text-[8px] text-center text-gray-600 font-bold tracking-[0.3em] uppercase">StrongLog Pro PWA • Offline First</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog Custom Modal -->
+    <div id="confirm-dialog-modal" class="fixed inset-0 z-[550] bg-black/90 backdrop-blur-xl hidden text-white">
+        <div class="flex items-center justify-center min-h-screen p-6">
+            <div class="glass w-full max-w-sm p-7 space-y-5 border-white/10 shadow-2xl animate-fade">
+                <div class="flex items-center gap-3">
+                    <div id="confirm-dialog-icon" class="p-3 rounded-xl bg-red-500/10 text-red-400">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="confirm-dialog-title" class="text-base font-black italic tracking-tight uppercase">Confirmar Ação</h3>
+                        <p id="confirm-dialog-subtitle" class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Atenção</p>
+                    </div>
+                </div>
+                <p id="confirm-dialog-msg" class="text-xs text-gray-300 font-medium leading-relaxed">Mensagem de confirmação...</p>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="confirm-dialog-btn-cancel" onclick="app.closeModal('confirm-dialog-modal')" class="p-3.5 glass text-xs font-black uppercase tracking-wider text-gray-400 active:bg-white/5">Cancelar</button>
+                    <button id="confirm-dialog-btn-confirm" class="p-3.5 rounded-xl text-xs font-black uppercase tracking-wider bg-red-500 text-white shadow-lg active:scale-95 transition-all">Confirmar</button>
+                </div>
             </div>
         </div>
     </div>
