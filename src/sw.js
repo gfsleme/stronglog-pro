@@ -1,7 +1,7 @@
-/* StrongLog Pro - Service Worker v4.7 */
-/* Release Date: 2026-07-03 */
+/* StrongLog Pro - Service Worker v4.8 */
+/* Release Date: 2026-08-19 */
 
-const CACHE_NAME = 'stronglog-pro-v4.10';
+const CACHE_NAME = 'stronglog-pro-v4.11';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './app.js',
   './manifest.json',
   './data/exercises.min.json',
+  'https://cdn.tailwindcss.com',
   'https://unpkg.com/dexie@latest/dist/dexie.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://unpkg.com/lucide@latest',

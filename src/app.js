@@ -46,17 +46,18 @@ const app = {
     restRemainingTime: 0,
     editingPlan: null, 
     libraryContext: null,
+    searchDebounceTimeout: null,
     exerciseTemplates: [
-        { name: 'Supino Reto (Barra)', muscleGroup: 'Peito' }, 
-        { name: 'Supino Inclinado (Halter)', muscleGroup: 'Peito' },
-        { name: 'Puxada Aberta', muscleGroup: 'Costas' }, 
-        { name: 'Remada Unilateral', muscleGroup: 'Costas' },
+        { name: 'Supino Reto com Barra', muscleGroup: 'Peito' }, 
+        { name: 'Supino Inclinado com Halter', muscleGroup: 'Peito' },
+        { name: 'Puxada no Pulley Pegada Aberta', muscleGroup: 'Costas' }, 
+        { name: 'Remada Curvada com Barra', muscleGroup: 'Costas' },
         { name: 'Agachamento Livre', muscleGroup: 'Pernas' }, 
         { name: 'Leg Press 45', muscleGroup: 'Pernas' },
         { name: 'Desenvolvimento Militar', muscleGroup: 'Ombros' }, 
-        { name: 'Elevação Lateral', muscleGroup: 'Ombros' },
-        { name: 'Rosca Martelo', muscleGroup: 'Bíceps' }, 
-        { name: 'Tríceps Testa', muscleGroup: 'Tríceps' }
+        { name: 'Elevação Lateral com Halter', muscleGroup: 'Ombros' },
+        { name: 'Rosca Martelo com Halter', muscleGroup: 'Braços' }, 
+        { name: 'Tríceps Testa com Barra W', muscleGroup: 'Braços' }
     ],
 
     init: async () => {
@@ -65,21 +66,22 @@ const app = {
         await app.rebuildRecords();
         await app.renderPlans();
         await app.renderHistory();
+        app.checkActiveWorkoutRecovery();
         app.initCharts();
         lucide.createIcons();
     },
 
     rebuildRecords: async () => {
         const count = await db.records.count();
-        if (count > 0) return; // Only run once or if empty
+        if (count > 0) return;
 
         console.log('[App] Reconstruindo recordes históricos...');
         const sessions = await db.sessions.toArray();
         const recs = {};
         
         sessions.forEach(s => {
-            s.exercises.forEach(ex => {
-                const bestSet = ex.sets.filter(x => x.completed).sort((a,b) => b.weight - a.weight)[0];
+            (s.exercises || []).forEach(ex => {
+                const bestSet = (ex.sets || []).filter(x => x.completed).sort((a,b) => b.weight - a.weight)[0];
                 if (bestSet) {
                     if (!recs[ex.name] || bestSet.weight > recs[ex.name].weight) {
                         recs[ex.name] = { name: ex.name, weight: bestSet.weight, reps: bestSet.reps, date: s.date };
@@ -94,6 +96,7 @@ const app = {
 
     // Security: Sanitization
     sanitize: (str) => {
+        if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
@@ -106,34 +109,33 @@ const app = {
 
     seedTemplates: async () => {
         try {
+            const DATASET_VERSION = 'stronglog_dataset_v4.11';
+            const currentVer = localStorage.getItem('stronglog_dataset_version');
             const count = await db.templates.count();
-            // Se tiver menos de 100 exercícios, consideramos a base antiga e sobrescrevemos
-            if (count < 100) {
-                console.log('[App] Atualizando base de dados de exercícios científica...');
-                if (count > 0) {
-                    await db.templates.clear();
-                }
+            
+            if (currentVer !== DATASET_VERSION || count < 100) {
+                console.log('[App] Atualizando base científica de 1.324 exercícios desambiguados...');
+                if (count > 0) await db.templates.clear();
                 const res = await fetch('./data/exercises.min.json');
-                if (!res.ok) throw new Error('Falha ao baixar exercises.min.json');
+                if (!res.ok) throw new Error('Falha ao carregar exercises.min.json');
                 const data = await res.json();
-                
-                // Salva no banco de dados local
                 await db.templates.bulkAdd(data);
+                localStorage.setItem('stronglog_dataset_version', DATASET_VERSION);
                 console.log(`[App] ${data.length} exercícios semeados com sucesso!`);
             }
         } catch (err) {
             console.error('[App] Erro no seed de exercícios:', err);
-            // Fallback estático caso o fetch falhe no primeiro boot offline
             const count = await db.templates.count();
             if (count === 0) {
                 await db.templates.bulkAdd(app.exerciseTemplates.map(ex => ({
                     name: ex.name,
+                    name_en: ex.name,
                     body_part: ex.muscleGroup,
                     equipment: 'Barra/Halter',
                     target: ex.muscleGroup,
                     secondary_muscles: [],
                     media_id: '',
-                    instruction_steps: ['Execute o exercício com a postura adequada.']
+                    instruction_steps: ['Execute o exercício com postura e amplitude adequadas.']
                 })));
             }
         }
@@ -152,13 +154,28 @@ const app = {
     },
 
     showCustomExerciseForm: () => {
-        const name = prompt('Nome do Exercício:');
-        const group = prompt('Grupo Muscular (Peito, Costas, etc):');
-        if(name && group) app.saveCustomExercise(name, group);
+        const nameInput = document.getElementById('custom-ex-name');
+        if (nameInput) nameInput.value = '';
+        document.getElementById('custom-exercise-modal').classList.remove('hidden');
     },
 
-    saveCustomExercise: async (name, muscleGroup) => {
-        await db.templates.add({ name: app.sanitize(name), muscleGroup: app.sanitize(muscleGroup) });
+    saveCustomExerciseFromModal: async () => {
+        const nameInput = document.getElementById('custom-ex-name').value.trim();
+        const groupSelect = document.getElementById('custom-ex-group').value;
+        if (!nameInput) return;
+        
+        await db.templates.add({
+            name: app.sanitize(nameInput),
+            name_en: nameInput,
+            body_part: groupSelect,
+            equipment: 'Customizado',
+            target: groupSelect,
+            secondary_muscles: [],
+            media_id: '',
+            instruction_steps: ['Exercício adicionado manualmente pelo usuário.']
+        });
+        
+        app.closeModal('custom-exercise-modal');
         app.filterExerciseLibrary();
     },
 
@@ -183,7 +200,7 @@ const app = {
             <div class="glass p-6 flex justify-between items-center active:scale-[0.98] transition-all animate-fade bg-white/[0.01]">
                 <div class="flex-1 cursor-pointer" onclick="app.startWorkout(${p.id})">
                     <h3 class="font-black text-xl tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
-                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${p.exercises.length} EXERCÍCIOS</p>
+                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${(p.exercises || []).length} EXERCÍCIOS</p>
                 </div>
                 <button onclick="app.showPlanEditor(${p.id})" class="p-3 glass text-gray-500 active:text-[#00FF9D]"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
             </div>
@@ -194,7 +211,7 @@ const app = {
     showPlanEditor: async (id = null) => {
         app.editingPlan = id ? await db.plans.get(id) : { name: '', exercises: [] };
         document.getElementById('plan-editor-title').innerText = id ? 'Ajustar Rotina' : 'Criar Rotina';
-        document.getElementById('plan-name-input').value = app.editingPlan.name;
+        document.getElementById('plan-name-input').value = app.editingPlan.name || '';
         app.renderEditorExercises();
         app.setView('plan-editor');
     },
@@ -203,17 +220,17 @@ const app = {
         const list = document.getElementById('selected-exercises-list');
         if (!list) return;
 
-        list.innerHTML = app.editingPlan.exercises.map((ex, i) => `
+        list.innerHTML = (app.editingPlan.exercises || []).map((ex, i) => `
             <div class="glass p-5 flex justify-between items-center animate-fade bg-white/[0.01]">
                 <span class="font-black text-xs uppercase tracking-tight text-gray-300">${app.sanitize(ex)}</span>
-                <button onclick="app.editingPlan.exercises.splice(${i},1); app.renderEditorExercises()" class="text-red-500/40 p-1"><i data-lucide="minus-circle" class="w-5 h-5"></i></button>
+                <button onclick="app.editingPlan.exercises.splice(${i},1); app.renderEditorExercises()" class="text-red-500/40 p-1 active:text-red-500"><i data-lucide="minus-circle" class="w-5 h-5"></i></button>
             </div>
         `).join('');
         lucide.createIcons();
     },
 
     savePlan: async () => {
-        const name = document.getElementById('plan-name-input').value;
+        const name = document.getElementById('plan-name-input').value.trim();
         if (!name || !app.editingPlan.exercises.length) return;
         app.editingPlan.name = name;
         await db.plans.put(app.editingPlan);
@@ -221,27 +238,69 @@ const app = {
         app.renderPlans();
     },
 
+    calculate1RM: (weight, reps) => {
+        const w = parseFloat(weight) || 0;
+        const r = parseInt(reps) || 0;
+        if (w <= 0) return 0;
+        if (r <= 1) return w;
+        return Math.round(w * (1 + r / 30));
+    },
+
+    getExerciseHistoryDetailed: async (exName) => {
+        const record = await db.records.get(exName);
+        const sessions = await db.sessions.orderBy('date').reverse().toArray();
+        const recent = [];
+        
+        for (let s of sessions) {
+            const match = s.exercises && s.exercises.find(e => e.name === exName);
+            if (match) {
+                const validSets = (match.sets || []).filter(st => st.completed);
+                if (validSets.length > 0) {
+                    recent.push({
+                        date: s.date,
+                        planName: s.planName,
+                        sets: validSets
+                    });
+                    if (recent.length >= 5) break;
+                }
+            }
+        }
+        
+        let estimated1RM = 0;
+        if (record && record.weight && record.reps) {
+            estimated1RM = app.calculate1RM(record.weight, record.reps);
+        }
+        
+        return {
+            record,
+            estimated1RM,
+            recentSessions: recent
+        };
+    },
+
     startWorkout: async (planId) => {
         const plan = await db.plans.get(planId);
+        if(!plan) return;
+        
         const workoutExercises = [];
         for(let name of plan.exercises) {
             const lastData = await app.getExerciseHistory(name);
             workoutExercises.push({
                 name: name, 
                 restTime: 90,
-                historyPreview: lastData ? `${lastData.weight}kg x ${lastData.reps}` : 'Novo Desafio',
-                sets: [{ 
-                    weight: lastData ? lastData.weight : 0, 
-                    reps: lastData ? lastData.reps : 0, 
-                    completed: false, 
-                    type: 'Normal', 
-                    rpe: '' 
-                }]
+                historyPreview: lastData ? `${lastData.weight}kg x ${lastData.reps}` : 'Novo',
+                sets: [
+                    { weight: lastData ? lastData.weight : 0, reps: lastData ? lastData.reps : 0, completed: false, type: 'Normal', rpe: '' },
+                    { weight: lastData ? lastData.weight : 0, reps: lastData ? lastData.reps : 0, completed: false, type: 'Normal', rpe: '' },
+                    { weight: lastData ? lastData.weight : 0, reps: lastData ? lastData.reps : 0, completed: false, type: 'Normal', rpe: '' }
+                ]
             });
         }
         app.activeWorkout = { ...plan, startTime: Date.now(), exercises: workoutExercises };
+        app.startTime = app.activeWorkout.startTime;
         document.getElementById('active-workout-name').innerText = plan.name;
         app.renderWorkout();
+        app.saveActiveWorkoutState();
         app.setView('active-workout');
         app.startTimer();
     },
@@ -249,9 +308,9 @@ const app = {
     getExerciseHistory: async (exName) => {
         const sessions = await db.sessions.orderBy('date').reverse().toArray();
         for(let s of sessions) {
-            const ex = s.exercises.find(e => e.name === exName);
+            const ex = (s.exercises || []).find(e => e.name === exName);
             if(ex) {
-                const best = [...ex.sets].filter(x => x.completed).sort((a,b) => (b.weight*b.reps) - (a.weight*a.reps))[0];
+                const best = [...(ex.sets || [])].filter(x => x.completed).sort((a,b) => (b.weight*b.reps) - (a.weight*a.reps))[0];
                 if(best) return best;
             }
         }
@@ -260,7 +319,7 @@ const app = {
 
     renderWorkout: () => {
         const list = document.getElementById('exercise-list');
-        if (!list) return;
+        if (!list || !app.activeWorkout) return;
 
         list.innerHTML = app.activeWorkout.exercises.map((ex, exIdx) => `
             <div class="glass p-6 space-y-5 animate-fade">
@@ -282,7 +341,7 @@ const app = {
     },
 
     renderSetRow: (exI, sI, s) => `
-        <div class="flex items-center gap-2 ${s.completed ? 'opacity-20 grayscale' : ''} transition-all">
+        <div class="flex items-center gap-2 ${s.completed ? 'opacity-30 grayscale' : ''} transition-all">
             <button onclick="app.cycleSetType(${exI},${sI})" class="w-9 h-9 flex items-center justify-center glass text-[9px] font-black text-[#00FF9D] uppercase italic shrink-0">${s.type[0]}</button>
             <div class="flex-1 grid grid-cols-3 gap-1.5 h-10">
                 <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white"></div>
@@ -296,18 +355,26 @@ const app = {
     `,
 
     setRest: (idx) => {
-        const t = prompt('Descanso (segundos):', app.activeWorkout.exercises[idx].restTime);
-        if(t) app.activeWorkout.exercises[idx].restTime = parseInt(t);
+        const cur = app.activeWorkout.exercises[idx].restTime || 90;
+        const options = [30, 45, 60, 90, 120, 180];
+        const next = options[(options.indexOf(cur) + 1) % options.length] || 90;
+        app.activeWorkout.exercises[idx].restTime = next;
         app.renderWorkout();
+        app.saveActiveWorkoutState();
     },
 
-    updateSet: (exI, sI, f, v) => { app.activeWorkout.exercises[exI].sets[sI][f] = parseFloat(v) || v; },
+    updateSet: (exI, sI, f, v) => { 
+        if (!app.activeWorkout) return;
+        app.activeWorkout.exercises[exI].sets[sI][f] = parseFloat(v) || v; 
+        app.saveActiveWorkoutState();
+    },
     
     cycleSetType: (exI, sI) => { 
         const types = ['Normal', 'Warmup', 'Failure', 'Drop'];
         const cur = app.activeWorkout.exercises[exI].sets[sI].type;
         app.activeWorkout.exercises[exI].sets[sI].type = types[(types.indexOf(cur) + 1) % types.length];
         app.renderWorkout();
+        app.saveActiveWorkoutState();
     },
 
     toggleSet: (exI, sI) => {
@@ -315,17 +382,19 @@ const app = {
         s.completed = !s.completed;
         if(s.completed) { 
             app.startRestTimer(app.activeWorkout.exercises[exI].restTime); 
-            if(navigator.vibrate) navigator.vibrate(40); // Haptic feedback
+            if(navigator.vibrate) navigator.vibrate(40);
         } else {
             app.stopRestTimer();
         }
         app.renderWorkout();
+        app.saveActiveWorkoutState();
     },
 
     addSetToWorkout: (exI) => { 
         const sets = app.activeWorkout.exercises[exI].sets;
         sets.push({...sets[sets.length-1], completed: false}); 
         app.renderWorkout(); 
+        app.saveActiveWorkoutState();
     },
 
     addExerciseToActiveWorkout: async (n) => { 
@@ -343,11 +412,26 @@ const app = {
             }]
         }); 
         app.renderWorkout(); 
+        app.saveActiveWorkoutState();
     },
 
-    removeExerciseFromWorkout: (i) => { if(confirm('Remover?')) { app.activeWorkout.exercises.splice(i,1); app.renderWorkout(); } },
+    removeExerciseFromWorkout: (i) => { 
+        if(confirm('Remover exercício do treino?')) { 
+            app.activeWorkout.exercises.splice(i,1); 
+            app.renderWorkout(); 
+            app.saveActiveWorkoutState();
+        } 
+    },
     
-    cancelWorkout: () => { if(confirm('Descartar treino?')) { clearInterval(app.timerInterval); app.stopRestTimer(); app.activeWorkout = null; app.setView('dashboard'); } },
+    cancelWorkout: () => { 
+        if(confirm('Descartar treino atual? Todo o progresso desta sessão será perdido.')) { 
+            clearInterval(app.timerInterval); 
+            app.stopRestTimer(); 
+            app.activeWorkout = null; 
+            app.clearActiveWorkoutState();
+            app.setView('dashboard'); 
+        } 
+    },
     
     finishWorkout: async () => {
         clearInterval(app.timerInterval);
@@ -356,7 +440,7 @@ const app = {
         const newPRs = [];
         
         for (const ex of app.activeWorkout.exercises) {
-            const bestSet = ex.sets.filter(s => s.completed).sort((a,b) => b.weight - a.weight)[0];
+            const bestSet = (ex.sets || []).filter(s => s.completed).sort((a,b) => b.weight - a.weight)[0];
             if (bestSet) {
                 const existingRecord = await db.records.get(ex.name);
                 if (!existingRecord || bestSet.weight > existingRecord.weight) {
@@ -365,7 +449,7 @@ const app = {
                     newPRs.push(recordData);
                 }
             }
-            ex.sets.forEach(s => { if(s.completed) vol += (s.weight * s.reps); });
+            (ex.sets || []).forEach(s => { if(s.completed) vol += ((s.weight || 0) * (s.reps || 0)); });
         }
 
         await db.sessions.add({ 
@@ -381,9 +465,68 @@ const app = {
         }
 
         app.activeWorkout = null; 
+        app.clearActiveWorkoutState();
         app.setView('dashboard'); 
         app.renderHistory(); 
         app.initCharts();
+    },
+
+    saveActiveWorkoutState: () => {
+        if (app.activeWorkout) {
+            localStorage.setItem('stronglog_active_session', JSON.stringify({
+                workout: app.activeWorkout,
+                startTime: app.startTime,
+                savedAt: Date.now()
+            }));
+        }
+    },
+
+    clearActiveWorkoutState: () => {
+        localStorage.removeItem('stronglog_active_session');
+    },
+
+    checkActiveWorkoutRecovery: () => {
+        try {
+            const raw = localStorage.getItem('stronglog_active_session');
+            if (!raw) return;
+            const session = JSON.parse(raw);
+            if (session && session.workout && (Date.now() - (session.savedAt || 0) < 18 * 3600 * 1000)) {
+                const banner = document.getElementById('workout-recovery-banner');
+                const nameEl = document.getElementById('recovery-workout-name');
+                if (banner && nameEl) {
+                    const startTimeStr = session.startTime ? new Date(session.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+                    nameEl.innerText = `${session.workout.name} · Iniciado às ${startTimeStr}`;
+                    banner.classList.remove('hidden');
+                }
+            }
+        } catch (e) {
+            console.error('[Recovery] Erro ao checar treino recuperável:', e);
+        }
+    },
+
+    resumeRecoveredWorkout: () => {
+        try {
+            const raw = localStorage.getItem('stronglog_active_session');
+            if (!raw) return;
+            const session = JSON.parse(raw);
+            app.activeWorkout = session.workout;
+            app.startTime = session.startTime || Date.now();
+            
+            document.getElementById('workout-recovery-banner').classList.add('hidden');
+            document.getElementById('active-workout-name').innerText = app.activeWorkout.name;
+            
+            app.startTimer();
+            app.renderWorkout();
+            app.setView('active-workout');
+        } catch (e) {
+            console.error('[Recovery] Erro ao retomar treino:', e);
+        }
+    },
+
+    discardRecoveredWorkout: () => {
+        app.clearActiveWorkoutState();
+        const banner = document.getElementById('workout-recovery-banner');
+        if (banner) banner.classList.add('hidden');
     },
 
     showPRNotification: (prs) => {
@@ -393,11 +536,11 @@ const app = {
             <div class="flex items-center gap-4">
                 <div class="p-3 bg-[#00FF9D]/20 rounded-full"><i data-lucide="trophy" class="text-[#00FF9D] w-6 h-6"></i></div>
                 <div>
-                    <h4 class="font-black italic uppercase text-[10px] tracking-widest text-[#00FF9D]">Novo Recorde!</h4>
-                    ${prs.map(p => `<p class="text-xs font-bold text-white">${p.name}: ${p.weight}kg</p>`).join('')}
+                    <h4 class="font-black italic uppercase text-[10px] tracking-widest text-[#00FF9D]">Novo Recorde Pessoal!</h4>
+                    ${prs.map(p => `<p class="text-xs font-bold text-white">${app.sanitize(p.name)}: ${p.weight}kg</p>`).join('')}
                 </div>
             </div>
-            <button onclick="this.parentElement.remove()" class="w-full mt-4 py-2 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-500">Fechar</button>
+            <button onclick="this.parentElement.remove()" class="w-full mt-4 py-2 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-500 active:bg-white/10">Fechar</button>
         `;
         document.body.appendChild(toast);
         lucide.createIcons();
@@ -422,16 +565,21 @@ const app = {
                 </div>
                 <div class="text-right">
                     <div class="text-xl font-black text-white italic tracking-tighter">${r.weight}<span class="text-[10px] text-gray-700 not-italic ml-1">KG</span></div>
-                    <div class="text-[9px] text-gray-700 font-black uppercase">${r.reps} REPS</div>
+                    <div class="text-[9px] text-gray-700 font-black uppercase">${r.reps} REPS · 1RM: ${app.calculate1RM(r.weight, r.reps)}KG</div>
                 </div>
             </div>
-        `).join('') : `<div class="p-10 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum recorde ainda. Treine pesado!</div>`;
+        `).join('') : `<div class="p-10 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum recorde ainda. Treine</div>`;
     },
 
     showExerciseLibrary: (ctx) => { 
         app.libraryContext = ctx; 
         app.filterExerciseLibrary(); 
         document.getElementById('exercise-library-modal').classList.remove('hidden'); 
+    },
+
+    debouncedFilterExerciseLibrary: () => {
+        clearTimeout(app.searchDebounceTimeout);
+        app.searchDebounceTimeout = setTimeout(app.filterExerciseLibrary, 180);
     },
 
     filterExerciseLibrary: async () => {
@@ -441,7 +589,7 @@ const app = {
         
         let exercises = await db.templates.toArray();
         
-        // Aplicar filtros
+        // Filtros
         if (filterBodyPart) {
             exercises = exercises.filter(x => x.body_part === filterBodyPart);
         }
@@ -450,53 +598,49 @@ const app = {
         }
         if (searchInput) {
             exercises = exercises.filter(x => 
-                x.name.toLowerCase().includes(searchInput) || 
-                x.target.toLowerCase().includes(searchInput) ||
-                (x.name_en && x.name_en.toLowerCase().includes(searchInput))
+                (x.name && x.name.toLowerCase().includes(searchInput)) ||
+                (x.name_en && x.name_en.toLowerCase().includes(searchInput)) ||
+                (x.target && x.target.toLowerCase().includes(searchInput)) ||
+                (x.body_part && x.body_part.toLowerCase().includes(searchInput))
             );
         }
-        
-        // Limitar renderização para 60 resultados por performance
-        const limit = 60;
-        const count = exercises.length;
-        const displayList = exercises.slice(0, limit);
-        
-        const groups = {};
-        displayList.forEach(x => {
-            const grp = x.body_part || 'Outros';
-            if (!groups[grp]) groups[grp] = [];
-            groups[grp].push(x);
-        });
-        
+
         const listContainer = document.getElementById('library-list');
         if (!listContainer) return;
         
+        const count = exercises.length;
+        const limit = 60;
+        const displayed = exercises.slice(0, limit);
+
         let html = '';
-        if (displayList.length === 0) {
-            html = `<div class="p-10 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum exercício encontrado</div>`;
+        if (count === 0) {
+            html = `<div class="p-8 text-center text-gray-600 text-xs font-bold uppercase tracking-wider">Nenhum exercício encontrado.</div>`;
         } else {
-            html = Object.keys(groups).sort().map(g => `
-                <div class="pt-6 pb-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-2">${g}</div>
-                ${groups[g].map(x => `
-                    <div class="w-full glass p-5 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.02] transition-all">
-                        <div class="flex-1 cursor-pointer" onclick="app.showExerciseDetails('${x.id}')">
-                            <div class="font-black text-sm uppercase tracking-tight text-white leading-tight">${app.sanitize(x.name)}</div>
-                            <div class="flex gap-2 mt-1">
-                                <span class="text-[8px] font-black text-gray-500 uppercase tracking-widest">${app.sanitize(x.target)}</span>
-                                <span class="text-[8px] font-black text-[#00FF9D]/60 uppercase tracking-widest">${app.sanitize(x.equipment)}</span>
-                            </div>
+            html = displayed.map(x => `
+                <div class="glass p-4 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.03] transition-all">
+                    <div class="flex-1 cursor-pointer pr-2" onclick="app.showExerciseDetails(${typeof x.id === 'string' ? `'${x.id}'` : x.id})">
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-black text-xs text-white uppercase italic tracking-tight leading-tight">${app.sanitize(x.name)}</h4>
                         </div>
-                        ${app.libraryContext === 'manager' 
-                            ? `<button onclick="app.deleteTemplate('${x.id}')" class="p-2 text-red-900 active:scale-95"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
-                            : `<button onclick="app.selectExercise('${x.name}')" class="p-3.5 glass text-[#00FF9D] active:scale-95"><i data-lucide="plus" class="w-4 h-4"></i></button>`
-                        }
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[8px] font-bold text-[#00FF9D] uppercase tracking-wider">${app.sanitize(x.target || x.body_part)}</span>
+                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider">• ${app.sanitize(x.equipment)}</span>
+                        </div>
                     </div>
-                `).join('')}
+                    <div class="flex items-center gap-2">
+                        ${app.libraryContext === 'manager' && typeof x.id === 'string' && x.id.startsWith('custom_') ? `
+                            <button onclick="app.deleteTemplate('${x.id}')" class="p-2 text-red-500/60 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        ` : ''}
+                        <button onclick="app.selectExercise('${app.sanitize(x.name)}')" class="p-2.5 bg-[#00FF9D]/10 text-[#00FF9D] rounded-xl active:bg-[#00FF9D] active:text-black transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
             `).join('');
-            
+
             if (count > limit) {
                 html += `
-                    <div class="p-6 text-center text-[9px] text-gray-600 font-black uppercase tracking-widest">
+                    <div class="p-4 text-center text-[9px] font-black uppercase text-gray-600 tracking-widest border-t border-white/5">
                         Exibindo primeiros ${limit} de ${count} resultados. Refine sua busca.
                     </div>
                 `;
@@ -508,9 +652,32 @@ const app = {
     },
 
     selectExercise: (n) => {
-        if(app.libraryContext === 'editor') { app.editingPlan.exercises.push(n); app.renderEditorExercises(); }
-        else if(app.libraryContext === 'workout') { app.addExerciseToActiveWorkout(n); }
+        if(app.libraryContext === 'editor') { 
+            app.editingPlan.exercises.push(n); 
+            app.renderEditorExercises(); 
+        } else if(app.libraryContext === 'workout') { 
+            app.addExerciseToActiveWorkout(n); 
+        }
         app.closeModal('exercise-library-modal');
+    },
+
+    switchDetailTab: (tab) => {
+        const stepsTab = document.getElementById('detail-tab-steps');
+        const histTab = document.getElementById('detail-tab-history');
+        const btnSteps = document.getElementById('tab-btn-steps');
+        const btnHist = document.getElementById('tab-btn-history');
+        
+        if (tab === 'steps') {
+            if (stepsTab) stepsTab.classList.remove('hidden');
+            if (histTab) histTab.classList.add('hidden');
+            if (btnSteps) btnSteps.className = 'text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-lg text-[#00FF9D] bg-[#00FF9D]/10';
+            if (btnHist) btnHist.className = 'text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-lg text-gray-400';
+        } else {
+            if (stepsTab) stepsTab.classList.add('hidden');
+            if (histTab) histTab.classList.remove('hidden');
+            if (btnSteps) btnSteps.className = 'text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-lg text-gray-400';
+            if (btnHist) btnHist.className = 'text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-lg text-[#00FF9D] bg-[#00FF9D]/10';
+        }
     },
 
     showExerciseDetails: async (id) => {
@@ -523,9 +690,53 @@ const app = {
         // Tags
         const tagsContainer = document.getElementById('detail-exercise-tags');
         tagsContainer.innerHTML = `
-            <span class="tag-accent">${app.sanitize(ex.target)}</span>
+            <span class="tag-accent">${app.sanitize(ex.target || ex.body_part)}</span>
             <span class="tag-secondary">${app.sanitize(ex.equipment)}</span>
+            ${ex.name_en ? `<span class="px-2 py-0.5 rounded-full text-[8px] font-mono text-gray-400 bg-white/5 uppercase border border-white/5">${app.sanitize(ex.name_en)}</span>` : ''}
         `;
+        
+        // Fetch Detailed History & PR
+        const historyData = await app.getExerciseHistoryDetailed(ex.name);
+        const prDisplay = document.getElementById('detail-pr-display');
+        const oneRmDisplay = document.getElementById('detail-1rm-display');
+        
+        if (historyData.record) {
+            prDisplay.innerHTML = `${historyData.record.weight} <span class="text-[10px] text-gray-400 font-bold not-italic">KG</span> <span class="text-xs text-gray-500 font-normal">(${historyData.record.reps} reps)</span>`;
+            oneRmDisplay.innerHTML = `${historyData.estimated1RM} <span class="text-[10px] text-gray-400 font-bold not-italic">KG</span>`;
+        } else {
+            prDisplay.innerHTML = `<span class="text-xs text-gray-600 font-normal">Sem registro</span>`;
+            oneRmDisplay.innerHTML = `<span class="text-xs text-gray-600 font-normal">--</span>`;
+        }
+        
+        // Render Recent Sessions in History Tab
+        const histList = document.getElementById('detail-history-list');
+        if (historyData.recentSessions.length > 0) {
+            histList.innerHTML = historyData.recentSessions.map(sess => {
+                const bestSessSet = [...sess.sets].sort((a,b) => (b.weight*b.reps) - (a.weight*a.reps))[0];
+                const session1RM = bestSessSet ? app.calculate1RM(bestSessSet.weight, bestSessSet.reps) : 0;
+                return `
+                    <div class="glass p-3.5 rounded-xl space-y-2 bg-white/[0.01] border-white/5">
+                        <div class="flex justify-between items-center text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-white/5 pb-1">
+                            <span>${new Date(sess.date).toLocaleDateString('pt-BR')} · ${app.sanitize(sess.planName)}</span>
+                            <span class="text-[#00FF9D]">1RM Sessão: ${session1RM}kg</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            ${sess.sets.map((st, sIdx) => `
+                                <div class="flex items-center justify-between text-xs font-mono p-1.5 px-2.5 bg-black/40 rounded-lg border border-white/5">
+                                    <span class="text-[9px] text-gray-500 font-bold">#${sIdx + 1}</span>
+                                    <span class="font-black text-white">${st.weight}kg <span class="text-gray-500 font-normal">×</span> ${st.reps}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            histList.innerHTML = `<div class="p-8 text-center text-gray-600 text-xs font-bold uppercase tracking-wider">Nenhum treino registrado com este exercício ainda.</div>`;
+        }
+        
+        // Default to steps tab
+        app.switchDetailTab('steps');
         
         // GIF de execução
         const gifImg = document.getElementById('detail-exercise-gif');
@@ -560,7 +771,7 @@ const app = {
             secContainer.classList.add('hidden');
         }
         
-        // Adiciona botão "Adicionar ao Treino" se aplicável
+        // Botão "Adicionar ao Treino"
         const detailModal = document.getElementById('exercise-detail-modal');
         const oldBtn = document.getElementById('detail-action-btn');
         if (oldBtn) oldBtn.remove();
@@ -568,7 +779,7 @@ const app = {
         if (app.libraryContext !== 'manager') {
             const btn = document.createElement('button');
             btn.id = 'detail-action-btn';
-            btn.className = 'w-full btn-accent p-5 rounded-[22px] text-xs font-black tracking-[0.2em] uppercase shrink-0 mt-4';
+            btn.className = 'w-full btn-accent p-4 rounded-[20px] text-xs font-black tracking-[0.2em] uppercase shrink-0 mt-2 active:scale-95 transition-all';
             btn.innerText = 'Adicionar ao Treino';
             btn.onclick = () => {
                 app.selectExercise(ex.name);
@@ -599,7 +810,6 @@ const app = {
         const overlay = document.getElementById('rest-timer-overlay');
         if (overlay) {
             overlay.classList.remove('translate-y-[-200%]');
-            overlay.classList.remove('translate-x-[200%]');
         }
         
         app.updateRestTimerUI();
@@ -611,10 +821,51 @@ const app = {
             if(app.restRemainingTime <= 0) { 
                 app.stopRestTimer(); 
                 if(navigator.vibrate) navigator.vibrate([150, 80, 150]); 
-                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                audio.play().catch(()=>{});
+                app.playRestAlarm();
             }
         }, 1000);
+    },
+
+    playRestAlarm: () => {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                
+                // Beep 1 (880Hz)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, now);
+                osc1.frequency.exponentialRampToValueAtTime(1760, now + 0.12);
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                // Beep 2 (1760Hz)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1760, now + 0.18);
+                osc2.frequency.exponentialRampToValueAtTime(880, now + 0.42);
+                gain2.gain.setValueAtTime(0.35, now + 0.18);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.18);
+                osc2.stop(now + 0.55);
+            }
+        } catch (e) {
+            console.warn('[Audio] Web Audio synth failed:', e);
+        }
+        try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(()=>{});
+        } catch (e) {}
     },
 
     adjustRestTime: (sec) => {
@@ -656,14 +907,17 @@ const app = {
 
     exportData: async () => {
         const data = { 
+            version: 4.11,
+            timestamp: new Date().toISOString(),
             plans: await db.plans.toArray(), 
             sessions: await db.sessions.toArray(), 
-            templates: await db.templates.toArray() 
+            templates: await db.templates.toArray(),
+            records: await db.records.toArray()
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const a = document.createElement('a'); 
         a.href = URL.createObjectURL(blob); 
-        a.download = `stronglog-pro-backup.json`; 
+        a.download = `stronglog-pro-backup-${new Date().toISOString().slice(0,10)}.json`; 
         a.click();
     },
 
@@ -676,11 +930,16 @@ const app = {
         const f = ev.target.files[0]; if(!f) return;
         const r = new FileReader(); 
         r.onload = async (e) => {
-            const d = JSON.parse(e.target.result);
-            if(d.plans) await db.plans.bulkPut(d.plans); 
-            if(d.sessions) await db.sessions.bulkPut(d.sessions); 
-            if(d.templates) await db.templates.bulkPut(d.templates);
-            location.reload();
+            try {
+                const d = JSON.parse(e.target.result);
+                if(d.plans && Array.isArray(d.plans)) await db.plans.bulkPut(d.plans); 
+                if(d.sessions && Array.isArray(d.sessions)) await db.sessions.bulkPut(d.sessions); 
+                if(d.templates && Array.isArray(d.templates)) await db.templates.bulkPut(d.templates);
+                if(d.records && Array.isArray(d.records)) await db.records.bulkPut(d.records);
+                location.reload();
+            } catch (err) {
+                alert('Erro ao importar backup: arquivo JSON inválido.');
+            }
         }; 
         r.readAsText(f);
     },
@@ -688,6 +947,7 @@ const app = {
     clearAllData: async () => { 
         if(confirm('Apagar tudo? Isso deletará todos os seus treinos e planos permanentemente.')) { 
             await db.delete(); 
+            localStorage.clear();
             location.reload(); 
         } 
     },
@@ -715,7 +975,7 @@ const app = {
         const s = await db.sessions.orderBy('date').reverse().limit(7).toArray();
         const sessions = s.reverse();
         const templates = await db.templates.toArray();
-        const exToGroup = Object.fromEntries(templates.map(t => [t.name, t.muscleGroup]));
+        const exToGroup = Object.fromEntries(templates.map(t => [t.name, t.body_part || t.target || 'Outros']));
 
         const canvas1 = document.getElementById('volumeChart');
         const canvas2 = document.getElementById('muscleGroupChart');
@@ -751,10 +1011,10 @@ const app = {
         // Muscle Group Data
         const muscleData = {};
         sessions.forEach(sess => {
-            sess.exercises.forEach(ex => {
+            (sess.exercises || []).forEach(ex => {
                 const group = exToGroup[ex.name] || 'Outros';
                 let vol = 0;
-                ex.sets.forEach(st => { if(st.completed) vol += (st.weight * st.reps); });
+                (ex.sets || []).forEach(st => { if(st.completed) vol += ((st.weight || 0) * (st.reps || 0)); });
                 muscleData[group] = (muscleData[group] || 0) + vol;
             });
         });
@@ -765,14 +1025,14 @@ const app = {
                 labels: Object.keys(muscleData),
                 datasets: [{
                     data: Object.values(muscleData),
-                    backgroundColor: ['#00FF9D', '#00cc33', '#009926', '#00661a', '#1a1a1a'],
+                    backgroundColor: ['#00FF9D', '#00cc33', '#009926', '#00661a', '#333333', '#555555', '#777777'],
                     borderWidth: 0,
                     cutout: '80%'
                 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } }
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: false } } 
             }
         });
     }
