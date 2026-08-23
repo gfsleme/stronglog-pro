@@ -214,13 +214,13 @@
     </div>
 
     <div id="exercise-library-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden">
-        <div class="absolute bottom-0 left-0 right-0 glass h-[92vh] rounded-t-[45px] p-8 space-y-5 flex flex-col shadow-2xl border-white/10">
-            <div class="flex justify-between items-center text-white">
+        <div onclick="event.stopPropagation()" class="absolute bottom-0 left-0 right-0 glass h-[92vh] rounded-t-[45px] p-6 sm:p-8 space-y-4 sm:space-y-5 flex flex-col shadow-2xl border-white/10">
+            <div class="flex justify-between items-center text-white shrink-0">
                 <div>
                     <h2 class="text-3xl font-black italic tracking-tighter uppercase leading-none">Biblioteca</h2>
                     <span id="library-count-badge" class="text-[9px] font-mono text-[#00FF9D] uppercase tracking-widest">1.324 Exercícios</span>
                 </div>
-                <button onclick="app.closeModal('exercise-library-modal')" class="p-3 glass"><i data-lucide="x"></i></button>
+                <button onclick="app.closeModal('exercise-library-modal')" class="p-3 glass active:scale-95 transition-all" title="Fechar Biblioteca"><i data-lucide="x"></i></button>
             </div>
 
             <!-- View Mode Switcher: Lista vs Mapa 2D vs 3D Hologram -->
@@ -231,7 +231,7 @@
             </div>
 
             <!-- 2D Interactive Anatomical Map Container -->
-            <div id="library-map-container" class="hidden flex-col items-center justify-center space-y-3 shrink-0 py-2">
+            <div id="library-map-container" class="hidden flex-col items-center justify-center space-y-3 shrink-0 py-2" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center w-full px-2">
                     <span class="text-[9px] font-black uppercase tracking-widest text-gray-400">Toque em um músculo para filtrar:</span>
                     <div class="flex gap-1">
@@ -243,7 +243,7 @@
             </div>
 
             <!-- 3D Hologram Interactive Stage Container -->
-            <div id="library-3d-container" class="hidden flex-col items-center justify-center space-y-2 shrink-0 py-2">
+            <div id="library-3d-container" class="hidden flex-col items-center justify-center space-y-2 shrink-0 py-2" onclick="event.stopPropagation()">
                 <div class="hologram-stage h-56 w-full flex items-center justify-center relative">
                     <div class="hologram-grid"></div>
                     <canvas id="library-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
@@ -258,7 +258,7 @@
                     <span class="w-2 h-2 rounded-full bg-[#00FF9D] animate-pulse"></span>
                     <span class="text-xs font-black uppercase text-white" id="library-filter-muscle-label">Peitoral</span>
                 </div>
-                <button onclick="app.clearMuscleFilter()" class="text-[9px] font-black uppercase tracking-wider text-red-400 active:text-red-300">Remover Filtro [X]</button>
+                <button onclick="app.clearMuscleFilter()" class="text-[9px] font-black uppercase tracking-wider text-red-400 hover:text-red-300 active:text-red-200">Remover Filtro [X]</button>
             </div>
 
             <!-- Search and Controls -->
@@ -267,11 +267,11 @@
                     <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600"></i>
                     <input id="search-exercise" type="text" oninput="app.debouncedFilterExerciseLibrary()" class="w-full bg-white/5 p-4 pl-14 rounded-2xl focus:outline-none font-bold text-sm text-white" placeholder="Buscar exercício ou músculo...">
                 </div>
-                <button onclick="app.showCustomExerciseForm()" class="p-4 glass text-[#00FF9D] active:bg-[#00FF9D]/10"><i data-lucide="plus"></i></button>
+                <button onclick="app.showCustomExerciseForm()" class="p-4 glass text-[#00FF9D] active:bg-[#00FF9D]/10" title="Cadastrar Exercício"><i data-lucide="plus"></i></button>
             </div>
             
             <div class="grid grid-cols-2 gap-2 shrink-0">
-                <select id="filter-body-part" onchange="app.filterExerciseLibrary()" class="bg-[#111] border border-white/5 p-3.5 rounded-xl focus:outline-none text-xs font-bold text-gray-300 appearance-none">
+                <select id="filter-body-part" onchange="app.onBodyPartDropdownChange()" class="bg-[#111] border border-white/5 p-3.5 rounded-xl focus:outline-none text-xs font-bold text-gray-300 appearance-none">
                     <option value="" class="bg-[#0a0a0a] text-white">Todos os Músculos</option>
                     <option value="Braços" class="bg-[#0a0a0a] text-white">Braços</option>
                     <option value="Antebraços" class="bg-[#0a0a0a] text-white">Antebraços</option>
@@ -298,7 +298,22 @@
                 </select>
             </div>
             
-            <div id="library-list" class="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2 pb-20"></div>
+            <div id="library-list" class="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1 pb-4"></div>
+
+            <!-- Fixed Bottom Action Bar for Multi-Add -->
+            <div id="library-bottom-bar" class="p-3 bg-[#0a0a0c]/95 backdrop-blur-xl border border-white/10 rounded-2xl shrink-0 mt-auto flex items-center justify-between gap-3 shadow-2xl z-20">
+                <div class="flex flex-col min-w-0">
+                    <span id="library-bottom-status" class="text-[9px] font-black uppercase tracking-widest text-[#00FF9D] flex items-center gap-1.5 truncate">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse"></span>
+                        Adição Contínua
+                    </span>
+                    <span id="library-bottom-counter" class="text-xs font-black text-white italic tracking-tight truncate">0 exercícios no treino</span>
+                </div>
+                <button onclick="app.closeModal('exercise-library-modal')" class="btn-accent px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-[0_0_20px_rgba(0,255,157,0.3)] active:scale-95 transition-all shrink-0">
+                    <i data-lucide="check" class="w-4 h-4 text-black"></i>
+                    <span id="library-bottom-btn-text">Concluir e Voltar</span>
+                </button>
+            </div>
         </div>
     </div>
     

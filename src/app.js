@@ -111,11 +111,44 @@ const app = {
         modalIds.forEach(id => {
             const modal = document.getElementById(id);
             if (modal) {
+                let pointerStartedInsideCard = false;
+
+                const checkInside = (e) => {
+                    const isCardOrCanvasOrSvg = !!(
+                        e.target.closest('.glass') || 
+                        e.target.closest('.modal-content') || 
+                        e.target.closest('canvas') || 
+                        e.target.closest('svg') || 
+                        e.target.closest('#library-3d-container') || 
+                        e.target.closest('#library-map-container') ||
+                        e.target.closest('#summary-3d-container') ||
+                        e.target.closest('#summary-2d-container')
+                    );
+                    return isCardOrCanvasOrSvg || e.target !== modal;
+                };
+
+                modal.addEventListener('pointerdown', (e) => {
+                    pointerStartedInsideCard = checkInside(e);
+                }, { passive: true });
+
+                modal.addEventListener('touchstart', (e) => {
+                    pointerStartedInsideCard = checkInside(e);
+                }, { passive: true });
+
+                modal.addEventListener('mousedown', (e) => {
+                    pointerStartedInsideCard = checkInside(e);
+                }, { passive: true });
+
                 modal.addEventListener('click', (e) => {
-                    const contentCard = e.target.closest('.glass') || e.target.closest('.modal-content');
-                    if (!contentCard || e.target === modal) {
+                    if (pointerStartedInsideCard) {
+                        pointerStartedInsideCard = false;
+                        return;
+                    }
+                    const contentCard = e.target.closest('.glass') || e.target.closest('.modal-content') || e.target.closest('canvas') || e.target.closest('svg');
+                    if (!contentCard && e.target === modal) {
                         app.closeModal(id);
                     }
+                    pointerStartedInsideCard = false;
                 });
             }
         });
@@ -1599,6 +1632,143 @@ const app = {
         app.selectMuscleFilter(groupId);
     },
 
+    ANATOMICAL_HIERARCHY: {
+        chest: {
+            keys: ['chest'],
+            keywords: ['peitoral', 'peito', 'chest', 'supino', 'crucifixo', 'crossover', 'paralelas para peito', 'peck deck'],
+            secondaries: ['chest']
+        },
+        lats: {
+            keys: ['lats', 'upper_back'],
+            keywords: ['dorsal', 'lats', 'latissimus', 'puxada', 'pulley', 'pulldown', 'barra fixa', 'chin-up', 'pull-up'],
+            secondaries: ['lats', 'upper_back']
+        },
+        upper_back: {
+            keys: ['upper_back', 'lats', 'traps'],
+            keywords: ['costas superior', 'romboides', 'elevador da escápula', 'costas', 'remada', 'upper back', 'trapezio'],
+            secondaries: ['upper_back', 'traps', 'lats']
+        },
+        traps: {
+            keys: ['traps', 'upper_back'],
+            keywords: ['trapézio', 'trapezio', 'traps', 'encolhimento', 'shrug', 'remada alta'],
+            secondaries: ['traps', 'upper_back']
+        },
+        lower_back: {
+            keys: ['lower_back'],
+            keywords: ['lombar', 'eretores da espinha', 'lower back', 'hiperestensão', 'bom dia', 'good morning'],
+            secondaries: ['lower_back']
+        },
+        back: {
+            keys: ['lats', 'upper_back', 'traps', 'lower_back'],
+            keywords: ['costas', 'dorsal', 'trapézio', 'lombar', 'remada', 'puxada'],
+            secondaries: ['lats', 'upper_back', 'traps', 'lower_back']
+        },
+        shoulders: {
+            keys: ['shoulders', 'shoulders_front', 'shoulders_side', 'shoulders_rear'],
+            keywords: ['deltoides', 'deltoide', 'ombros', 'ombro', 'shoulders', 'desenvolvimento', 'elevação lateral', 'elevação frontal', 'crucifixo invertido'],
+            secondaries: ['shoulders', 'shoulders_front', 'shoulders_side', 'shoulders_rear']
+        },
+        shoulders_front: {
+            keys: ['shoulders_front', 'shoulders_side', 'shoulders'],
+            keywords: ['deltoide anterior', 'deltoides', 'ombros', 'desenvolvimento', 'elevação frontal', 'shoulder press', 'overhead press'],
+            secondaries: ['shoulders_front', 'shoulders']
+        },
+        shoulders_side: {
+            keys: ['shoulders_side', 'shoulders_front', 'shoulders_rear', 'shoulders'],
+            keywords: ['deltoide lateral', 'deltoides', 'ombros', 'elevação lateral', 'lateral raise', 'desenvolvimento'],
+            secondaries: ['shoulders_side', 'shoulders']
+        },
+        shoulders_rear: {
+            keys: ['shoulders_rear', 'shoulders_side', 'shoulders', 'upper_back'],
+            keywords: ['deltoide posterior', 'deltoides', 'ombros', 'crucifixo invertido', 'face pull', 'rear delt', 'remada aberta'],
+            secondaries: ['shoulders_rear', 'shoulders', 'upper_back']
+        },
+        biceps: {
+            keys: ['biceps'],
+            keywords: ['bíceps', 'biceps', 'braquial', 'brachialis', 'rosca', 'curl'],
+            secondaries: ['biceps']
+        },
+        triceps: {
+            keys: ['triceps'],
+            keywords: ['tríceps', 'triceps', 'triceps press', 'testa', 'paralelas', 'corda', 'coice', 'skull crusher', 'mergulho'],
+            secondaries: ['triceps']
+        },
+        forearms: {
+            keys: ['forearms', 'biceps'],
+            keywords: ['antebraço', 'antebraços', 'forearms', 'punho', 'flexão de punho', 'extensão de punho', 'wrist'],
+            secondaries: ['forearms', 'biceps']
+        },
+        abs: {
+            keys: ['abs'],
+            keywords: ['abdômen', 'abdomen', 'cintura', 'core', 'oblíquos', 'obliques', 'serrátil', 'prancha', 'plank', 'sit-up', 'crunch'],
+            secondaries: ['abs']
+        },
+        glutes: {
+            keys: ['glutes', 'abductors'],
+            keywords: ['glúteos', 'gluteos', 'glúteo', 'gluteo', 'glutes', 'elevação pélvica', 'hip thrust', 'coice', 'ponte'],
+            secondaries: ['glutes', 'hamstrings']
+        },
+        quads: {
+            keys: ['quads'],
+            keywords: ['quadríceps', 'quadriceps', 'coxas', 'agachamento', 'squat', 'leg press', 'extensora', 'afundo', 'lunge', 'hack'],
+            secondaries: ['quads', 'glutes']
+        },
+        hamstrings: {
+            keys: ['hamstrings', 'glutes'],
+            keywords: ['posterior de coxa', 'isquiotibiais', 'hamstrings', 'stiff', 'flexora', 'leg curl', 'romeno', 'deadlift romeno', 'rdl'],
+            secondaries: ['hamstrings', 'glutes', 'lower_back']
+        },
+        calves: {
+            keys: ['calves'],
+            keywords: ['panturrilha', 'panturrilhas', 'calves', 'gêmeos', 'sóleo', 'calf raise', 'elevação de panturrilha'],
+            secondaries: ['calves']
+        },
+        adductors: {
+            keys: ['adductors', 'quads'],
+            keywords: ['adutores', 'adutor', 'adductors', 'coxas interna', 'cadeira adutora'],
+            secondaries: ['adductors', 'quads']
+        },
+        abductors: {
+            keys: ['abductors', 'glutes'],
+            keywords: ['abdutores', 'abdutor', 'abductors', 'glúteo médio', 'cadeira abdutora'],
+            secondaries: ['abductors', 'glutes']
+        },
+        cardio: {
+            keys: ['cardio'],
+            keywords: ['cardio', 'cardiovascular', 'aeróbico', 'aerobico', 'corrida', 'esteira', 'bicicleta', 'remo', 'pular corda'],
+            secondaries: ['cardio']
+        }
+    },
+
+    matchesMuscleHierarchy: (exercise, filterKey) => {
+        if (!filterKey) return true;
+        const hier = app.ANATOMICAL_HIERARCHY[filterKey] || {
+            keys: [filterKey],
+            keywords: [filterKey],
+            secondaries: [filterKey]
+        };
+
+        // 1. Primário direto ou mapeado na hierarquia
+        if (hier.keys.includes(exercise.primary_muscle_group)) return true;
+
+        // 2. Sinergista secundário
+        if (exercise.secondary_muscle_groups && exercise.secondary_muscle_groups.some(s => hier.secondaries.includes(s))) {
+            return true;
+        }
+
+        // 3. Fallback semântico por palavras-chave em nome, alvo ou grupo
+        const fullText = `${exercise.name || ''} ${exercise.name_en || ''} ${exercise.target || ''} ${exercise.body_part || ''}`.toLowerCase();
+        return hier.keywords.some(kw => fullText.includes(kw));
+    },
+
+    isMuscleGroupSelectedOrChild: (meshGroupKey, activeFilterKey) => {
+        if (!activeFilterKey) return false;
+        if (meshGroupKey === activeFilterKey) return true;
+        const hier = app.ANATOMICAL_HIERARCHY[activeFilterKey];
+        if (hier && hier.keys && hier.keys.includes(meshGroupKey)) return true;
+        return false;
+    },
+
     selectMuscleFilter: (groupId) => {
         if (app.activeMuscleFilter === groupId) {
             app.clearMuscleFilter();
@@ -1607,6 +1777,10 @@ const app = {
         app.activeMuscleFilter = groupId;
         const grpInfo = app.muscleOntology?.groups?.[groupId] || { name: groupId };
         
+        // Sincroniza e reseta o dropdown de body_part para evitar colisão AND
+        const bodyPartSelect = document.getElementById('filter-body-part');
+        if (bodyPartSelect) bodyPartSelect.value = '';
+
         const filterChip = document.getElementById('library-active-muscle-filter');
         const filterLabel = document.getElementById('library-filter-muscle-label');
         if (filterChip && filterLabel) {
@@ -1616,8 +1790,9 @@ const app = {
 
         if (navigator.vibrate) navigator.vibrate(25);
         app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
+        app.update3DMuscleHighlights('library');
         app.filterExerciseLibrary();
-        app.toast(`Filtrando por: ${grpInfo.name}`, 'info', 1800);
+        app.toast(`Filtrando por: ${grpInfo.name || groupId}`, 'info', 1800);
     },
 
     clearMuscleFilter: () => {
@@ -1626,6 +1801,7 @@ const app = {
         if (filterChip) filterChip.classList.add('hidden');
         
         app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, null);
+        app.update3DMuscleHighlights('library');
         app.filterExerciseLibrary();
     },
 
@@ -1714,6 +1890,50 @@ const app = {
             pointerListeners = { onDown, onMove, onUp };
         }
 
+        // Raycaster Interativo para Seleção de Músculos no 3D
+        let tapListeners = null;
+        if (isInteractive && sceneKey === 'library') {
+            let downX = 0;
+            let downY = 0;
+            let downTime = 0;
+
+            const onPointerDownRay = (e) => {
+                downX = e.clientX;
+                downY = e.clientY;
+                downTime = Date.now();
+            };
+
+            const onPointerUpRay = (e) => {
+                const distX = Math.abs(e.clientX - downX);
+                const distY = Math.abs(e.clientY - downY);
+                const elapsed = Date.now() - downTime;
+
+                // Considera toque/clique se o ponteiro moveu menos de 8px em menos de 350ms
+                if (distX < 8 && distY < 8 && elapsed < 350) {
+                    const rect = canvas.getBoundingClientRect();
+                    const mouse = new THREE.Vector2(
+                        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                        -((e.clientY - rect.top) / rect.height) * 2 + 1
+                    );
+                    const raycaster = new THREE.Raycaster();
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(bodyGroup.children, true);
+                    if (intersects && intersects.length > 0) {
+                        const hit = intersects.find(i => i.object && i.object.userData && i.object.userData.groupKey);
+                        if (hit) {
+                            const groupKey = hit.object.userData.groupKey;
+                            app.pulse3DMeshFeedback(hit.object);
+                            app.selectMuscleFilter(groupKey);
+                        }
+                    }
+                }
+            };
+
+            canvas.addEventListener('pointerdown', onPointerDownRay);
+            canvas.addEventListener('pointerup', onPointerUpRay);
+            tapListeners = { onPointerDownRay, onPointerUpRay };
+        }
+
         // ResizeObserver para manter aspect ratio perfeito e render nítido
         let resizeObserver = null;
         if (typeof ResizeObserver !== 'undefined') {
@@ -1751,6 +1971,7 @@ const app = {
             animationFrameId,
             resizeObserver,
             pointerListeners,
+            tapListeners,
             canvas,
             container,
             initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
@@ -1761,7 +1982,8 @@ const app = {
         const bodyGroup = new THREE.Group();
 
         const getMaterial = (groupKey) => {
-            const level = heatLevels ? (heatLevels[groupKey] || 0) : (app.activeMuscleFilter === groupKey ? 3 : 0);
+            const isMatch = app.isMuscleGroupSelectedOrChild(groupKey, app.activeMuscleFilter);
+            const level = heatLevels ? (heatLevels[groupKey] || 0) : (isMatch ? 3 : 0);
             let colorHex = 0x141c28;
             let emissiveHex = 0x000000;
             let emissiveIntensity = 0.1;
@@ -1824,27 +2046,34 @@ const app = {
         // 4. Abdômen / Core
         createPart(new THREE.BoxGeometry(0.24, 0.32, 0.13), 'abs', [0, 0.60, 0.06]);
 
-        // 5. Deltoides (Esq / Dir)
-        createPart(new THREE.SphereGeometry(0.12, 8, 8), 'shoulders_front', [0.30, 0.92, 0.02]);
-        createPart(new THREE.SphereGeometry(0.12, 8, 8), 'shoulders_front', [-0.30, 0.92, 0.02]);
+        // 5. Deltoides (Anterior, Lateral, Posterior)
+        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_front', [0.30, 0.92, 0.05]);
+        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_front', [-0.30, 0.92, 0.05]);
+        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_side', [0.35, 0.92, 0.0]);
+        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_side', [-0.35, 0.92, 0.0]);
+        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_rear', [0.30, 0.92, -0.05]);
+        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_rear', [-0.30, 0.92, -0.05]);
 
-        // 6. Braços (Bíceps / Tríceps)
-        createPart(new THREE.CylinderGeometry(0.08, 0.07, 0.24, 6), 'biceps', [0.34, 0.70, 0.02]);
-        createPart(new THREE.CylinderGeometry(0.08, 0.07, 0.24, 6), 'biceps', [-0.34, 0.70, 0.02]);
+        // 6. Braços (Bíceps na frente, Tríceps atrás)
+        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'biceps', [0.34, 0.70, 0.04]);
+        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'biceps', [-0.34, 0.70, 0.04]);
+        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'triceps', [0.34, 0.70, -0.04]);
+        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'triceps', [-0.34, 0.70, -0.04]);
 
         // 7. Antebraços
         createPart(new THREE.CylinderGeometry(0.07, 0.05, 0.26, 6), 'forearms', [0.36, 0.42, 0.04]);
         createPart(new THREE.CylinderGeometry(0.07, 0.05, 0.26, 6), 'forearms', [-0.36, 0.42, 0.04]);
 
-        // 8. Costas Superior / Dorsais (Lats)
-        createPart(new THREE.BoxGeometry(0.32, 0.28, 0.12), 'lats', [0, 0.82, -0.07]);
-        createPart(new THREE.BoxGeometry(0.26, 0.20, 0.11), 'lower_back', [0, 0.58, -0.06]);
+        // 8. Costas Superior / Dorsais (Lats) / Lombar
+        createPart(new THREE.BoxGeometry(0.30, 0.16, 0.11), 'upper_back', [0, 0.92, -0.07]);
+        createPart(new THREE.BoxGeometry(0.32, 0.20, 0.12), 'lats', [0, 0.74, -0.07]);
+        createPart(new THREE.BoxGeometry(0.26, 0.20, 0.11), 'lower_back', [0, 0.54, -0.06]);
 
         // 9. Glúteos
         createPart(new THREE.SphereGeometry(0.14, 8, 8), 'glutes', [0.12, 0.36, -0.06]);
         createPart(new THREE.SphereGeometry(0.14, 8, 8), 'glutes', [-0.12, 0.36, -0.06]);
 
-        // 10. Quadríceps / Coxas (Esq / Dir)
+        // 10. Quadríceps / Coxas (Frente)
         createPart(new THREE.CylinderGeometry(0.12, 0.09, 0.44, 8), 'quads', [0.15, -0.02, 0.04]);
         createPart(new THREE.CylinderGeometry(0.12, 0.09, 0.44, 8), 'quads', [-0.15, -0.02, 0.04]);
 
@@ -1857,6 +2086,61 @@ const app = {
         createPart(new THREE.CylinderGeometry(0.09, 0.06, 0.42, 6), 'calves', [-0.16, -0.52, -0.01]);
 
         return bodyGroup;
+    },
+
+    update3DMuscleHighlights: (sceneKey = 'library') => {
+        const entry = app.threeScenes[sceneKey];
+        if (!entry || !entry.bodyGroup) return;
+        entry.bodyGroup.traverse(child => {
+            if (child.isMesh && child.userData && child.userData.groupKey) {
+                const grp = child.userData.groupKey;
+                const isMatch = app.isMuscleGroupSelectedOrChild(grp, app.activeMuscleFilter);
+                if (isMatch) {
+                    child.material.color.setHex(0x00FF9D);
+                    child.material.emissive.setHex(0x00FF9D);
+                    child.material.emissiveIntensity = 1.6;
+                    child.material.opacity = 0.95;
+                } else {
+                    child.material.color.setHex(0x141c28);
+                    child.material.emissive.setHex(0x000000);
+                    child.material.emissiveIntensity = 0.1;
+                    child.material.opacity = 0.55;
+                }
+            }
+        });
+    },
+
+    pulse3DMeshFeedback: (mesh) => {
+        if (!mesh || !mesh.material) return;
+        try {
+            const origColor = mesh.material.color ? mesh.material.color.getHex() : 0x141c28;
+            const origEmissive = mesh.material.emissive ? mesh.material.emissive.getHex() : 0x000000;
+            const origIntensity = mesh.material.emissiveIntensity || 0.1;
+            const origOpacity = mesh.material.opacity || 0.55;
+
+            mesh.material.color.setHex(0x00FF9D);
+            mesh.material.emissive.setHex(0x00FF9D);
+            mesh.material.emissiveIntensity = 2.8;
+            mesh.material.opacity = 1.0;
+
+            setTimeout(() => {
+                if (mesh && mesh.material) {
+                    if (app.activeMuscleFilter && app.isMuscleGroupSelectedOrChild(mesh.userData?.groupKey, app.activeMuscleFilter)) {
+                        mesh.material.color.setHex(0x00FF9D);
+                        mesh.material.emissive.setHex(0x00FF9D);
+                        mesh.material.emissiveIntensity = 1.6;
+                        mesh.material.opacity = 0.95;
+                    } else {
+                        mesh.material.color.setHex(origColor);
+                        mesh.material.emissive.setHex(origEmissive);
+                        mesh.material.emissiveIntensity = origIntensity;
+                        mesh.material.opacity = origOpacity;
+                    }
+                }
+            }, 300);
+        } catch(e) {
+            console.warn('[3D Engine] Erro no feedback pulsante:', e);
+        }
     },
 
     reset3DCamera: (sceneKey = 'library') => {
@@ -1877,9 +2161,15 @@ const app = {
             if (entry.animationFrameId) cancelAnimationFrame(entry.animationFrameId);
             if (entry.resizeObserver) entry.resizeObserver.disconnect();
             if (entry.pointerListeners) {
-                if (entry.canvas) entry.canvas.removeEventListener('pointerdown', entry.pointerListeners.onDown);
-                window.removeEventListener('pointermove', entry.pointerListeners.onMove);
-                window.removeEventListener('pointerup', entry.pointerListeners.onUp);
+                if (entry.canvas && typeof entry.canvas.removeEventListener === 'function') entry.canvas.removeEventListener('pointerdown', entry.pointerListeners.onDown);
+                if (typeof window.removeEventListener === 'function') {
+                    window.removeEventListener('pointermove', entry.pointerListeners.onMove);
+                    window.removeEventListener('pointerup', entry.pointerListeners.onUp);
+                }
+            }
+            if (entry.tapListeners && entry.canvas && typeof entry.canvas.removeEventListener === 'function') {
+                entry.canvas.removeEventListener('pointerdown', entry.tapListeners.onPointerDownRay);
+                entry.canvas.removeEventListener('pointerup', entry.tapListeners.onPointerUpRay);
             }
             if (entry.controls) entry.controls.dispose();
             if (entry.bodyGroup) {
@@ -2060,8 +2350,37 @@ const app = {
 
     showExerciseLibrary: (ctx) => { 
         app.libraryContext = ctx; 
+        app.updateLibraryBottomBar();
         app.filterExerciseLibrary(); 
         document.getElementById('exercise-library-modal').classList.remove('hidden'); 
+    },
+
+    updateLibraryBottomBar: () => {
+        const bottomBar = document.getElementById('library-bottom-bar');
+        const statusEl = document.getElementById('library-bottom-status');
+        const counterEl = document.getElementById('library-bottom-counter');
+        const btnTextEl = document.getElementById('library-bottom-btn-text');
+        if (!bottomBar || !counterEl || !btnTextEl) return;
+
+        if (app.libraryContext === 'workout') {
+            const count = app.activeWorkout?.exercises?.length || 0;
+            if (statusEl) statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse"></span> Adição Contínua`;
+            counterEl.innerText = `${count} exercício${count !== 1 ? 's' : ''} no treino`;
+            btnTextEl.innerText = 'Concluir e Voltar ao Treino';
+            bottomBar.classList.remove('hidden');
+        } else if (app.libraryContext === 'editor') {
+            const count = app.editingPlan?.exercises?.length || 0;
+            if (statusEl) statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse"></span> Editor de Planos`;
+            counterEl.innerText = `${count} exercício${count !== 1 ? 's' : ''} no plano`;
+            btnTextEl.innerText = 'Concluir e Voltar ao Plano';
+            bottomBar.classList.remove('hidden');
+        } else {
+            if (statusEl) statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Biblioteca`;
+            counterEl.innerText = '1.324 Exercícios disponíveis';
+            btnTextEl.innerText = 'Fechar Biblioteca';
+            bottomBar.classList.remove('hidden');
+        }
+        lucide.createIcons();
     },
 
     debouncedFilterExerciseLibrary: () => {
@@ -2069,28 +2388,41 @@ const app = {
         app.searchDebounceTimeout = setTimeout(app.filterExerciseLibrary, 180);
     },
 
+    onBodyPartDropdownChange: () => {
+        const bodyPartVal = document.getElementById('filter-body-part')?.value;
+        if (bodyPartVal && app.activeMuscleFilter) {
+            app.activeMuscleFilter = null;
+            const filterChip = document.getElementById('library-active-muscle-filter');
+            if (filterChip) filterChip.classList.add('hidden');
+            app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, null);
+            app.update3DMuscleHighlights('library');
+        }
+        app.filterExerciseLibrary();
+    },
+
     filterExerciseLibrary: async () => {
-        const searchInput = document.getElementById('search-exercise').value.toLowerCase().trim();
-        const filterBodyPart = document.getElementById('filter-body-part').value;
-        const filterEquipment = document.getElementById('filter-equipment').value;
+        const searchInput = document.getElementById('search-exercise')?.value.toLowerCase().trim() || '';
+        const filterBodyPart = document.getElementById('filter-body-part')?.value || '';
+        const filterEquipment = document.getElementById('filter-equipment')?.value || '';
         
         let exercises = await db.templates.toArray();
         
-        // Filtro por Músculo Interativo do Mapa 2D/3D
+        // 1. Filtro por Músculo Interativo do Mapa 2D/3D com Hierarquia Anatômica e Sinergistas
         if (app.activeMuscleFilter) {
-            exercises = exercises.filter(x => 
-                x.primary_muscle_group === app.activeMuscleFilter || 
-                (x.secondary_muscle_groups && x.secondary_muscle_groups.includes(app.activeMuscleFilter))
-            );
+            exercises = exercises.filter(x => app.matchesMuscleHierarchy(x, app.activeMuscleFilter));
         }
 
-        // Filtros suspensos
+        // 2. Filtro suspenso por Grupo Muscular
         if (filterBodyPart) {
             exercises = exercises.filter(x => x.body_part === filterBodyPart);
         }
+
+        // 3. Filtro suspenso por Equipamento
         if (filterEquipment) {
             exercises = exercises.filter(x => x.equipment === filterEquipment);
         }
+
+        // 4. Busca textual inteligente
         if (searchInput) {
             exercises = exercises.filter(x => 
                 (x.name && x.name.toLowerCase().includes(searchInput)) ||
@@ -2100,10 +2432,31 @@ const app = {
             );
         }
 
+        const count = exercises.length;
+
+        // Atualiza chip de filtro muscular ativo com contador real
+        const filterChip = document.getElementById('library-active-muscle-filter');
+        const filterLabel = document.getElementById('library-filter-muscle-label');
+        if (filterChip && filterLabel) {
+            if (app.activeMuscleFilter) {
+                const grpInfo = app.muscleOntology?.groups?.[app.activeMuscleFilter] || { name: app.activeMuscleFilter };
+                const groupDisplayName = grpInfo.name || app.activeMuscleFilter;
+                filterLabel.innerText = `🔥 ${groupDisplayName} (${count} exercício${count !== 1 ? 's' : ''})`;
+                filterChip.classList.remove('hidden');
+            } else {
+                filterChip.classList.add('hidden');
+            }
+        }
+
+        // Atualiza badge de contagem geral
+        const countBadge = document.getElementById('library-count-badge');
+        if (countBadge) {
+            countBadge.innerText = `${count.toLocaleString('pt-BR')} Exercício${count !== 1 ? 's' : ''}`;
+        }
+
         const listContainer = document.getElementById('library-list');
         if (!listContainer) return;
         
-        const count = exercises.length;
         const limit = 60;
         const displayed = exercises.slice(0, limit);
 
@@ -2124,9 +2477,9 @@ const app = {
                     </div>
                     <div class="flex items-center gap-2">
                         ${app.libraryContext === 'manager' && typeof x.id === 'string' && x.id.startsWith('custom_') ? `
-                            <button onclick="app.deleteTemplate('${x.id}')" class="p-2 text-red-500/60 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <button onclick="app.deleteTemplate('${x.id}')" class="p-2 text-red-500/60 active:text-red-500" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         ` : ''}
-                        <button onclick="app.selectExerciseById('${x.id}')" class="p-2.5 bg-[#00FF9D]/10 text-[#00FF9D] rounded-xl active:bg-[#00FF9D] active:text-black transition-all">
+                        <button onclick="app.selectExerciseById('${x.id}', this)" class="p-2.5 bg-[#00FF9D]/10 text-[#00FF9D] hover:bg-[#00FF9D]/20 rounded-xl active:scale-95 transition-all flex items-center justify-center min-w-[38px] min-h-[38px]" title="Adicionar">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -2146,28 +2499,49 @@ const app = {
         lucide.createIcons();
     },
 
-    selectExerciseById: async (id) => {
+    selectExerciseById: async (id, btnEl = null) => {
         let ex = await db.templates.get(id);
         if (!ex && !isNaN(id) && typeof id === 'string') {
             ex = await db.templates.get(Number(id));
         }
         if (ex) {
-            app.selectExercise(ex.name);
-            if (navigator.vibrate) navigator.vibrate(30);
-            app.toast(`"${ex.name}" adicionado!`, 'success', 2000);
+            app.selectExercise(ex.name, btnEl);
         } else {
             app.toast('Exercício não encontrado na biblioteca.', 'warning');
         }
     },
 
-    selectExercise: (n) => {
-        if(app.libraryContext === 'editor') { 
+    selectExercise: async (n, btnEl = null) => {
+        if (navigator.vibrate) navigator.vibrate(20);
+
+        if (app.libraryContext === 'editor') { 
+            if (!app.editingPlan.exercises) app.editingPlan.exercises = [];
             app.editingPlan.exercises.push(n); 
             app.renderEditorExercises(); 
-        } else if(app.libraryContext === 'workout') { 
-            app.addExerciseToActiveWorkout(n); 
+            app.updateLibraryBottomBar();
+            app.toast(`"${n}" adicionado ao plano!`, 'success', 1600);
+        } else if (app.libraryContext === 'workout') { 
+            await app.addExerciseToActiveWorkout(n); 
+            app.updateLibraryBottomBar();
+            app.toast(`"${n}" adicionado ao treino!`, 'success', 1600);
+        } else {
+            app.toast(`"${n}" selecionado.`, 'info', 1600);
         }
-        app.closeModal('exercise-library-modal');
+
+        // Animação tátil no botão '+' para '✓ Adicionado' sem fechar modal
+        if (btnEl) {
+            const origHtml = btnEl.innerHTML;
+            const origClass = btnEl.className;
+            btnEl.innerHTML = `<span class="flex items-center gap-1 text-[9px] font-black text-black uppercase tracking-wider whitespace-nowrap"><i data-lucide="check" class="w-3.5 h-3.5"></i> Adicionado</span>`;
+            btnEl.className = 'px-3 py-2 btn-added-pulse text-black rounded-xl transition-all pointer-events-none';
+            lucide.createIcons();
+            setTimeout(() => {
+                btnEl.innerHTML = origHtml;
+                btnEl.className = origClass;
+                btnEl.classList.remove('pointer-events-none');
+                lucide.createIcons();
+            }, 1400);
+        }
     },
 
     switchDetailTab: (tab) => {

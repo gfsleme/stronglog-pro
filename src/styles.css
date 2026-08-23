@@ -490,5 +490,25 @@ select:focus {
     color: #00FF9D !important;
 }
 
+/* 3D & 2D Touch Action Safety (Anti-Backdrop Trigger) */
+#library-3d-canvas, #summary-3d-canvas {
+    touch-action: none !important;
+}
+
+#library-svg-stage svg, #summary-svg-wrapper svg {
+    touch-action: pan-y !important;
+    pointer-events: auto;
+}
+
+/* Multi-add Tactile Button Success State */
+.btn-added-pulse {
+    background: #00FF9D !important;
+    color: #000000 !important;
+    border-color: #00FF9D !important;
+    box-shadow: 0 0 18px rgba(0, 255, 157, 0.6) !important;
+    transform: scale(1.04);
+}
+
+
 
 
