@@ -1,0 +1,279 @@
+{
+  "groups": {
+    "chest": {
+      "id": "chest",
+      "name": "Peitoral",
+      "category": "upper",
+      "view": "anterior",
+      "nodes": [
+        "chest_upper_l",
+        "chest_upper_r",
+        "chest_lower_l",
+        "chest_lower_r"
+      ],
+      "targets": [
+        "Peitoral"
+      ],
+      "recovery_hours": 48
+    },
+    "lats": {
+      "id": "lats",
+      "name": "Dorsais",
+      "category": "back",
+      "view": "posterior",
+      "nodes": [
+        "lat_l",
+        "lat_r"
+      ],
+      "targets": [
+        "Dorsal"
+      ],
+      "recovery_hours": 48
+    },
+    "upper_back": {
+      "id": "upper_back",
+      "name": "Costas Superior & Romboides",
+      "category": "back",
+      "view": "posterior",
+      "nodes": [
+        "upper_back_l",
+        "upper_back_r",
+        "rhomboids"
+      ],
+      "targets": [
+        "Costas Superior",
+        "Elevador da Escápula"
+      ],
+      "recovery_hours": 48
+    },
+    "traps": {
+      "id": "traps",
+      "name": "Trapézio",
+      "category": "back",
+      "view": "posterior",
+      "nodes": [
+        "trap_l",
+        "trap_r"
+      ],
+      "targets": [
+        "Trapézio"
+      ],
+      "recovery_hours": 48
+    },
+    "shoulders_front": {
+      "id": "shoulders_front",
+      "name": "Deltoide Anterior",
+      "category": "shoulders",
+      "view": "anterior",
+      "nodes": [
+        "delt_ant_l",
+        "delt_ant_r"
+      ],
+      "targets": [
+        "Deltoides"
+      ],
+      "recovery_hours": 48
+    },
+    "shoulders_side": {
+      "id": "shoulders_side",
+      "name": "Deltoide Lateral",
+      "category": "shoulders",
+      "view": "anterior",
+      "nodes": [
+        "delt_lat_l",
+        "delt_lat_r"
+      ],
+      "targets": [
+        "Deltoides"
+      ],
+      "recovery_hours": 48
+    },
+    "shoulders_rear": {
+      "id": "shoulders_rear",
+      "name": "Deltoide Posterior",
+      "category": "shoulders",
+      "view": "posterior",
+      "nodes": [
+        "delt_post_l",
+        "delt_post_r"
+      ],
+      "targets": [
+        "Deltoides"
+      ],
+      "recovery_hours": 48
+    },
+    "biceps": {
+      "id": "biceps",
+      "name": "Bíceps",
+      "category": "arms",
+      "view": "anterior",
+      "nodes": [
+        "biceps_l",
+        "biceps_r",
+        "brachialis_l",
+        "brachialis_r"
+      ],
+      "targets": [
+        "Bíceps"
+      ],
+      "recovery_hours": 36
+    },
+    "triceps": {
+      "id": "triceps",
+      "name": "Tríceps",
+      "category": "arms",
+      "view": "posterior",
+      "nodes": [
+        "triceps_l",
+        "triceps_r"
+      ],
+      "targets": [
+        "Tríceps"
+      ],
+      "recovery_hours": 36
+    },
+    "forearms": {
+      "id": "forearms",
+      "name": "Antebraços",
+      "category": "arms",
+      "view": "anterior",
+      "nodes": [
+        "forearm_l",
+        "forearm_r"
+      ],
+      "targets": [
+        "Antebraço"
+      ],
+      "recovery_hours": 24
+    },
+    "abs": {
+      "id": "abs",
+      "name": "Abdômen",
+      "category": "core",
+      "view": "anterior",
+      "nodes": [
+        "rectus_abdominis",
+        "obliques_l",
+        "obliques_r"
+      ],
+      "targets": [
+        "Abdômen",
+        "Serrátil"
+      ],
+      "recovery_hours": 24
+    },
+    "lower_back": {
+      "id": "lower_back",
+      "name": "Lombar",
+      "category": "core",
+      "view": "posterior",
+      "nodes": [
+        "erector_spinae_l",
+        "erector_spinae_r"
+      ],
+      "targets": [
+        "Lombar/Eretores da Espinha"
+      ],
+      "recovery_hours": 72
+    },
+    "glutes": {
+      "id": "glutes",
+      "name": "Glúteos",
+      "category": "legs",
+      "view": "posterior",
+      "nodes": [
+        "glute_l",
+        "glute_r"
+      ],
+      "targets": [
+        "Glúteos"
+      ],
+      "recovery_hours": 48
+    },
+    "quads": {
+      "id": "quads",
+      "name": "Quadríceps",
+      "category": "legs",
+      "view": "anterior",
+      "nodes": [
+        "quad_l",
+        "quad_r"
+      ],
+      "targets": [
+        "Quadríceps"
+      ],
+      "recovery_hours": 72
+    },
+    "hamstrings": {
+      "id": "hamstrings",
+      "name": "Posterior de Coxa",
+      "category": "legs",
+      "view": "posterior",
+      "nodes": [
+        "hamstring_l",
+        "hamstring_r"
+      ],
+      "targets": [
+        "Posterior de Coxa"
+      ],
+      "recovery_hours": 72
+    },
+    "calves": {
+      "id": "calves",
+      "name": "Panturrilhas",
+      "category": "legs",
+      "view": "posterior",
+      "nodes": [
+        "calf_l",
+        "calf_r"
+      ],
+      "targets": [
+        "Panturrilha"
+      ],
+      "recovery_hours": 24
+    },
+    "adductors": {
+      "id": "adductors",
+      "name": "Adutores",
+      "category": "legs",
+      "view": "anterior",
+      "nodes": [
+        "adductor_l",
+        "adductor_r"
+      ],
+      "targets": [
+        "Adutores"
+      ],
+      "recovery_hours": 48
+    },
+    "abductors": {
+      "id": "abductors",
+      "name": "Abdutores",
+      "category": "legs",
+      "view": "posterior",
+      "nodes": [
+        "abductor_l",
+        "abductor_r"
+      ],
+      "targets": [
+        "Abdutores"
+      ],
+      "recovery_hours": 48
+    },
+    "cardio": {
+      "id": "cardio",
+      "name": "Cardiovascular",
+      "category": "cardio",
+      "view": "both",
+      "nodes": [
+        "heart_system"
+      ],
+      "targets": [
+        "Cardiovascular"
+      ],
+      "recovery_hours": 24
+    }
+  },
+  "exercise_count": 1324,
+  "mapping_version": "v5.0_biomechanical_3d"
+}

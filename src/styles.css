@@ -300,4 +300,69 @@ select:focus {
     }
 }
 
+/* ==========================================================================
+   🧬 3D & 2D ANATOMICAL MAP & HEATMAP ENGINE
+   ========================================================================== */
+
+.muscle-node {
+    fill: #1a2233;
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 1.2;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.muscle-node:hover {
+    fill: #00FF9D;
+    filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.8));
+    stroke: #ffffff;
+    stroke-width: 1.8;
+}
+
+.muscle-node.active-selected {
+    fill: #00FF9D !important;
+    filter: drop-shadow(0 0 12px rgba(0, 255, 157, 0.9)) !important;
+    stroke: #ffffff !important;
+    stroke-width: 2 !important;
+}
+
+/* Heatmap Levels */
+.muscle-node.heat-0 { fill: #151b28; }
+.muscle-node.heat-1 { fill: #00e5ff; filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.6)); } /* Ciano */
+.muscle-node.heat-2 { fill: #00FF9D; filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.7)); } /* Neon Mint (Ótimo) */
+.muscle-node.heat-3 { fill: #ffab00; filter: drop-shadow(0 0 8px rgba(255, 171, 0, 0.7)); } /* Âmbar */
+.muscle-node.heat-4 { fill: #ff1744; filter: drop-shadow(0 0 10px rgba(255, 23, 68, 0.9)); } /* Vermelho Coral */
+
+/* 3D Hologram Stage */
+.hologram-stage {
+    background: radial-gradient(circle at center, rgba(0, 255, 157, 0.08) 0%, rgba(7, 7, 9, 0.95) 75%);
+    border: 1px solid rgba(0, 255, 157, 0.2);
+    border-radius: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 40px rgba(0, 255, 157, 0.05), 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+.hologram-grid {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+}
+
+/* Smart Stepper Tactile Buttons */
+.stepper-btn {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.stepper-btn:active {
+    transform: scale(0.88);
+    background: rgba(0, 255, 157, 0.25) !important;
+    color: #00FF9D !important;
+}
+
 

@@ -1,5 +1,5 @@
-// StrongLog Pro v4.12 - PWA Lifecycle & Core Engine
-const APP_VERSION = 'v4.12';
+// StrongLog Pro v5.0 - 3D Anatomical Heatmap & In-Workout Ergonomics Engine
+const APP_VERSION = 'v5.0';
 let swRegistration = null;
 let waitingWorker = null;
 
@@ -43,10 +43,10 @@ if ('serviceWorker' in navigator) {
 }
 
 const db = new Dexie("StrongLog_v4_Pro");
-db.version(3).stores({ 
+db.version(4).stores({ 
     plans: '++id, name', 
     sessions: '++id, planName, date', 
-    templates: '++id, name, body_part, equipment, target',
+    templates: '++id, name, body_part, equipment, target, primary_muscle_group',
     records: 'name' // Exercise name as key
 });
 
@@ -60,6 +60,14 @@ const app = {
     editingPlan: null, 
     libraryContext: null,
     searchDebounceTimeout: null,
+    wakeLockSentinel: null,
+    graphicMode: localStorage.getItem('stronglog_graphic_mode') || 'tier_0',
+    libraryViewMode: 'list',
+    activeSvgView: 'anterior',
+    activeMuscleFilter: null,
+    threeScenes: {},
+    muscleOntology: null,
+    lastSummarySession: null,
     exerciseTemplates: [
         { name: 'Supino Reto com Barra', muscleGroup: 'Peito' }, 
         { name: 'Supino Inclinado com Halter', muscleGroup: 'Peito' },
@@ -78,13 +86,91 @@ const app = {
         const verEl = document.getElementById('pwa-version-display');
         if (verEl) verEl.innerText = APP_VERSION;
         
+        await app.loadMuscleOntology();
         await app.seedTemplates();
         await app.rebuildRecords();
         await app.renderPlans();
         await app.renderHistory();
         app.checkActiveWorkoutRecovery();
         app.initCharts();
+        app.initGraphicTier();
         lucide.createIcons();
+    },
+
+    loadMuscleOntology: async () => {
+        try {
+            const res = await fetch('./data/muscle_ontology.json');
+            if (res.ok) {
+                app.muscleOntology = await res.json();
+            }
+        } catch(e) {
+            console.warn('[App] Ontologia carregada com fallback local:', e);
+        }
+    },
+
+    initGraphicTier: () => {
+        const tier = app.detectDeviceTier();
+        const badge = document.getElementById('tier-badge');
+        const select = document.getElementById('setting-graphic-mode');
+        if (badge) {
+            const label = app.graphicMode === 'tier_0' ? 'Tier 0 (60 FPS)' : (app.graphicMode === 'tier_1' ? 'Tier 1 (Econômico)' : 'Tier 2 (2D Puro)');
+            badge.innerText = label;
+        }
+        if (select) select.value = app.graphicMode || tier;
+    },
+
+    detectDeviceTier: () => {
+        const memory = navigator.deviceMemory || 4;
+        const isSaveData = navigator.connection?.saveData || false;
+        if (isSaveData || memory < 2) return 'tier_2';
+        if (memory < 4) return 'tier_1';
+        return 'tier_0';
+    },
+
+    setGraphicMode: (mode) => {
+        app.graphicMode = mode;
+        localStorage.setItem('stronglog_graphic_mode', mode);
+        app.initGraphicTier();
+        app.toast(`Modo gráfico alterado para ${mode.toUpperCase()}`, 'info');
+        
+        // Re-render current visualizer if active
+        if (app.libraryViewMode === '3d') {
+            app.init3DScene('library-3d-canvas', null, true, 'library');
+        }
+    },
+
+    requestWakeLock: async () => {
+        if ('wakeLock' in navigator) {
+            try {
+                app.wakeLockSentinel = await navigator.wakeLock.request('screen');
+                app.updateWakeLockUI(true);
+                app.wakeLockSentinel.addEventListener('release', () => {
+                    app.updateWakeLockUI(false);
+                });
+                console.log('[WakeLock] Tela ativa durante o treino.');
+            } catch (err) {
+                console.log('[WakeLock] Não disponível ou bloqueado:', err);
+                app.updateWakeLockUI(false);
+            }
+        }
+    },
+
+    releaseWakeLock: async () => {
+        if (app.wakeLockSentinel) {
+            try {
+                await app.wakeLockSentinel.release();
+            } catch(e) {}
+            app.wakeLockSentinel = null;
+            app.updateWakeLockUI(false);
+            console.log('[WakeLock] Tela liberada.');
+        }
+    },
+
+    updateWakeLockUI: (isActive) => {
+        const el = document.getElementById('wakelock-indicator');
+        if (el) {
+            el.classList.toggle('hidden', !isActive);
+        }
     },
 
     // Toast Notification System
@@ -289,12 +375,12 @@ const app = {
 
     seedTemplates: async () => {
         try {
-            const DATASET_VERSION = 'stronglog_dataset_v4.11';
+            const DATASET_VERSION = 'stronglog_dataset_v5.0';
             const currentVer = localStorage.getItem('stronglog_dataset_version');
             const count = await db.templates.count();
             
             if (currentVer !== DATASET_VERSION || count < 100) {
-                console.log('[App] Atualizando base científica de 1.324 exercícios desambiguados...');
+                console.log('[App] Atualizando base científica de 1.324 exercícios desambiguados com ontologia 3D...');
                 if (count > 0) await db.templates.clear();
                 const res = await fetch('./data/exercises.min.json');
                 if (!res.ok) throw new Error('Falha ao carregar exercises.min.json');
@@ -313,7 +399,9 @@ const app = {
                     body_part: ex.muscleGroup,
                     equipment: 'Barra/Halter',
                     target: ex.muscleGroup,
+                    primary_muscle_group: 'chest',
                     secondary_muscles: [],
+                    secondary_muscle_groups: ['triceps', 'shoulders_front'],
                     media_id: '',
                     instruction_steps: ['Execute o exercício com postura e amplitude adequadas.']
                 })));
@@ -349,6 +437,7 @@ const app = {
         }
         
         const customId = `custom_${Date.now()}`;
+        const primaryGroup = app.inferMuscleGroupLocal(name, groupSelect);
         await db.templates.add({
             id: customId,
             name: app.sanitize(name),
@@ -356,7 +445,9 @@ const app = {
             body_part: groupSelect,
             equipment: 'Personalizado',
             target: groupSelect,
+            primary_muscle_group: primaryGroup,
             secondary_muscles: [],
+            secondary_muscle_groups: [],
             media_id: '',
             instruction_steps: ['Exercício adicionado manualmente pelo usuário.']
         });
@@ -398,16 +489,27 @@ const app = {
                     <h3 class="font-black text-xl tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
                     <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${(p.exercises || []).length} EXERCÍCIOS</p>
                 </div>
-                <button onclick="app.showPlanEditor(${p.id})" class="p-3 glass text-gray-500 active:text-[#00FF9D]"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.editPlan(${p.id})" class="p-3 glass text-gray-400 hover:text-white active:scale-90"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    <button onclick="app.deletePlan(${p.id})" class="p-3 glass text-red-500/50 hover:text-red-500 active:scale-90"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
             </div>
-        `).join('') : `<div class="glass p-12 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhuma rotina ativa</div>`;
+        `).join('') : `<div class="p-12 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhuma rotina criada</div>`;
         lucide.createIcons();
     },
 
-    showPlanEditor: async (id = null) => {
-        app.editingPlan = id ? await db.plans.get(id) : { name: '', exercises: [] };
-        document.getElementById('plan-editor-title').innerText = id ? 'Ajustar Rotina' : 'Criar Rotina';
-        document.getElementById('plan-name-input').value = app.editingPlan.name || '';
+    showNewPlanForm: () => {
+        app.editingPlan = { name: '', exercises: [] };
+        document.getElementById('plan-name-input').value = '';
+        document.getElementById('plan-editor-title').innerText = 'Nova Rotina';
+        app.renderEditorExercises();
+        app.setView('plan-editor');
+    },
+
+    editPlan: async (id) => {
+        app.editingPlan = await db.plans.get(id);
+        document.getElementById('plan-name-input').value = app.editingPlan.name;
+        document.getElementById('plan-editor-title').innerText = 'Editar Rotina';
         app.renderEditorExercises();
         app.setView('plan-editor');
     },
@@ -416,7 +518,7 @@ const app = {
         const list = document.getElementById('selected-exercises-list');
         if (!list) return;
 
-        list.innerHTML = (app.editingPlan.exercises || []).map((ex, i) => `
+        list.innerHTML = app.editingPlan.exercises.map((ex, i) => `
             <div class="glass p-5 flex justify-between items-center animate-fade bg-white/[0.01]">
                 <span class="font-black text-xs uppercase tracking-tight text-gray-300">${app.sanitize(ex)}</span>
                 <button onclick="app.editingPlan.exercises.splice(${i},1); app.renderEditorExercises()" class="text-red-500/40 p-1 active:text-red-500"><i data-lucide="minus-circle" class="w-5 h-5"></i></button>
@@ -525,6 +627,7 @@ const app = {
         app.saveActiveWorkoutState();
         app.setView('active-workout');
         app.startTimer();
+        app.requestWakeLock();
     },
 
     getExerciseHistory: async (exName) => {
@@ -544,7 +647,7 @@ const app = {
         if (!list || !app.activeWorkout) return;
 
         list.innerHTML = app.activeWorkout.exercises.map((ex, exIdx) => `
-            <div class="glass p-6 space-y-5 animate-fade">
+            <div class="glass p-6 space-y-4 animate-fade">
                 <div class="flex justify-between items-start">
                     <div>
                         <h4 class="font-black text-[#00FF9D] uppercase tracking-tighter text-lg italic leading-tight">${app.sanitize(ex.name)}</h4>
@@ -555,26 +658,68 @@ const app = {
                     </div>
                     <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-800 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
-                <div class="space-y-3">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
+                <div class="space-y-2.5">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
                 <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-4 bg-white/5 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-600 active:bg-white/10 uppercase">+ Add Série</button>
             </div>
         `).join('');
         lucide.createIcons();
     },
 
+    // In-Workout Ergonomics: Smart Steppers & Fast 1-Touch Adjust
     renderSetRow: (exI, sI, s) => `
-        <div class="flex items-center gap-2 ${s.completed ? 'opacity-30 grayscale' : ''} transition-all">
-            <button onclick="app.cycleSetType(${exI},${sI})" class="w-9 h-9 flex items-center justify-center glass text-[9px] font-black text-[#00FF9D] uppercase italic shrink-0">${s.type[0]}</button>
-            <div class="flex-1 grid grid-cols-3 gap-1.5 h-10">
-                <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white"></div>
-                <div class="flex items-center glass px-1"><input onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white"></div>
-                <div class="flex items-center glass px-1 bg-white/[0.01]"><input onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="numeric" value="${s.rpe}" class="w-full text-center text-[9px] font-black text-gray-600 focus:outline-none" placeholder="RPE"></div>
+        <div class="space-y-1.5 p-2 rounded-2xl bg-black/40 border border-white/5 ${s.completed ? 'opacity-40 grayscale' : ''} transition-all">
+            <div class="flex items-center gap-2">
+                <button onclick="app.cycleSetType(${exI},${sI})" class="w-8 h-9 flex items-center justify-center glass text-[9px] font-black text-[#00FF9D] uppercase italic shrink-0" title="Tipo de Série">${s.type[0]}</button>
+                <div class="flex-1 grid grid-cols-3 gap-1.5 h-9">
+                    <div class="flex items-center glass px-1">
+                        <input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white" placeholder="KG">
+                    </div>
+                    <div class="flex items-center glass px-1">
+                        <input onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white" placeholder="REPS">
+                    </div>
+                    <div class="flex items-center glass px-1 bg-white/[0.01]">
+                        <input onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="numeric" value="${s.rpe}" class="w-full text-center text-[9px] font-black text-gray-600 focus:outline-none" placeholder="RPE">
+                    </div>
+                </div>
+                <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}">
+                    <i data-lucide="check" class="w-4 h-4 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
+                </button>
             </div>
-            <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}">
-                <i data-lucide="check" class="w-4 h-4 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
-            </button>
+            <!-- Tactile Smart Stepper Controls (1-Hand Workout Use) -->
+            <div class="flex items-center justify-between gap-1 px-1">
+                <div class="flex items-center gap-1">
+                    <button onclick="app.stepWeight(${exI},${sI},-5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-gray-400">-5</button>
+                    <button onclick="app.stepWeight(${exI},${sI},-2.5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-gray-400">-2.5</button>
+                    <span class="text-[7px] uppercase font-mono text-gray-600 font-black">KG</span>
+                    <button onclick="app.stepWeight(${exI},${sI},2.5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-[#00FF9D]">+2.5</button>
+                    <button onclick="app.stepWeight(${exI},${sI},5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-[#00FF9D]">+5</button>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="app.stepReps(${exI},${sI},-1)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-gray-400">-1</button>
+                    <span class="text-[7px] uppercase font-mono text-gray-600 font-black">REPS</span>
+                    <button onclick="app.stepReps(${exI},${sI},1)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-[#00FF9D]">+1</button>
+                </div>
+            </div>
         </div>
     `,
+
+    stepWeight: (exI, sI, delta) => {
+        if (!app.activeWorkout) return;
+        const set = app.activeWorkout.exercises[exI].sets[sI];
+        set.weight = Math.max(0, Math.round(((parseFloat(set.weight) || 0) + delta) * 10) / 10);
+        if (navigator.vibrate) navigator.vibrate(15);
+        app.renderWorkout();
+        app.saveActiveWorkoutState();
+    },
+
+    stepReps: (exI, sI, delta) => {
+        if (!app.activeWorkout) return;
+        const set = app.activeWorkout.exercises[exI].sets[sI];
+        set.reps = Math.max(0, (parseInt(set.reps) || 0) + delta);
+        if (navigator.vibrate) navigator.vibrate(15);
+        app.renderWorkout();
+        app.saveActiveWorkoutState();
+    },
 
     setRest: (idx) => {
         const cur = app.activeWorkout.exercises[idx].restTime || 90;
@@ -666,6 +811,7 @@ const app = {
             onConfirm: () => {
                 clearInterval(app.timerInterval); 
                 app.stopRestTimer(); 
+                app.releaseWakeLock();
                 app.activeWorkout = null; 
                 app.clearActiveWorkoutState();
                 app.setView('dashboard'); 
@@ -682,6 +828,8 @@ const app = {
 
         clearInterval(app.timerInterval);
         app.stopRestTimer();
+        app.releaseWakeLock();
+        
         let vol = 0;
         const newPRs = [];
         
@@ -698,25 +846,625 @@ const app = {
             (ex.sets || []).forEach(s => { if(s.completed) vol += ((s.weight || 0) * (s.reps || 0)); });
         }
 
-        await db.sessions.add({ 
+        const durationSec = Math.floor((Date.now()-app.startTime)/1000);
+        const recruitment = await app.calculateWorkoutMuscleRecruitment(app.activeWorkout.exercises);
+
+        const sessionData = { 
             planName: app.activeWorkout.name, 
             date: new Date(), 
-            duration: Math.floor((Date.now()-app.startTime)/1000), 
+            duration: durationSec, 
             volume: vol, 
+            effectiveVolume: recruitment.totalEffectiveVolume,
+            recruitment: recruitment,
             exercises: app.activeWorkout.exercises 
-        });
+        };
+
+        const sessId = await db.sessions.add(sessionData);
+        sessionData.id = sessId;
 
         if (newPRs.length > 0) {
             app.showPRNotification(newPRs);
-        } else {
-            app.toast('Treino finalizado com sucesso! Parabéns!', 'success');
         }
+
+        // Exibe o modal sci-fi de resumo pós-treino com o holograma 3D / mapa 2D
+        app.showWorkoutSummaryModal(sessionData);
 
         app.activeWorkout = null; 
         app.clearActiveWorkoutState();
-        app.setView('dashboard'); 
         app.renderHistory(); 
         app.initCharts();
+    },
+
+    // Motor de Cálculo de Volume Efetivo & Fadiga Muscular
+    calculateWorkoutMuscleRecruitment: async (exercises) => {
+        const templates = await db.templates.toArray();
+        const templateMap = Object.fromEntries(templates.map(t => [t.name, t]));
+        
+        const muscleVolumes = {};
+        let totalEffectiveVolume = 0;
+        let completedSetsCount = 0;
+
+        (exercises || []).forEach(ex => {
+            const tmpl = templateMap[ex.name] || {};
+            const primary = tmpl.primary_muscle_group || app.inferMuscleGroupLocal(ex.name, tmpl.target);
+            const secondary = tmpl.secondary_muscle_groups || [];
+
+            (ex.sets || []).forEach(st => {
+                if (st.completed) {
+                    completedSetsCount++;
+                    const w = parseFloat(st.weight) || 0;
+                    const r = parseInt(st.reps) || 0;
+                    const rawVol = (w > 0 ? w : 45) * (r > 0 ? r : 10);
+
+                    // 100% no músculo primário
+                    muscleVolumes[primary] = (muscleVolumes[primary] || 0) + rawVol;
+                    totalEffectiveVolume += rawVol;
+
+                    // 40% nos sinergistas secundários
+                    secondary.forEach(sec => {
+                        const secVol = rawVol * 0.4;
+                        muscleVolumes[sec] = (muscleVolumes[sec] || 0) + secVol;
+                        totalEffectiveVolume += secVol;
+                    });
+                }
+            });
+        });
+
+        const maxVol = Math.max(...Object.values(muscleVolumes), 1);
+        const heatLevels = {};
+        const breakdown = [];
+
+        Object.keys(muscleVolumes).forEach(grp => {
+            const vol = muscleVolumes[grp];
+            const ratio = vol / maxVol;
+            let level = 1;
+            if (ratio > 0.75) level = 4;
+            else if (ratio > 0.45) level = 3;
+            else if (ratio > 0.20) level = 2;
+            heatLevels[grp] = level;
+
+            const grpInfo = app.muscleOntology?.groups?.[grp] || { name: grp };
+            breakdown.push({
+                groupId: grp,
+                name: grpInfo.name || grp,
+                volume: Math.round(vol),
+                level: level,
+                percentage: Math.round(ratio * 100)
+            });
+        });
+
+        breakdown.sort((a, b) => b.volume - a.volume);
+
+        return {
+            muscleVolumes,
+            totalEffectiveVolume: Math.round(totalEffectiveVolume),
+            completedSetsCount,
+            heatLevels,
+            breakdown
+        };
+    },
+
+    inferMuscleGroupLocal: (name, target) => {
+        const n = (name || '').toLowerCase();
+        const t = (target || '').toLowerCase();
+        if (t.includes('peitoral') || n.includes('supino') || n.includes('crucifixo') || n.includes('peck deck')) return 'chest';
+        if (t.includes('dorsal') || n.includes('puxada') || n.includes('pulley') || n.includes('barra fixa') || n.includes('pulldown')) return 'lats';
+        if (t.includes('costas') || n.includes('remada')) return 'upper_back';
+        if (t.includes('trapézio') || n.includes('encolhimento')) return 'traps';
+        if (t.includes('bíceps') || n.includes('rosca')) return 'biceps';
+        if (t.includes('tríceps') || n.includes('testa') || n.includes('corda') || n.includes('paralelas')) return 'triceps';
+        if (t.includes('antebraço') || n.includes('punho')) return 'forearms';
+        if (t.includes('quadríceps') || n.includes('agachamento') || n.includes('leg press') || n.includes('extensora')) return 'quads';
+        if (t.includes('posterior') || n.includes('stiff') || n.includes('flexora') || n.includes('romeno')) return 'hamstrings';
+        if (t.includes('glúteo') || n.includes('elevação pélvica') || n.includes('hip thrust')) return 'glutes';
+        if (t.includes('panturrilha') || n.includes('gêmeos')) return 'calves';
+        if (t.includes('abdômen') || n.includes('abdominal') || n.includes('prancha')) return 'abs';
+        if (t.includes('deltoide') || n.includes('desenvolvimento') || n.includes('elevação lateral')) return 'shoulders_side';
+        return 'upper_back';
+    },
+
+    // Modal de Resumo Pós-Treino & Holograma
+    showWorkoutSummaryModal: (session) => {
+        app.lastSummarySession = session;
+        const modal = document.getElementById('workout-summary-modal');
+        if (!modal) return;
+
+        document.getElementById('summary-workout-title').innerText = session.planName || 'Sessão Finalizada';
+        document.getElementById('summary-volume').innerText = `${(session.volume || 0).toLocaleString()} kg`;
+        document.getElementById('summary-sets').innerText = session.recruitment?.completedSetsCount || 0;
+        
+        const durMin = Math.floor((session.duration || 0) / 60);
+        const durSec = (session.duration || 0) % 60;
+        document.getElementById('summary-duration').innerText = `${durMin.toString().padStart(2,'0')}:${durSec.toString().padStart(2,'0')}`;
+
+        const listEl = document.getElementById('summary-muscles-list');
+        if (listEl) {
+            if (session.recruitment && session.recruitment.breakdown.length > 0) {
+                listEl.innerHTML = session.recruitment.breakdown.map(item => `
+                    <div class="flex items-center justify-between text-[10px] p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${item.level >= 4 ? 'bg-[#ff1744]' : (item.level === 3 ? 'bg-[#ffab00]' : (item.level === 2 ? 'bg-[#00FF9D]' : 'bg-[#00e5ff]'))}"></span>
+                            <span class="font-black text-white uppercase">${app.sanitize(item.name)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full ${item.level >= 4 ? 'bg-[#ff1744]' : (item.level === 3 ? 'bg-[#ffab00]' : (item.level === 2 ? 'bg-[#00FF9D]' : 'bg-[#00e5ff]'))}" style="width: ${item.percentage}%"></div>
+                            </div>
+                            <span class="font-mono text-gray-400 font-bold w-12 text-right">${item.volume}kg</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                listEl.innerHTML = `<div class="text-[9px] text-gray-600 font-bold uppercase p-2">Nenhum dado de recrutamento nesta sessão.</div>`;
+            }
+        }
+
+        modal.classList.remove('hidden');
+        lucide.createIcons();
+
+        // Renderiza visualizador 3D padrão
+        setTimeout(() => {
+            app.switchSummaryHeatmapMode('3d');
+        }, 100);
+    },
+
+    switchSummaryHeatmapMode: (mode) => {
+        const btn3D = document.getElementById('summary-toggle-3d-btn');
+        const btn2D = document.getElementById('summary-toggle-2d-btn');
+        const stage3D = document.getElementById('summary-3d-container');
+        const stage2D = document.getElementById('summary-2d-container');
+
+        if (mode === '3d' && app.graphicMode !== 'tier_2') {
+            if (btn3D) btn3D.className = 'px-2.5 py-1 rounded-lg bg-[#00FF9D]/15 text-[#00FF9D]';
+            if (btn2D) btn2D.className = 'px-2.5 py-1 rounded-lg text-gray-500';
+            if (stage3D) stage3D.classList.remove('hidden');
+            if (stage2D) stage2D.classList.add('hidden');
+            
+            const heat = app.lastSummarySession?.recruitment?.heatLevels || null;
+            app.init3DScene('summary-3d-canvas', heat, true, 'summary');
+        } else {
+            if (btn3D) btn3D.className = 'px-2.5 py-1 rounded-lg text-gray-500';
+            if (btn2D) btn2D.className = 'px-2.5 py-1 rounded-lg bg-[#00FF9D]/15 text-[#00FF9D]';
+            if (stage3D) stage3D.classList.add('hidden');
+            if (stage2D) stage2D.classList.remove('hidden');
+
+            const heat = app.lastSummarySession?.recruitment?.heatLevels || null;
+            app.renderSvgAnatomicalMap('summary-svg-wrapper', 'both', null, heat);
+        }
+    },
+
+    // 2D SVG Anatomical Map Generator & Interactive Filter
+    renderSvgAnatomicalMap: (containerId, view = 'anterior', activeFilter = null, heatLevels = null) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (view === 'both') {
+            container.innerHTML = `
+                <div class="flex items-center justify-around w-full h-full gap-2">
+                    <div class="flex-1 h-full flex flex-col items-center">
+                        <span class="text-[8px] font-mono text-gray-500 uppercase">Frente</span>
+                        ${app.getSvgAnatomicalPaths('anterior', heatLevels, activeFilter)}
+                    </div>
+                    <div class="flex-1 h-full flex flex-col items-center">
+                        <span class="text-[8px] font-mono text-gray-500 uppercase">Costas</span>
+                        ${app.getSvgAnatomicalPaths('posterior', heatLevels, activeFilter)}
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = app.getSvgAnatomicalPaths(view, heatLevels, activeFilter);
+        }
+    },
+
+    getSvgAnatomicalPaths: (view, heatLevels = null, activeFilter = null) => {
+        const getNodeClass = (groupId) => {
+            let cls = 'muscle-node';
+            if (heatLevels && heatLevels[groupId]) {
+                cls += ` heat-${heatLevels[groupId]}`;
+            }
+            if (activeFilter === groupId) {
+                cls += ' active-selected';
+            }
+            return cls;
+        };
+
+        if (view === 'anterior') {
+            return `
+                <svg viewBox="0 0 200 320" class="w-full h-full max-h-52 drop-shadow-md">
+                    <!-- Head & Neck -->
+                    <ellipse cx="100" cy="24" rx="14" ry="17" fill="#151b28" stroke="rgba(255,255,255,0.1)" stroke-width="1.2" />
+                    <!-- Traps Front -->
+                    <polygon points="86,35 114,35 125,48 75,48" data-group="traps" class="${getNodeClass('traps')}" onclick="app.handleMuscleNodeClick('traps')" />
+                    
+                    <!-- Chest -->
+                    <path d="M 100,52 L 126,52 L 132,74 L 100,78 Z" data-group="chest" class="${getNodeClass('chest')}" onclick="app.handleMuscleNodeClick('chest')" />
+                    <path d="M 100,52 L 74,52 L 68,74 L 100,78 Z" data-group="chest" class="${getNodeClass('chest')}" onclick="app.handleMuscleNodeClick('chest')" />
+                    
+                    <!-- Deltoids Front -->
+                    <path d="M 128,50 L 146,56 L 144,76 L 130,68 Z" data-group="shoulders_front" class="${getNodeClass('shoulders_front')}" onclick="app.handleMuscleNodeClick('shoulders_front')" />
+                    <path d="M 72,50 L 54,56 L 56,76 L 70,68 Z" data-group="shoulders_front" class="${getNodeClass('shoulders_front')}" onclick="app.handleMuscleNodeClick('shoulders_front')" />
+                    
+                    <!-- Biceps -->
+                    <path d="M 133,75 L 145,82 L 140,112 L 130,105 Z" data-group="biceps" class="${getNodeClass('biceps')}" onclick="app.handleMuscleNodeClick('biceps')" />
+                    <path d="M 67,75 L 55,82 L 60,112 L 70,105 Z" data-group="biceps" class="${getNodeClass('biceps')}" onclick="app.handleMuscleNodeClick('biceps')" />
+                    
+                    <!-- Forearms Front -->
+                    <path d="M 138,116 L 148,124 L 142,160 L 134,152 Z" data-group="forearms" class="${getNodeClass('forearms')}" onclick="app.handleMuscleNodeClick('forearms')" />
+                    <path d="M 62,116 L 52,124 L 58,160 L 66,152 Z" data-group="forearms" class="${getNodeClass('forearms')}" onclick="app.handleMuscleNodeClick('forearms')" />
+                    
+                    <!-- Rectus Abdominis / Core -->
+                    <rect x="88" y="82" width="24" height="26" rx="4" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
+                    <rect x="89" y="112" width="22" height="28" rx="4" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
+                    <!-- Obliques -->
+                    <path d="M 116,84 L 126,92 L 122,130 L 114,136 Z" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
+                    <path d="M 84,84 L 74,92 L 78,130 L 86,136 Z" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
+                    
+                    <!-- Quadriceps -->
+                    <path d="M 102,150 L 124,150 L 120,210 L 105,210 Z" data-group="quads" class="${getNodeClass('quads')}" onclick="app.handleMuscleNodeClick('quads')" />
+                    <path d="M 98,150 L 76,150 L 80,210 L 95,210 Z" data-group="quads" class="${getNodeClass('quads')}" onclick="app.handleMuscleNodeClick('quads')" />
+                    
+                    <!-- Adductors -->
+                    <polygon points="101,152 106,152 104,195 101,195" data-group="adductors" class="${getNodeClass('adductors')}" onclick="app.handleMuscleNodeClick('adductors')" />
+                    <polygon points="99,152 94,152 96,195 99,195" data-group="adductors" class="${getNodeClass('adductors')}" onclick="app.handleMuscleNodeClick('adductors')" />
+                    
+                    <!-- Calves Front -->
+                    <path d="M 106,222 L 118,222 L 114,280 L 108,280 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
+                    <path d="M 94,222 L 82,222 L 86,280 L 92,280 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
+                </svg>
+            `;
+        } else {
+            return `
+                <svg viewBox="0 0 200 320" class="w-full h-full max-h-52 drop-shadow-md">
+                    <!-- Head Posterior -->
+                    <ellipse cx="100" cy="24" rx="14" ry="17" fill="#151b28" stroke="rgba(255,255,255,0.1)" stroke-width="1.2" />
+                    
+                    <!-- Trapezius -->
+                    <polygon points="100,32 120,44 114,70 100,78 86,70 80,44" data-group="traps" class="${getNodeClass('traps')}" onclick="app.handleMuscleNodeClick('traps')" />
+                    
+                    <!-- Upper Back & Rhomboids -->
+                    <polygon points="100,78 124,72 120,95 100,102 80,95 76,72" data-group="upper_back" class="${getNodeClass('upper_back')}" onclick="app.handleMuscleNodeClick('upper_back')" />
+                    
+                    <!-- Lats -->
+                    <path d="M 122,80 L 134,92 L 126,134 L 114,136 L 118,102 Z" data-group="lats" class="${getNodeClass('lats')}" onclick="app.handleMuscleNodeClick('lats')" />
+                    <path d="M 78,80 L 66,92 L 74,134 L 86,136 L 82,102 Z" data-group="lats" class="${getNodeClass('lats')}" onclick="app.handleMuscleNodeClick('lats')" />
+                    
+                    <!-- Rear Deltoids -->
+                    <path d="M 126,48 L 144,56 L 140,74 L 126,68 Z" data-group="shoulders_rear" class="${getNodeClass('shoulders_rear')}" onclick="app.handleMuscleNodeClick('shoulders_rear')" />
+                    <path d="M 74,48 L 56,56 L 60,74 L 74,68 Z" data-group="shoulders_rear" class="${getNodeClass('shoulders_rear')}" onclick="app.handleMuscleNodeClick('shoulders_rear')" />
+                    
+                    <!-- Triceps -->
+                    <path d="M 134,75 L 145,82 L 140,112 L 131,105 Z" data-group="triceps" class="${getNodeClass('triceps')}" onclick="app.handleMuscleNodeClick('triceps')" />
+                    <path d="M 66,75 L 55,82 L 60,112 L 69,105 Z" data-group="triceps" class="${getNodeClass('triceps')}" onclick="app.handleMuscleNodeClick('triceps')" />
+                    
+                    <!-- Lower Back -->
+                    <polygon points="90,105 110,105 112,140 88,140" data-group="lower_back" class="${getNodeClass('lower_back')}" onclick="app.handleMuscleNodeClick('lower_back')" />
+                    
+                    <!-- Glutes -->
+                    <path d="M 101,142 L 125,142 L 124,178 L 101,178 Z" data-group="glutes" class="${getNodeClass('glutes')}" onclick="app.handleMuscleNodeClick('glutes')" />
+                    <path d="M 99,142 L 75,142 L 76,178 L 99,178 Z" data-group="glutes" class="${getNodeClass('glutes')}" onclick="app.handleMuscleNodeClick('glutes')" />
+                    
+                    <!-- Hamstrings -->
+                    <path d="M 102,182 L 123,182 L 119,228 L 103,228 Z" data-group="hamstrings" class="${getNodeClass('hamstrings')}" onclick="app.handleMuscleNodeClick('hamstrings')" />
+                    <path d="M 98,182 L 77,182 L 81,228 L 97,228 Z" data-group="hamstrings" class="${getNodeClass('hamstrings')}" onclick="app.handleMuscleNodeClick('hamstrings')" />
+                    
+                    <!-- Calves Posterior -->
+                    <path d="M 104,234 L 121,234 L 115,286 L 106,286 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
+                    <path d="M 96,234 L 79,234 L 85,286 L 94,286 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
+                </svg>
+            `;
+        }
+    },
+
+    switchSvgView: (view) => {
+        app.activeSvgView = view;
+        const frontBtn = document.getElementById('svg-view-front-btn');
+        const backBtn = document.getElementById('svg-view-back-btn');
+        if (view === 'anterior') {
+            if (frontBtn) frontBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D]';
+            if (backBtn) backBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-gray-400';
+        } else {
+            if (frontBtn) frontBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-gray-400';
+            if (backBtn) backBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D]';
+        }
+        app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
+    },
+
+    handleMuscleNodeClick: (groupId) => {
+        app.selectMuscleFilter(groupId);
+    },
+
+    selectMuscleFilter: (groupId) => {
+        if (app.activeMuscleFilter === groupId) {
+            app.clearMuscleFilter();
+            return;
+        }
+        app.activeMuscleFilter = groupId;
+        const grpInfo = app.muscleOntology?.groups?.[groupId] || { name: groupId };
+        
+        const filterChip = document.getElementById('library-active-muscle-filter');
+        const filterLabel = document.getElementById('library-filter-muscle-label');
+        if (filterChip && filterLabel) {
+            filterLabel.innerText = grpInfo.name || groupId;
+            filterChip.classList.remove('hidden');
+        }
+
+        if (navigator.vibrate) navigator.vibrate(25);
+        app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
+        app.filterExerciseLibrary();
+        app.toast(`Filtrando por: ${grpInfo.name}`, 'info', 1800);
+    },
+
+    clearMuscleFilter: () => {
+        app.activeMuscleFilter = null;
+        const filterChip = document.getElementById('library-active-muscle-filter');
+        if (filterChip) filterChip.classList.add('hidden');
+        
+        app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, null);
+        app.filterExerciseLibrary();
+    },
+
+    // 3D WebGL Sci-Fi Hologram Viewer Engine (Three.js)
+    init3DScene: (canvasId, heatLevels = null, isInteractive = true, sceneKey = 'library') => {
+        if (typeof THREE === 'undefined') {
+            console.warn('[3D Engine] Three.js não carregado. Fallback para 2D.');
+            return;
+        }
+
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+
+        // Limpa cena anterior se existir
+        app.destroy3DScene(sceneKey);
+
+        const container = canvas.parentElement;
+        const width = container.clientWidth || 320;
+        const height = container.clientHeight || 240;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 0.8, 3.8);
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            alpha: true,
+            antialias: true,
+            powerPreference: 'high-performance'
+        });
+        renderer.setSize(width, height, false);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+        // Iluminação Sci-Fi
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const light1 = new THREE.DirectionalLight(0x00FF9D, 1.2);
+        light1.position.set(3, 4, 3);
+        scene.add(light1);
+
+        const light2 = new THREE.DirectionalLight(0x00e5ff, 0.9);
+        light2.position.set(-3, -2, -3);
+        scene.add(light2);
+
+        // Grid de Holograma no chão
+        const grid = new THREE.GridHelper(5, 10, 0x00FF9D, 0x11221b);
+        grid.position.y = -1.4;
+        scene.add(grid);
+
+        // Constrói o corpo anatômico Sci-Fi Low-Poly
+        const bodyGroup = app.buildHologramBodyMesh(THREE, heatLevels);
+        scene.add(bodyGroup);
+
+        // OrbitControls
+        let controls = null;
+        if (typeof THREE.OrbitControls !== 'undefined') {
+            controls = new THREE.OrbitControls(camera, canvas);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.08;
+            controls.enableZoom = false;
+            controls.autoRotate = (app.graphicMode === 'tier_0');
+            controls.autoRotateSpeed = 2.5;
+            controls.target.set(0, 0.2, 0);
+        }
+
+        let isDragging = false;
+        let prevX = 0;
+        if (!controls) {
+            canvas.onpointerdown = (e) => { isDragging = true; prevX = e.clientX; };
+            window.onpointermove = (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - prevX;
+                    bodyGroup.rotation.y += deltaX * 0.01;
+                    prevX = e.clientX;
+                }
+            };
+            window.onpointerup = () => { isDragging = false; };
+        }
+
+        let animationFrameId = null;
+        const animate = () => {
+            animationFrameId = requestAnimationFrame(animate);
+            if (controls) {
+                controls.update();
+            } else if (!isDragging && app.graphicMode === 'tier_0') {
+                bodyGroup.rotation.y += 0.006;
+            }
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        app.threeScenes[sceneKey] = {
+            scene,
+            camera,
+            renderer,
+            controls,
+            bodyGroup,
+            animationFrameId,
+            initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
+        };
+    },
+
+    buildHologramBodyMesh: (THREE, heatLevels = null) => {
+        const bodyGroup = new THREE.Group();
+
+        const getMaterial = (groupKey) => {
+            const level = heatLevels ? (heatLevels[groupKey] || 0) : (app.activeMuscleFilter === groupKey ? 3 : 0);
+            let colorHex = 0x141c28;
+            let emissiveHex = 0x000000;
+            let emissiveIntensity = 0.1;
+            let opacity = 0.55;
+
+            if (level === 1) { // Cyan
+                colorHex = 0x00e5ff;
+                emissiveHex = 0x00e5ff;
+                emissiveIntensity = 0.8;
+                opacity = 0.85;
+            } else if (level === 2) { // Neon Mint
+                colorHex = 0x00FF9D;
+                emissiveHex = 0x00FF9D;
+                emissiveIntensity = 1.1;
+                opacity = 0.9;
+            } else if (level === 3) { // Amber
+                colorHex = 0xffab00;
+                emissiveHex = 0xffab00;
+                emissiveIntensity = 1.4;
+                opacity = 0.95;
+            } else if (level >= 4) { // Crimson
+                colorHex = 0xff1744;
+                emissiveHex = 0xff1744;
+                emissiveIntensity = 1.8;
+                opacity = 1.0;
+            }
+
+            return new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: emissiveHex,
+                emissiveIntensity: emissiveIntensity,
+                roughness: 0.3,
+                metalness: 0.4,
+                transparent: true,
+                opacity: opacity
+            });
+        };
+
+        const createPart = (geom, grpKey, pos, rot = [0,0,0], scale = [1,1,1]) => {
+            const mat = getMaterial(grpKey);
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(...pos);
+            mesh.rotation.set(...rot);
+            mesh.scale.set(...scale);
+            mesh.userData = { groupKey: grpKey };
+            bodyGroup.add(mesh);
+            return mesh;
+        };
+
+        // 1. Cabeça
+        createPart(new THREE.IcosahedronGeometry(0.18, 2), 'head', [0, 1.25, 0]);
+
+        // 2. Trapézio / Pescoço
+        createPart(new THREE.CylinderGeometry(0.12, 0.22, 0.16, 6), 'traps', [0, 1.05, -0.02]);
+
+        // 3. Peitoral (Esq / Dir)
+        createPart(new THREE.BoxGeometry(0.19, 0.20, 0.12), 'chest', [0.12, 0.86, 0.08], [0, 0, -0.05]);
+        createPart(new THREE.BoxGeometry(0.19, 0.20, 0.12), 'chest', [-0.12, 0.86, 0.08], [0, 0, 0.05]);
+
+        // 4. Abdômen / Core
+        createPart(new THREE.BoxGeometry(0.24, 0.32, 0.13), 'abs', [0, 0.60, 0.06]);
+
+        // 5. Deltoides (Esq / Dir)
+        createPart(new THREE.SphereGeometry(0.12, 8, 8), 'shoulders_front', [0.30, 0.92, 0.02]);
+        createPart(new THREE.SphereGeometry(0.12, 8, 8), 'shoulders_front', [-0.30, 0.92, 0.02]);
+
+        // 6. Braços (Bíceps / Tríceps)
+        createPart(new THREE.CylinderGeometry(0.08, 0.07, 0.24, 6), 'biceps', [0.34, 0.70, 0.02]);
+        createPart(new THREE.CylinderGeometry(0.08, 0.07, 0.24, 6), 'biceps', [-0.34, 0.70, 0.02]);
+
+        // 7. Antebraços
+        createPart(new THREE.CylinderGeometry(0.07, 0.05, 0.26, 6), 'forearms', [0.36, 0.42, 0.04]);
+        createPart(new THREE.CylinderGeometry(0.07, 0.05, 0.26, 6), 'forearms', [-0.36, 0.42, 0.04]);
+
+        // 8. Costas Superior / Dorsais (Lats)
+        createPart(new THREE.BoxGeometry(0.32, 0.28, 0.12), 'lats', [0, 0.82, -0.07]);
+        createPart(new THREE.BoxGeometry(0.26, 0.20, 0.11), 'lower_back', [0, 0.58, -0.06]);
+
+        // 9. Glúteos
+        createPart(new THREE.SphereGeometry(0.14, 8, 8), 'glutes', [0.12, 0.36, -0.06]);
+        createPart(new THREE.SphereGeometry(0.14, 8, 8), 'glutes', [-0.12, 0.36, -0.06]);
+
+        // 10. Quadríceps / Coxas (Esq / Dir)
+        createPart(new THREE.CylinderGeometry(0.12, 0.09, 0.44, 8), 'quads', [0.15, -0.02, 0.04]);
+        createPart(new THREE.CylinderGeometry(0.12, 0.09, 0.44, 8), 'quads', [-0.15, -0.02, 0.04]);
+
+        // 11. Isquiotibiais (Posterior de Coxa)
+        createPart(new THREE.CylinderGeometry(0.11, 0.08, 0.40, 6), 'hamstrings', [0.15, -0.02, -0.04]);
+        createPart(new THREE.CylinderGeometry(0.11, 0.08, 0.40, 6), 'hamstrings', [-0.15, -0.02, -0.04]);
+
+        // 12. Panturrilhas
+        createPart(new THREE.CylinderGeometry(0.09, 0.06, 0.42, 6), 'calves', [0.16, -0.52, -0.01]);
+        createPart(new THREE.CylinderGeometry(0.09, 0.06, 0.42, 6), 'calves', [-0.16, -0.52, -0.01]);
+
+        return bodyGroup;
+    },
+
+    reset3DCamera: (sceneKey = 'library') => {
+        const entry = app.threeScenes[sceneKey];
+        if (entry) {
+            if (entry.controls) {
+                entry.controls.reset();
+            } else if (entry.bodyGroup) {
+                entry.bodyGroup.rotation.set(0, 0, 0);
+            }
+            entry.camera.position.set(entry.initialCameraPos.x, entry.initialCameraPos.y, entry.initialCameraPos.z);
+        }
+    },
+
+    destroy3DScene: (sceneKey) => {
+        const entry = app.threeScenes[sceneKey];
+        if (entry) {
+            if (entry.animationFrameId) cancelAnimationFrame(entry.animationFrameId);
+            if (entry.controls) entry.controls.dispose();
+            if (entry.renderer) entry.renderer.dispose();
+            delete app.threeScenes[sceneKey];
+        }
+    },
+
+    // Modos de Visualização na Biblioteca
+    setLibraryViewMode: (mode) => {
+        app.libraryViewMode = mode;
+        const btnList = document.getElementById('lib-view-list-btn');
+        const btnMap = document.getElementById('lib-view-map-btn');
+        const btn3D = document.getElementById('lib-view-3d-btn');
+        const mapContainer = document.getElementById('library-map-container');
+        const threeContainer = document.getElementById('library-3d-container');
+
+        if (mode === 'list') {
+            if (btnList) btnList.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all flex items-center justify-center gap-1.5';
+            if (btnMap) btnMap.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (btn3D) btn3D.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (mapContainer) mapContainer.classList.add('hidden');
+            if (threeContainer) threeContainer.classList.add('hidden');
+            app.destroy3DScene('library');
+        } else if (mode === 'map') {
+            if (btnList) btnList.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (btnMap) btnMap.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all flex items-center justify-center gap-1.5';
+            if (btn3D) btn3D.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (mapContainer) mapContainer.classList.remove('hidden');
+            if (threeContainer) threeContainer.classList.add('hidden');
+            app.destroy3DScene('library');
+            app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
+        } else if (mode === '3d') {
+            if (app.graphicMode === 'tier_2') {
+                app.toast('Modo 3D desativado em Tier 2 (Economia). Usando Mapa 2D.', 'info');
+                app.setLibraryViewMode('map');
+                return;
+            }
+            if (btnList) btnList.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (btnMap) btnMap.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (btn3D) btn3D.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all flex items-center justify-center gap-1.5';
+            if (mapContainer) mapContainer.classList.add('hidden');
+            if (threeContainer) threeContainer.classList.remove('hidden');
+            app.init3DScene('library-3d-canvas', null, true, 'library');
+        }
+        lucide.createIcons();
     },
 
     saveActiveWorkoutState: () => {
@@ -766,6 +1514,7 @@ const app = {
             app.startTimer();
             app.renderWorkout();
             app.setView('active-workout');
+            app.requestWakeLock();
             app.toast('Treino recuperado com sucesso!', 'success');
         } catch (e) {
             console.error('[Recovery] Erro ao retomar treino:', e);
@@ -849,7 +1598,15 @@ const app = {
         
         let exercises = await db.templates.toArray();
         
-        // Filtros
+        // Filtro por Músculo Interativo do Mapa 2D/3D
+        if (app.activeMuscleFilter) {
+            exercises = exercises.filter(x => 
+                x.primary_muscle_group === app.activeMuscleFilter || 
+                (x.secondary_muscle_groups && x.secondary_muscle_groups.includes(app.activeMuscleFilter))
+            );
+        }
+
+        // Filtros suspensos
         if (filterBodyPart) {
             exercises = exercises.filter(x => x.body_part === filterBodyPart);
         }
@@ -1009,7 +1766,6 @@ const app = {
             histList.innerHTML = `<div class="p-8 text-center text-gray-600 text-xs font-bold uppercase tracking-wider">Nenhum treino registrado com este exercício ainda.</div>`;
         }
         
-        // Default to steps tab
         app.switchDetailTab('steps');
         
         // GIF de execução
@@ -1179,11 +1935,14 @@ const app = {
     closeModal: (id) => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
+        if (id === 'workout-summary-modal') {
+            app.destroy3DScene('summary');
+        }
     },
 
     exportData: async () => {
         const data = { 
-            version: 4.12,
+            version: 5.0,
             timestamp: new Date().toISOString(),
             plans: await db.plans.toArray(), 
             sessions: await db.sessions.toArray(), 
@@ -1224,6 +1983,28 @@ const app = {
 
     clearAllData: () => { 
         app.confirmClearAllData();
+    },
+
+    confirmClearAllData: () => {
+        app.showConfirmDialog({
+            title: 'Limpar Todos os Dados',
+            subtitle: 'Zona de Perigo',
+            message: 'Tem certeza absoluta? Todos os seus treinos, rotinas, recordes e exercícios serão apagados deste dispositivo permanentemente.',
+            confirmText: 'Sim, Apagar Tudo',
+            cancelText: 'Cancelar',
+            isDanger: true,
+            onConfirm: async () => {
+                await Promise.all([
+                    db.plans.clear(),
+                    db.sessions.clear(),
+                    db.templates.clear(),
+                    db.records.clear()
+                ]);
+                localStorage.clear();
+                app.toast('Todos os dados foram resetados.', 'info');
+                setTimeout(() => location.reload(), 600);
+            }
+        });
     },
 
     renderHistory: async () => {

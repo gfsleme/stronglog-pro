@@ -1,7 +1,7 @@
-/* StrongLog Pro - Service Worker v4.12 */
+/* StrongLog Pro - Service Worker v5.0 */
 /* Release Date: 2026-08-19 */
 
-const CACHE_NAME = 'stronglog-pro-v4.12';
+const CACHE_NAME = 'stronglog-pro-v5.0';
 const ASSETS = [
   './',
   './index.html',
@@ -9,10 +9,13 @@ const ASSETS = [
   './app.js',
   './manifest.json',
   './data/exercises.min.json',
+  './data/muscle_ontology.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/dexie@latest/dist/dexie.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://unpkg.com/lucide@latest',
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+  'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap'
 ];
 

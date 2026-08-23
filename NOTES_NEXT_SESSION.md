@@ -1,36 +1,40 @@
 # 🔁 Handover — StrongLog Pro
 
-> Atualizado em: 2026-08-19 23:25 | Por: Antigravity (Líder Técnico & Maestro)
+> Atualizado em: 2026-08-23 18:20 | Por: Antigravity (Líder Técnico & Maestro)
 
 ## Estado atual do projeto
-O **StrongLog Pro v4.12** foi implementado com sucesso e validado em ambiente E2E. A aplicação conta agora com uma **Central de Atualização PWA (1-Click Update)** nos Ajustes, permitindo que o usuário em qualquer celular ou desktop force a atualização imediata do Service Worker e limpe caches transitórios com segurança (sem afetar os dados do IndexedDB). Todos os diálogos nativos (`alert` e `confirm`) foram eliminados e substituídos por um **Sistema Global de Toasts** e **Modais Customizados em Glassmorphism**, além da consolidação da seleção de exercícios da biblioteca por ID imutável.
+O **StrongLog Pro v5.0 (3D Pro: Ergonomia In-Workout, Ontologia Muscular e Anatomia 3D)** foi implementado com sucesso absoluto e validado via testes E2E automatizados. O app agora conta com uma experiência in-workout ergonômica de 1 mão com Smart Steppers táteis (`±2.5kg`, `±5kg`, `±1 rep`, `±5 reps`), Wake Lock API (tela sempre acesa durante o treino), motor de ontologia muscular biomecânica mapeando 1.324 exercícios científicos, cálculo de Volume Efetivo ($V_{\text{eff}}$), Mapa Anatômico 2D SVG vetorial interativo (Frontal/Dorsal) com filtros instantâneos, Visualizador 3D WebGL Sci-Fi (Three.js) com iluminação térmica no pós-treino e seletor de Hardware Tiering (Tier 0, 1 e 2).
 
 ## O que foi feito nesta sessão
-*   **Central de Atualização PWA & 1-Click Update (v4.12)**:
-    *   Implementado painel no modal de Ajustes exibindo a versão ativa (`v4.12`) e botões de ação instantânea: `Verificar Atualizações` e `Forçar Reload (Cache Clean)`.
-    *   Banner flutuante de nova versão no topo da tela com botão de ativação em tempo real via `skipWaiting`.
-    *   Suporte a limpeza atômica de `CacheStorage` e reinicialização do Service Worker para dispositivos móveis com cache agressivo.
-*   **Sistema Global de Notificações Toast (Glassmorphism & Neon Mint)**:
-    *   Motor `app.toast(message, type, duration)` com suporte a estados `success`, `info`, `warning` e `error`.
-    *   Animações fluidas de entrada/saída (`toastIn`, `toastOut`) com backdrop blur e ícones semânticos Lucide.
-*   **Modais Customizados de Confirmação**:
-    *   Componente `#confirm-dialog-modal` estilizado em Glassmorphism escuro com botões estilizados conforme criticidade (perigo/vermelho vs ação/verde).
-    *   Substituição completa de chamadas nativas de `confirm()` (descarte de treino, cancelamento de sessão, exclusão de exercício, exclusão de plano e limpeza geral do app).
-*   **Seleção Imutável por ID (`selectExerciseById`)**:
-    *   Seleção de exercícios e injeção em rotinas / treinos ativos vinculada diretamente ao ID no Dexie/IndexedDB, imune a aspas, caracteres especiais ou colisões de nomes.
+*   **Ergonomia In-Workout & Smart Steppers (v5.0)**:
+    *   Implementados botões incrementais táteis inline na linha de cada série (`-5`, `-2.5`, `+2.5`, `+5` kg e `-1`, `+1` reps), permitindo ajuste com 1 dedo na academia sem acionar o teclado do sistema operacional.
+    *   Integração automática com a **Wake Lock API** (`navigator.wakeLock.request('screen')`), mantendo a tela do celular sempre acesa durante treinos ativos e liberando o lock ao finalizar/cancelar.
+    *   Feedback háptico via `navigator.vibrate` em todas as ações de ajuste, conclusão de série e filtros.
+*   **Ontologia Anatômica & Motor de Fadiga Muscular**:
+    *   Desenvolvido script `scripts/generate_muscle_ontology.py` mapeando 1.324 exercícios científicos para 24 grupos anatômicos canônicos e sinergistas secundários.
+    *   Implementado cálculo em tempo real de **Volume Efetivo** ($V_{\text{eff}}$ = 100% primário + 40% secundários) e níveis de ativação térmica (Heat levels 0 a 4).
+*   **Visualizador 3D WebGL Sci-Fi (Three.js) & Mapa 2D SVG**:
+    *   Desenvolvido modelo holográfico procedural em Three.js com geometrias low-poly estilizadas, iluminação volumétrica e materiais emissores dinâmicos (Cyan, Neon Mint, Âmbar e Crimson).
+    *   Controles de rotação 360° via touch/mouse e modo de auto-rotação suave.
+    *   Mapa anatômico vetorial 2D (Frontal e Dorsal) no modal de Biblioteca e no Resumo Pós-Treino.
+*   **Modal de Resumo Pós-Treino**:
+    *   Exibição de Volume Total, Séries completas, Duração e o Holograma 3D iluminado pelos músculos recrutados no treino recém-finalizado.
+*   **Hardware Tiering & PWA Offline**:
+    *   Configuração nos Ajustes com 3 níveis de performance: `Tier 0` (3D 60 FPS completo), `Tier 1` (3D sob demanda) e `Tier 2` (2D SVG puro para máxima economia de bateria).
+    *   Service Worker atualizado para armazenar Three.js, OrbitControls e o novo dataset `muscle_ontology.json` em cache offline.
 *   **Validação E2E Automatizada**:
-    *   Testes completos de ciclo de vida (criação de rotina, treino ao vivo, cálculo de 1RM, volume semanal, toasts e diálogos de confirmação) executados via headless browser DevTools com 100% de sucesso.
+    *   Testes completos de ciclo de vida (início de treino, ajustes táteis por steppers, conclusão de séries, cálculo de $V_{\text{eff}}$, exibição do holograma 3D e filtros na biblioteca) executados com 100% de aprovação no Chrome DevTools.
 
 ## ⏳ Pendências (prioridade decrescente)
-1.  **Modularização Opcional do Frontend:** Se a aplicação receber novos submódulos analíticos complexos, separar `app.js` em controladores específicos (`controllers/workout.js`, `controllers/library.js`, `controllers/charts.js`).
-2.  **Exportação em Formato CSV / Excel:** Adicionar opção de exportar o histórico de treinos em formato CSV para análise externa.
+1.  **Exportação em Formato CSV / Excel:** Adicionar opção de exportar o histórico de treinos em formato CSV para análise externa.
+2.  **Visualizador de Recuperação Semanal:** Exibir na aba de Histórico um mapa de calor acumulado dos últimos 7 dias com curva de recuperação temporal ($e^{-\lambda t}$).
 
 ## 🔴 Armadilhas e alertas
-*   **Limpeza de Cache PWA**: A função `forcePwaReload()` limpa apenas o `CacheStorage` do navegador e unregistra o SW antigo; ela NUNCA deve chamar `db.delete()` ou `localStorage.clear()` para não apagar o banco de treinos do usuário.
+*   **Three.js Offline**: As dependências do Three.js e OrbitControls estão pré-cacheadas no Service Worker `stronglog-pro-v5.0`. Em dispositivos de baixo consumo (Tier 2), o app utiliza automaticamente o fallback para o Mapa 2D SVG.
 
 ## 🧩 Contexto técnico importante
 *   **Deploy Host**: URL de produção `https://gfsleme.github.io/stronglog-pro/`.
-*   **Versão**: v4.12 • Cache: `stronglog-pro-v4.12`.
+*   **Versão**: v5.0 • Cache: `stronglog-pro-v5.0`.
 
 ## 💡 Próximo passo recomendado
-*   Efetuar o push para o GitHub Pages e validar no dispositivo móvel a nova experiência de atualização com 1 clique e feedback tátil.
+*   Efetuar commit e git push para o repositório no GitHub para deploy em produção no GitHub Pages.
