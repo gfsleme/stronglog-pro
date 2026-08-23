@@ -94,7 +94,32 @@ const app = {
         app.checkActiveWorkoutRecovery();
         app.initCharts();
         app.initGraphicTier();
+        app.initModalBackdrops();
         lucide.createIcons();
+    },
+
+    initModalBackdrops: () => {
+        const modalIds = [
+            'records-modal',
+            'exercise-library-modal',
+            'exercise-detail-modal',
+            'workout-summary-modal',
+            'custom-exercise-modal',
+            'settings-modal',
+            'confirm-dialog-modal'
+        ];
+        
+        modalIds.forEach(id => {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    const contentCard = e.target.closest('.glass') || e.target.closest('.modal-content');
+                    if (!contentCard || e.target === modal) {
+                        app.closeModal(id);
+                    }
+                });
+            }
+        });
     },
 
     loadMuscleOntology: async () => {
@@ -208,8 +233,10 @@ const app = {
         lucide.createIcons();
 
         setTimeout(() => {
-            toastEl.classList.add('toast-out');
-            setTimeout(() => toastEl.remove(), 250);
+            if (toastEl && toastEl.classList) {
+                toastEl.classList.add('toast-out');
+                setTimeout(() => { if (toastEl && typeof toastEl.remove === 'function') toastEl.remove(); }, 250);
+            }
         }, duration);
     },
 
@@ -347,9 +374,12 @@ const app = {
         
         sessions.forEach(s => {
             (s.exercises || []).forEach(ex => {
-                const bestSet = (ex.sets || []).filter(x => x.completed).sort((a,b) => b.weight - a.weight)[0];
+                const completedSets = (ex.sets || []).filter(x => x.completed && (parseFloat(x.weight) || 0) > 0 && (parseInt(x.reps) || 0) > 0);
+                const bestSet = completedSets.sort((a, b) => app.calculate1RM(b.weight, b.reps) - app.calculate1RM(a.weight, a.reps))[0];
                 if (bestSet) {
-                    if (!recs[ex.name] || bestSet.weight > recs[ex.name].weight) {
+                    const best1RM = app.calculate1RM(bestSet.weight, bestSet.reps);
+                    const existing1RM = recs[ex.name] ? app.calculate1RM(recs[ex.name].weight, recs[ex.name].reps) : 0;
+                    if (!recs[ex.name] || best1RM > existing1RM) {
                         recs[ex.name] = { name: ex.name, weight: bestSet.weight, reps: bestSet.reps, date: s.date };
                     }
                 }
@@ -565,8 +595,8 @@ const app = {
     calculate1RM: (weight, reps) => {
         const w = parseFloat(weight) || 0;
         const r = parseInt(reps) || 0;
-        if (w <= 0) return 0;
-        if (r <= 1) return w;
+        if (w <= 0 || r <= 0) return 0;
+        if (r === 1) return Math.round(w);
         return Math.round(w * (1 + r / 30));
     },
 
@@ -606,11 +636,19 @@ const app = {
         const plan = await db.plans.get(planId);
         if(!plan) return;
         
+        const templates = await db.templates.toArray();
+        const templateMap = Object.fromEntries(templates.map(t => [t.name, t]));
+
         const workoutExercises = [];
         for(let name of plan.exercises) {
             const lastData = await app.getExerciseHistory(name);
+            const tmpl = templateMap[name] || {};
+            const muscleGroup = tmpl.body_part || tmpl.target || tmpl.primary_muscle_group || app.inferMuscleGroupLocal(name, '') || 'Geral';
             workoutExercises.push({
-                name: name, 
+                name: name,
+                muscleGroup: muscleGroup,
+                body_part: tmpl.body_part || muscleGroup,
+                target: tmpl.target || muscleGroup,
                 restTime: 90,
                 historyPreview: lastData ? `${lastData.weight}kg x ${lastData.reps}` : 'Novo',
                 sets: [
@@ -635,7 +673,7 @@ const app = {
         for(let s of sessions) {
             const ex = (s.exercises || []).find(e => e.name === exName);
             if(ex) {
-                const best = [...(ex.sets || [])].filter(x => x.completed).sort((a,b) => (b.weight*b.reps) - (a.weight*a.reps))[0];
+                const best = [...(ex.sets || [])].filter(x => x.completed && (parseFloat(x.weight) || 0) > 0 && (parseInt(x.reps) || 0) > 0).sort((a,b) => app.calculate1RM(b.weight, b.reps) - app.calculate1RM(a.weight, a.reps))[0];
                 if(best) return best;
             }
         }
@@ -646,79 +684,128 @@ const app = {
         const list = document.getElementById('exercise-list');
         if (!list || !app.activeWorkout) return;
 
-        list.innerHTML = app.activeWorkout.exercises.map((ex, exIdx) => `
-            <div class="glass p-6 space-y-4 animate-fade">
+        list.innerHTML = app.activeWorkout.exercises.map((ex, exIdx) => {
+            const muscleTag = ex.muscleGroup || ex.body_part || ex.target || 'Musculação';
+            return `
+            <div class="glass p-6 space-y-4 animate-fade" data-exercise-index="${exIdx}">
                 <div class="flex justify-between items-start">
                     <div>
                         <h4 class="font-black text-[#00FF9D] uppercase tracking-tighter text-lg italic leading-tight">${app.sanitize(ex.name)}</h4>
-                        <div class="flex items-center gap-2 mt-1">
+                        <div class="flex items-center flex-wrap gap-2 mt-1.5">
+                            <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-[#00FF9D]/10 text-[#00FF9D] border border-[#00FF9D]/20">${app.sanitize(muscleTag)}</span>
                             <div class="text-[9px] font-black text-gray-600 uppercase tracking-widest">Base: ${ex.historyPreview}</div>
                             <div class="text-[9px] font-black text-[#00FF9D]/40 uppercase tracking-widest cursor-pointer" onclick="app.setRest(${exIdx})">Descanso: ${ex.restTime}s</div>
                         </div>
                     </div>
-                    <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-800 active:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-700 hover:text-red-500 active:text-red-500 transition-colors" title="Remover Exercício"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
-                <div class="space-y-2.5">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
-                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-4 bg-white/5 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-600 active:bg-white/10 uppercase">+ Add Série</button>
+                <div class="space-y-2.5" id="exercise-sets-container-${exIdx}">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
+                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-3.5 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-400 active:bg-white/15 uppercase transition-all">+ Add Série</button>
             </div>
-        `).join('');
+        `}).join('');
         lucide.createIcons();
     },
 
     // In-Workout Ergonomics: Smart Steppers & Fast 1-Touch Adjust
     renderSetRow: (exI, sI, s) => `
-        <div class="space-y-1.5 p-2 rounded-2xl bg-black/40 border border-white/5 ${s.completed ? 'opacity-40 grayscale' : ''} transition-all">
+        <div class="space-y-2 p-2.5 rounded-2xl bg-black/40 border border-white/5 ${s.completed ? 'opacity-40 grayscale' : ''} transition-all" id="set-row-${exI}-${sI}">
             <div class="flex items-center gap-2">
                 <button onclick="app.cycleSetType(${exI},${sI})" class="w-8 h-9 flex items-center justify-center glass text-[9px] font-black text-[#00FF9D] uppercase italic shrink-0" title="Tipo de Série">${s.type[0]}</button>
                 <div class="flex-1 grid grid-cols-3 gap-1.5 h-9">
                     <div class="flex items-center glass px-1">
-                        <input onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white" placeholder="KG">
+                        <input id="set-weight-input-${exI}-${sI}" onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="KG">
                     </div>
                     <div class="flex items-center glass px-1">
-                        <input onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white" placeholder="REPS">
+                        <input id="set-reps-input-${exI}-${sI}" onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="REPS">
                     </div>
                     <div class="flex items-center glass px-1 bg-white/[0.01]">
-                        <input onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="numeric" value="${s.rpe}" class="w-full text-center text-[9px] font-black text-gray-600 focus:outline-none" placeholder="RPE">
+                        <input id="set-rpe-input-${exI}-${sI}" onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="decimal" step="0.5" min="1" max="10" value="${s.rpe !== undefined ? s.rpe : ''}" class="w-full text-center text-[10px] font-black text-gray-400 focus:text-[#00FF9D] focus:outline-none bg-transparent" placeholder="RPE">
                     </div>
                 </div>
-                <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}">
+                <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}" title="Concluir Série">
                     <i data-lucide="check" class="w-4 h-4 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
                 </button>
+                <button onclick="app.removeSetFromWorkout(${exI},${sI})" class="p-2 text-gray-700 hover:text-red-400 active:text-red-500 transition-colors shrink-0" title="Remover Série">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
-            <!-- Tactile Smart Stepper Controls (1-Hand Workout Use) -->
-            <div class="flex items-center justify-between gap-1 px-1">
-                <div class="flex items-center gap-1">
-                    <button onclick="app.stepWeight(${exI},${sI},-5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-gray-400">-5</button>
-                    <button onclick="app.stepWeight(${exI},${sI},-2.5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-gray-400">-2.5</button>
-                    <span class="text-[7px] uppercase font-mono text-gray-600 font-black">KG</span>
-                    <button onclick="app.stepWeight(${exI},${sI},2.5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-[#00FF9D]">+2.5</button>
-                    <button onclick="app.stepWeight(${exI},${sI},5)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-[#00FF9D]">+5</button>
+            <!-- Tactile Smart Stepper Controls (1-Hand Workout Use, touch targets >= 36px) -->
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                <div class="flex items-center justify-between bg-white/[0.02] p-1 rounded-xl border border-white/5">
+                    <div class="flex items-center gap-1">
+                        <button onclick="app.stepWeight(${exI},${sI},-5)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-5 kg">-5</button>
+                        <button onclick="app.stepWeight(${exI},${sI},-2.5)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-2.5 kg">-2.5</button>
+                    </div>
+                    <span class="text-[7px] uppercase font-mono text-gray-500 font-black px-1">KG</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="app.stepWeight(${exI},${sI},2.5)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+2.5 kg">+2.5</button>
+                        <button onclick="app.stepWeight(${exI},${sI},5)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+5 kg">+5</button>
+                    </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="app.stepReps(${exI},${sI},-1)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-gray-400">-1</button>
-                    <span class="text-[7px] uppercase font-mono text-gray-600 font-black">REPS</span>
-                    <button onclick="app.stepReps(${exI},${sI},1)" class="stepper-btn px-1.5 py-0.5 rounded-md glass text-[8px] font-mono font-bold text-[#00FF9D]">+1</button>
+                <div class="flex items-center justify-between bg-white/[0.02] p-1 rounded-xl border border-white/5">
+                    <div class="flex items-center gap-1">
+                        <button onclick="app.stepReps(${exI},${sI},-5)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-5 reps">-5</button>
+                        <button onclick="app.stepReps(${exI},${sI},-1)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-1 rep">-1</button>
+                    </div>
+                    <span class="text-[7px] uppercase font-mono text-gray-500 font-black px-1">REPS</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="app.stepReps(${exI},${sI},1)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+1 rep">+1</button>
+                        <button onclick="app.stepReps(${exI},${sI},5)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+5 reps">+5</button>
+                    </div>
                 </div>
             </div>
         </div>
     `,
 
     stepWeight: (exI, sI, delta) => {
-        if (!app.activeWorkout) return;
+        if (!app.activeWorkout || !app.activeWorkout.exercises[exI] || !app.activeWorkout.exercises[exI].sets[sI]) return;
         const set = app.activeWorkout.exercises[exI].sets[sI];
-        set.weight = Math.max(0, Math.round(((parseFloat(set.weight) || 0) + delta) * 10) / 10);
+        const newWeight = Math.max(0, Math.round(((parseFloat(set.weight) || 0) + delta) * 10) / 10);
+        set.weight = newWeight;
+        const inputEl = document.getElementById(`set-weight-input-${exI}-${sI}`);
+        if (inputEl) inputEl.value = newWeight;
         if (navigator.vibrate) navigator.vibrate(15);
-        app.renderWorkout();
         app.saveActiveWorkoutState();
     },
 
     stepReps: (exI, sI, delta) => {
-        if (!app.activeWorkout) return;
+        if (!app.activeWorkout || !app.activeWorkout.exercises[exI] || !app.activeWorkout.exercises[exI].sets[sI]) return;
         const set = app.activeWorkout.exercises[exI].sets[sI];
-        set.reps = Math.max(0, (parseInt(set.reps) || 0) + delta);
+        const newReps = Math.max(0, (parseInt(set.reps) || 0) + delta);
+        set.reps = newReps;
+        const inputEl = document.getElementById(`set-reps-input-${exI}-${sI}`);
+        if (inputEl) inputEl.value = newReps;
         if (navigator.vibrate) navigator.vibrate(15);
+        app.saveActiveWorkoutState();
+    },
+
+    removeSetFromWorkout: (exI, sI) => {
+        if (!app.activeWorkout || !app.activeWorkout.exercises[exI]) return;
+        const ex = app.activeWorkout.exercises[exI];
+        if (!ex.sets || !ex.sets[sI]) return;
+        
+        if (ex.sets.length <= 1) {
+            app.showConfirmDialog({
+                title: 'Remover Exercício',
+                subtitle: 'Última série',
+                message: `Esta é a única série de "${ex.name}". Deseja remover o exercício do treino?`,
+                confirmText: 'Remover',
+                cancelText: 'Manter',
+                isDanger: true,
+                onConfirm: () => {
+                    app.activeWorkout.exercises.splice(exI, 1);
+                    app.renderWorkout();
+                    app.saveActiveWorkoutState();
+                    app.toast('Exercício removido do treino.', 'info');
+                }
+            });
+            return;
+        }
+
+        ex.sets.splice(sI, 1);
         app.renderWorkout();
         app.saveActiveWorkoutState();
+        app.toast(`Série ${sI + 1} removida.`, 'info', 1500);
     },
 
     setRest: (idx) => {
@@ -766,8 +853,13 @@ const app = {
 
     addExerciseToActiveWorkout: async (n) => { 
         const lastData = await app.getExerciseHistory(n);
+        const tmpl = await db.templates.where('name').equals(n).first();
+        const muscleGroup = tmpl ? (tmpl.body_part || tmpl.target || tmpl.primary_muscle_group) : (app.inferMuscleGroupLocal(n, '') || 'Geral');
         app.activeWorkout.exercises.push({
             name: n, 
+            muscleGroup: muscleGroup,
+            body_part: tmpl ? tmpl.body_part : muscleGroup,
+            target: tmpl ? tmpl.target : muscleGroup,
             restTime: 90, 
             historyPreview: lastData ? `${lastData.weight}kg x ${lastData.reps}` : 'Novo',
             sets: [{ 
@@ -834,16 +926,21 @@ const app = {
         const newPRs = [];
         
         for (const ex of app.activeWorkout.exercises) {
-            const bestSet = (ex.sets || []).filter(s => s.completed).sort((a,b) => b.weight - a.weight)[0];
+            const completedSets = (ex.sets || []).filter(s => s.completed && (parseFloat(s.weight) || 0) > 0 && (parseInt(s.reps) || 0) > 0);
+            const bestSet = completedSets.sort((a, b) => app.calculate1RM(b.weight, b.reps) - app.calculate1RM(a.weight, a.reps))[0];
             if (bestSet) {
-                const existingRecord = await db.records.get(ex.name);
-                if (!existingRecord || bestSet.weight > existingRecord.weight) {
-                    const recordData = { name: ex.name, weight: bestSet.weight, reps: bestSet.reps, date: new Date() };
-                    await db.records.put(recordData);
-                    newPRs.push(recordData);
+                const best1RM = app.calculate1RM(bestSet.weight, bestSet.reps);
+                if (best1RM > 0) {
+                    const existingRecord = await db.records.get(ex.name);
+                    const existing1RM = existingRecord ? app.calculate1RM(existingRecord.weight, existingRecord.reps) : 0;
+                    if (!existingRecord || best1RM > existing1RM) {
+                        const recordData = { name: ex.name, weight: bestSet.weight, reps: bestSet.reps, date: new Date() };
+                        await db.records.put(recordData);
+                        newPRs.push(recordData);
+                    }
                 }
             }
-            (ex.sets || []).forEach(s => { if(s.completed) vol += ((s.weight || 0) * (s.reps || 0)); });
+            (ex.sets || []).forEach(s => { if(s.completed) vol += ((parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0)); });
         }
 
         const durationSec = Math.floor((Date.now()-app.startTime)/1000);
@@ -892,20 +989,22 @@ const app = {
             (ex.sets || []).forEach(st => {
                 if (st.completed) {
                     completedSetsCount++;
-                    const w = parseFloat(st.weight) || 0;
-                    const r = parseInt(st.reps) || 0;
-                    const rawVol = (w > 0 ? w : 45) * (r > 0 ? r : 10);
+                    const w = Math.max(0, parseFloat(st.weight) || 0);
+                    const r = Math.max(0, parseInt(st.reps) || 0);
+                    const rawVol = w * r;
 
-                    // 100% no músculo primário
-                    muscleVolumes[primary] = (muscleVolumes[primary] || 0) + rawVol;
-                    totalEffectiveVolume += rawVol;
+                    if (rawVol > 0) {
+                        // 100% no músculo primário
+                        muscleVolumes[primary] = (muscleVolumes[primary] || 0) + rawVol;
+                        totalEffectiveVolume += rawVol;
 
-                    // 40% nos sinergistas secundários
-                    secondary.forEach(sec => {
-                        const secVol = rawVol * 0.4;
-                        muscleVolumes[sec] = (muscleVolumes[sec] || 0) + secVol;
-                        totalEffectiveVolume += secVol;
-                    });
+                        // 40% nos sinergistas secundários
+                        secondary.forEach(sec => {
+                            const secVol = rawVol * 0.4;
+                            muscleVolumes[sec] = (muscleVolumes[sec] || 0) + secVol;
+                            totalEffectiveVolume += secVol;
+                        });
+                    }
                 }
             });
         });
@@ -915,12 +1014,23 @@ const app = {
         const breakdown = [];
 
         Object.keys(muscleVolumes).forEach(grp => {
-            const vol = muscleVolumes[grp];
+            const vol = muscleVolumes[grp] || 0;
+            if (vol <= 0) return;
+
             const ratio = vol / maxVol;
             let level = 1;
-            if (ratio > 0.75) level = 4;
-            else if (ratio > 0.45) level = 3;
-            else if (ratio > 0.20) level = 2;
+
+            // Limiares híbridos: volume absoluto mínimo e proporção relativa ao pico da sessão
+            if ((vol >= 800 && ratio >= 0.75) || vol >= 2000) {
+                level = 4; // Crimson - Carga máxima / Sobrecarga
+            } else if ((vol >= 400 && ratio >= 0.45) || vol >= 1000) {
+                level = 3; // Âmbar - Alta intensidade / Estimulação forte
+            } else if ((vol >= 150 && ratio >= 0.20) || vol >= 400) {
+                level = 2; // Neon Mint - Estimulação moderada
+            } else {
+                level = 1; // Cyan - Aquecimento / Ativação leve
+            }
+
             heatLevels[grp] = level;
 
             const grpInfo = app.muscleOntology?.groups?.[grp] || { name: grp };
@@ -961,6 +1071,23 @@ const app = {
         if (t.includes('abdômen') || n.includes('abdominal') || n.includes('prancha')) return 'abs';
         if (t.includes('deltoide') || n.includes('desenvolvimento') || n.includes('elevação lateral')) return 'shoulders_side';
         return 'upper_back';
+    },
+
+    showWorkoutSummaryById: async (id) => {
+        try {
+            const session = await db.sessions.get(Number(id));
+            if (!session) {
+                app.toast('Sessão não encontrada no histórico.', 'error');
+                return;
+            }
+            if (!session.recruitment && session.exercises) {
+                session.recruitment = await app.calculateWorkoutMuscleRecruitment(session.exercises);
+            }
+            app.showWorkoutSummaryModal(session);
+        } catch (e) {
+            console.error('[History] Erro ao carregar resumo da sessão:', e);
+            app.toast('Erro ao abrir resumo do treino.', 'error');
+        }
     },
 
     // Modal de Resumo Pós-Treino & Holograma
@@ -1217,6 +1344,8 @@ const app = {
         app.destroy3DScene(sceneKey);
 
         const container = canvas.parentElement;
+        if (!container) return;
+
         const width = container.clientWidth || 320;
         const height = container.clientHeight || 240;
 
@@ -1254,30 +1383,52 @@ const app = {
         const bodyGroup = app.buildHologramBodyMesh(THREE, heatLevels);
         scene.add(bodyGroup);
 
-        // OrbitControls
+        // OrbitControls ou Fallback Pointer Listeners
         let controls = null;
+        let pointerListeners = null;
+        let isDragging = false;
+        let prevX = 0;
+
         if (typeof THREE.OrbitControls !== 'undefined') {
             controls = new THREE.OrbitControls(camera, canvas);
             controls.enableDamping = true;
             controls.dampingFactor = 0.08;
             controls.enableZoom = false;
-            controls.autoRotate = (app.graphicMode === 'tier_0');
+            controls.autoRotate = (isInteractive && app.graphicMode === 'tier_0');
             controls.autoRotateSpeed = 2.5;
             controls.target.set(0, 0.2, 0);
-        }
-
-        let isDragging = false;
-        let prevX = 0;
-        if (!controls) {
-            canvas.onpointerdown = (e) => { isDragging = true; prevX = e.clientX; };
-            window.onpointermove = (e) => {
+        } else {
+            const onDown = (e) => { isDragging = true; prevX = e.clientX; };
+            const onMove = (e) => {
                 if (isDragging) {
                     const deltaX = e.clientX - prevX;
                     bodyGroup.rotation.y += deltaX * 0.01;
                     prevX = e.clientX;
                 }
             };
-            window.onpointerup = () => { isDragging = false; };
+            const onUp = () => { isDragging = false; };
+
+            canvas.addEventListener('pointerdown', onDown);
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+
+            pointerListeners = { onDown, onMove, onUp };
+        }
+
+        // ResizeObserver para manter aspect ratio perfeito e render nítido
+        let resizeObserver = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const cr = entry.contentRect;
+                    if (cr.width > 0 && cr.height > 0) {
+                        camera.aspect = cr.width / cr.height;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(cr.width, cr.height, false);
+                    }
+                }
+            });
+            resizeObserver.observe(container);
         }
 
         let animationFrameId = null;
@@ -1285,7 +1436,7 @@ const app = {
             animationFrameId = requestAnimationFrame(animate);
             if (controls) {
                 controls.update();
-            } else if (!isDragging && app.graphicMode === 'tier_0') {
+            } else if (!isDragging && isInteractive && app.graphicMode === 'tier_0') {
                 bodyGroup.rotation.y += 0.006;
             }
             renderer.render(scene, camera);
@@ -1299,6 +1450,10 @@ const app = {
             controls,
             bodyGroup,
             animationFrameId,
+            resizeObserver,
+            pointerListeners,
+            canvas,
+            container,
             initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
         };
     },
@@ -1421,8 +1576,30 @@ const app = {
         const entry = app.threeScenes[sceneKey];
         if (entry) {
             if (entry.animationFrameId) cancelAnimationFrame(entry.animationFrameId);
+            if (entry.resizeObserver) entry.resizeObserver.disconnect();
+            if (entry.pointerListeners) {
+                if (entry.canvas) entry.canvas.removeEventListener('pointerdown', entry.pointerListeners.onDown);
+                window.removeEventListener('pointermove', entry.pointerListeners.onMove);
+                window.removeEventListener('pointerup', entry.pointerListeners.onUp);
+            }
             if (entry.controls) entry.controls.dispose();
-            if (entry.renderer) entry.renderer.dispose();
+            if (entry.bodyGroup) {
+                entry.bodyGroup.traverse(child => {
+                    if (child.isMesh) {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                    }
+                });
+            }
+            if (entry.renderer) {
+                entry.renderer.dispose();
+            }
             delete app.threeScenes[sceneKey];
         }
     },
@@ -1743,7 +1920,7 @@ const app = {
         const histList = document.getElementById('detail-history-list');
         if (historyData.recentSessions.length > 0) {
             histList.innerHTML = historyData.recentSessions.map(sess => {
-                const bestSessSet = [...sess.sets].sort((a,b) => (b.weight*b.reps) - (a.weight*a.reps))[0];
+                const bestSessSet = [...sess.sets].sort((a,b) => app.calculate1RM(b.weight, b.reps) - app.calculate1RM(a.weight, a.reps))[0];
                 const session1RM = bestSessSet ? app.calculate1RM(bestSessSet.weight, bestSessSet.reps) : 0;
                 return `
                     <div class="glass p-3.5 rounded-xl space-y-2 bg-white/[0.01] border-white/5">
@@ -2007,23 +2184,83 @@ const app = {
         });
     },
 
+    showWorkoutSummaryById: async (id) => {
+        try {
+            const session = await db.sessions.get(Number(id));
+            if (!session) {
+                app.toast('Sessão de treino não encontrada.', 'warning');
+                return;
+            }
+            // Se a sessão antiga não possuir recrutamento pré-calculado, calcula na hora
+            if (!session.recruitment && session.exercises) {
+                session.recruitment = await app.calculateWorkoutMuscleRecruitment(session.exercises);
+            }
+            app.showWorkoutSummaryModal(session);
+        } catch (e) {
+            console.error('[App] Erro ao abrir resumo do treino:', e);
+            app.toast('Erro ao abrir resumo do treino.', 'error');
+        }
+    },
+
     renderHistory: async () => {
         const h = await db.sessions.orderBy('date').reverse().toArray();
         const list = document.getElementById('history-list');
         if (!list) return;
 
+        if (h.length === 0) {
+            list.innerHTML = `
+                <div class="glass p-8 text-center space-y-2 border-white/5">
+                    <i data-lucide="calendar" class="w-8 h-8 text-gray-600 mx-auto"></i>
+                    <p class="text-xs font-black uppercase tracking-widest text-gray-500">Nenhum treino registrado ainda</p>
+                    <p class="text-[10px] text-gray-600 font-bold">Finalize um treino para visualizar o histórico e o mapa 3D.</p>
+                </div>
+            `;
+            lucide.createIcons();
+            return;
+        }
+
         list.innerHTML = h.map(s => `
-            <div class="glass p-6 flex justify-between items-center bg-white/[0.01]">
+            <div onclick="app.showWorkoutSummaryById(${s.id})" class="glass p-5 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.04] cursor-pointer transition-all active:scale-[0.99] border-white/5 group">
                 <div class="space-y-1">
-                    <div class="text-[9px] text-gray-700 font-black uppercase tracking-widest">${new Date(s.date).toLocaleDateString('pt-BR')}</div>
-                    <div class="font-black text-sm uppercase text-white italic">${app.sanitize(s.planName)}</div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] text-gray-500 font-black uppercase tracking-widest">${new Date(s.date).toLocaleDateString('pt-BR')}</span>
+                        <span class="text-[8px] font-mono text-[#00FF9D] bg-[#00FF9D]/10 px-1.5 py-0.5 rounded group-hover:bg-[#00FF9D]/20 transition-all flex items-center gap-1"><i data-lucide="box" class="w-2.5 h-2.5"></i> Resumo 3D</span>
+                    </div>
+                    <div class="font-black text-sm uppercase text-white italic tracking-tight group-hover:text-[#00FF9D] transition-colors">${app.sanitize(s.planName)}</div>
                 </div>
                 <div class="text-right">
-                    <div class="text-xl font-black text-[#00FF9D] italic tracking-tighter">${s.volume.toLocaleString()}<span class="text-[10px] text-gray-700 not-italic ml-1">KG</span></div>
-                    <div class="text-[9px] text-gray-700 font-black uppercase">${Math.floor(s.duration/60)} MIN</div>
+                    <div class="text-xl font-black text-[#00FF9D] italic tracking-tighter">${(s.volume || 0).toLocaleString()}<span class="text-[10px] text-gray-500 not-italic ml-1">KG</span></div>
+                    <div class="text-[9px] text-gray-500 font-black uppercase">${Math.floor((s.duration || 0)/60)} MIN</div>
                 </div>
             </div>
         `).join('');
+        lucide.createIcons();
+    },
+
+    generateDynamicPalette: (count) => {
+        const basePalette = [
+            '#00FF9D', // Peito / Primário (Neon Green)
+            '#00E5FF', // Costas / Dorsal (Cyan)
+            '#7C4DFF', // Ombros / Deltoides (Purple)
+            '#FF9100', // Pernas / Quadríceps (Amber)
+            '#FF4081', // Braços / Bíceps (Pink)
+            '#FF1744', // Trapézio / Glúteos (Coral Red)
+            '#FFD600', // Panturrilhas (Gold)
+            '#00B0FF', // Antebraços / Core (Sky Blue)
+            '#69F0AE', // Mint
+            '#E040FB', // Magenta
+            '#1DE9B6', // Teal
+            '#B388FF'  // Lavender
+        ];
+        if (count <= basePalette.length) {
+            return basePalette.slice(0, count);
+        }
+        const colors = [...basePalette];
+        for (let i = basePalette.length; i < count; i++) {
+            const hue = Math.round((i * 360) / count);
+            colors.push(`hsl(${hue}, 85%, 60%)`);
+        }
+        return colors;
     },
 
     initCharts: async () => {
@@ -2067,27 +2304,44 @@ const app = {
         const muscleData = {};
         sessions.forEach(sess => {
             (sess.exercises || []).forEach(ex => {
-                const group = exToGroup[ex.name] || 'Outros';
+                const group = exToGroup[ex.name] || ex.muscleGroup || ex.body_part || 'Outros';
                 let vol = 0;
                 (ex.sets || []).forEach(st => { if(st.completed) vol += ((st.weight || 0) * (st.reps || 0)); });
-                muscleData[group] = (muscleData[group] || 0) + vol;
+                if (vol > 0) {
+                    muscleData[group] = (muscleData[group] || 0) + vol;
+                }
             });
         });
+
+        const labels = Object.keys(muscleData);
+        const dataValues = Object.values(muscleData);
+        const colors = app.generateDynamicPalette(labels.length);
 
         window.muscleChart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: Object.keys(muscleData),
+                labels: labels.length > 0 ? labels : ['Sem Dados'],
                 datasets: [{
-                    data: Object.values(muscleData),
-                    backgroundColor: ['#00FF9D', '#00cc33', '#009926', '#00661a', '#333333', '#555555', '#777777'],
+                    data: dataValues.length > 0 ? dataValues : [1],
+                    backgroundColor: dataValues.length > 0 ? colors : ['#222222'],
                     borderWidth: 0,
                     cutout: '80%'
                 }]
             },
             options: { 
-                responsive: true, maintainAspectRatio: false, 
-                plugins: { legend: { display: false } } 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: labels.length > 0,
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw.toLocaleString()} kg`;
+                            }
+                        }
+                    }
+                } 
             }
         });
     }

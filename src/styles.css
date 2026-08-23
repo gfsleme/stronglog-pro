@@ -352,17 +352,35 @@ select:focus {
     pointer-events: none;
 }
 
-/* Smart Stepper Tactile Buttons */
+/* Smart Stepper Tactile Buttons (touch targets >= 36px) */
 .stepper-btn {
+    min-height: 36px;
+    min-width: 32px;
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-user-select: none;
     user-select: none;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+.stepper-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .stepper-btn:active {
-    transform: scale(0.88);
+    transform: scale(0.90);
     background: rgba(0, 255, 157, 0.25) !important;
+    border-color: rgba(0, 255, 157, 0.5) !important;
     color: #00FF9D !important;
 }
+
 
 
