@@ -829,7 +829,7 @@ const app = {
         } else {
             app.toast(`Buscando "${name}" na biblioteca...`, 'info', 1500);
             app.showExerciseLibrary('workout');
-            const searchInput = document.getElementById('exercise-search-input');
+            const searchInput = document.getElementById('search-exercise') || document.getElementById('exercise-search-input');
             if (searchInput) {
                 searchInput.value = name;
                 app.filterExerciseLibrary();

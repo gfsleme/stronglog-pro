@@ -210,72 +210,110 @@ select:focus {
     border-bottom-right-radius: 0 !important;
 }
 
-/* Diálogos centralizados flutuantes */
+/* Diálogos centralizados flutuantes (320px a 430px + Desktop) */
 #set-type-picker-modal:not(.hidden),
 #rpe-picker-modal:not(.hidden),
 #confirm-dialog-modal:not(.hidden),
-#custom-exercise-modal:not(.hidden) {
+#custom-exercise-modal:not(.hidden),
+#settings-modal:not(.hidden) {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     padding: 1rem !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
 }
 
 #set-type-picker-modal .glass,
 #rpe-picker-modal .glass,
 #confirm-dialog-modal .glass,
-#custom-exercise-modal .glass {
+#custom-exercise-modal .glass,
+#settings-modal .glass {
     max-width: 380px !important;
     width: 100% !important;
     margin: auto !important;
+    box-sizing: border-box !important;
 }
 
-/* Set Type Badges & Indicators */
+@media (max-width: 360px) {
+    #set-type-picker-modal:not(.hidden),
+    #rpe-picker-modal:not(.hidden),
+    #confirm-dialog-modal:not(.hidden),
+    #custom-exercise-modal:not(.hidden),
+    #settings-modal:not(.hidden) {
+        padding: 0.75rem !important;
+    }
+    #set-type-picker-modal .glass,
+    #rpe-picker-modal .glass,
+    #confirm-dialog-modal .glass,
+    #custom-exercise-modal .glass,
+    #settings-modal .glass {
+        padding: 1.25rem !important;
+    }
+}
+
+/* Set Type Badges & Indicators (High Visibility on Dark Theme) */
 .badge-set-normal {
-    background: rgba(0, 255, 157, 0.12);
+    background: rgba(0, 255, 157, 0.14);
     color: #00FF9D;
-    border: 1px solid rgba(0, 255, 157, 0.3);
+    border: 1px solid rgba(0, 255, 157, 0.35);
+    box-shadow: 0 0 10px rgba(0, 255, 157, 0.15);
+    font-weight: 900;
 }
 .badge-set-warmup {
-    background: rgba(245, 158, 11, 0.12);
+    background: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+    font-weight: 900;
 }
 .badge-set-failure {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.18);
+    color: #ff4d4d;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+    font-weight: 900;
 }
 .badge-set-drop {
-    background: rgba(168, 85, 247, 0.15);
+    background: rgba(168, 85, 247, 0.18);
     color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.35);
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+    font-weight: 900;
 }
 
-/* Stepper Pill Micro Buttons */
+/* Stepper Pill Micro Buttons (Touch Target >= 36px & Ideal Contrast) */
 .stepper-pill {
-    min-height: 32px;
-    padding: 0 6px;
+    min-height: 36px;
+    min-width: 32px;
+    padding: 0 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #d1d5db;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 10px;
     font-weight: 800;
-    transition: all 0.12s ease;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     cursor: pointer;
 }
+.stepper-pill:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
 .stepper-pill:active {
-    transform: scale(0.92);
-    background: rgba(0, 255, 157, 0.2) !important;
-    border-color: rgba(0, 255, 157, 0.4) !important;
+    transform: scale(0.88);
+    background: rgba(0, 255, 157, 0.25) !important;
+    border-color: rgba(0, 255, 157, 0.5) !important;
     color: #00FF9D !important;
+    box-shadow: 0 0 12px rgba(0, 255, 157, 0.35);
 }
 
 /* O rest-timer-overlay centralizado no topo */
