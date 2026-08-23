@@ -1,5 +1,5 @@
-// StrongLog Pro v5.0 - 3D Anatomical Heatmap & In-Workout Ergonomics Engine
-const APP_VERSION = 'v5.0';
+// StrongLog Pro v5.1 - UX Ergonomics, Interactive Guidance & 3D Sci-Fi Engine
+const APP_VERSION = 'v5.1';
 let swRegistration = null;
 let waitingWorker = null;
 
@@ -51,35 +51,29 @@ db.version(4).stores({
 });
 
 const app = {
-    activeWorkout: null, 
-    timerInterval: null, 
-    startTime: null, 
-    restTimerInterval: null, 
-    restTotalTime: 0,
+    activeWorkout: null,
+    editingPlan: { name: '', exercises: [] },
+    timerInterval: null,
+    startTime: null,
+    templates: [],
+    customExercises: [],
+    restTimerInterval: null,
     restRemainingTime: 0,
-    editingPlan: null, 
-    libraryContext: null,
-    searchDebounceTimeout: null,
-    wakeLockSentinel: null,
-    graphicMode: localStorage.getItem('stronglog_graphic_mode') || 'tier_0',
-    libraryViewMode: 'list',
-    activeSvgView: 'anterior',
-    activeMuscleFilter: null,
-    threeScenes: {},
+    restTotalTime: 90,
+    libraryContext: 'library',
+    exerciseFilterDebounce: null,
+    currentDetailTab: 'steps',
     muscleOntology: null,
-    lastSummarySession: null,
-    exerciseTemplates: [
-        { name: 'Supino Reto com Barra', muscleGroup: 'Peito' }, 
-        { name: 'Supino Inclinado com Halter', muscleGroup: 'Peito' },
-        { name: 'Puxada no Pulley Pegada Aberta', muscleGroup: 'Costas' }, 
-        { name: 'Remada Curvada com Barra', muscleGroup: 'Costas' },
-        { name: 'Agachamento Livre', muscleGroup: 'Pernas' }, 
-        { name: 'Leg Press 45', muscleGroup: 'Pernas' },
-        { name: 'Desenvolvimento Militar', muscleGroup: 'Ombros' }, 
-        { name: 'Elevação Lateral com Halter', muscleGroup: 'Ombros' },
-        { name: 'Rosca Martelo com Halter', muscleGroup: 'Braços' }, 
-        { name: 'Tríceps Testa com Barra W', muscleGroup: 'Braços' }
-    ],
+    graphicMode: localStorage.getItem('stronglog_graphic_mode') || 'tier_0',
+    threeScenes: {},
+    libraryViewMode: 'list',
+    svgActiveView: 'anterior',
+    summaryHeatmapMode: '3d',
+    wakeLockSentinel: null,
+    onboardingCurrentSlide: 0,
+    currentHelpTab: 'guide',
+    activeSetPickerTarget: { exI: 0, sI: 0 },
+    activeRpePickerTarget: { exI: 0, sI: 0 },
 
     init: async () => {
         app.updateDate();
@@ -95,6 +89,7 @@ const app = {
         app.initCharts();
         app.initGraphicTier();
         app.initModalBackdrops();
+        app.checkOnboarding();
         lucide.createIcons();
     },
 
@@ -106,7 +101,11 @@ const app = {
             'workout-summary-modal',
             'custom-exercise-modal',
             'settings-modal',
-            'confirm-dialog-modal'
+            'confirm-dialog-modal',
+            'help-modal',
+            'onboarding-modal',
+            'set-type-picker-modal',
+            'rpe-picker-modal'
         ];
         
         modalIds.forEach(id => {
@@ -448,8 +447,28 @@ const app = {
             i.classList.remove('active');
             if(i.dataset.view === view) i.classList.add('active');
         });
-        window.scrollTo(0,0);
+
+        if (view === 'active-workout') {
+            const hasActiveWorkout = app.activeWorkout && app.activeWorkout.exercises && app.activeWorkout.exercises.length > 0;
+            const inactiveCard = document.getElementById('workout-inactive-card');
+            const activeContent = document.getElementById('workout-active-content');
+            if (inactiveCard && activeContent) {
+                if (hasActiveWorkout) {
+                    inactiveCard.classList.add('hidden');
+                    activeContent.classList.remove('hidden');
+                } else {
+                    inactiveCard.classList.remove('hidden');
+                    activeContent.classList.add('hidden');
+                }
+            }
+        }
+
+        if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+            window.scrollTo(0,0);
+        }
     },
+
+    showPlanEditor: () => app.showNewPlanForm(),
 
     showCustomExerciseForm: () => {
         const nameInput = document.getElementById('custom-ex-name');
@@ -514,18 +533,58 @@ const app = {
         if (!list) return;
 
         list.innerHTML = plans.length ? plans.map(p => `
-            <div class="glass p-6 flex justify-between items-center active:scale-[0.98] transition-all animate-fade bg-white/[0.01]">
+            <div class="glass p-5 rounded-2xl flex justify-between items-center active:scale-[0.98] transition-all animate-fade bg-white/[0.01]">
                 <div class="flex-1 cursor-pointer" onclick="app.startWorkout(${p.id})">
-                    <h3 class="font-black text-xl tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
-                    <p class="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mt-1">${(p.exercises || []).length} EXERCÍCIOS</p>
+                    <h3 class="font-black text-lg tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
+                    <p class="text-[9px] text-[#00FF9D]/80 font-black uppercase tracking-[0.2em] mt-1">${(p.exercises || []).length} EXERCÍCIOS · TOQUE P/ TREINAR</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="app.editPlan(${p.id})" class="p-3 glass text-gray-400 hover:text-white active:scale-90"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                    <button onclick="app.deletePlan(${p.id})" class="p-3 glass text-red-500/50 hover:text-red-500 active:scale-90"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="app.editPlan(${p.id})" class="p-3 glass text-gray-400 hover:text-white active:scale-90" title="Editar Rotina"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    <button onclick="app.deletePlan(${p.id})" class="p-3 glass text-red-500/50 hover:text-red-500 active:scale-90" title="Excluir Rotina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             </div>
-        `).join('') : `<div class="p-12 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhuma rotina criada</div>`;
+        `).join('') : `
+            <div class="glass p-6 text-center space-y-4 rounded-3xl border-dashed border-2 border-white/10 bg-white/[0.01]">
+                <div class="w-12 h-12 rounded-2xl bg-[#00FF9D]/10 border border-[#00FF9D]/20 flex items-center justify-center mx-auto text-[#00FF9D]">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </div>
+                <div class="space-y-1">
+                    <h4 class="font-black text-sm uppercase italic tracking-tight text-white">Nenhuma Rotina Criada</h4>
+                    <p class="text-[11px] text-gray-400 leading-relaxed max-w-xs mx-auto">Você pode iniciar um <b>Treino Livre</b> avulso a qualquer momento ou criar uma rotina personalizada com exercícios catalogados.</p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-2 pt-1">
+                    <button onclick="app.showNewPlanForm()" class="bg-[#00FF9D] text-black text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-[#00FF9D]/20">+ Criar Primeira Rotina</button>
+                    <button onclick="app.startFreeWorkout()" class="glass text-white text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:bg-white/10 transition-all">⚡ Treino Livre</button>
+                    <button onclick="app.showHelpModal()" class="glass text-[#00FF9D] text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:bg-white/10 transition-all">📖 Guia de Uso</button>
+                </div>
+            </div>
+        `;
         lucide.createIcons();
+    },
+
+    startFreeWorkout: () => {
+        app.activeWorkout = {
+            id: null,
+            name: 'Treino Livre',
+            startTime: Date.now(),
+            exercises: []
+        };
+        app.startTime = app.activeWorkout.startTime;
+        const nameEl = document.getElementById('active-workout-name');
+        if (nameEl) nameEl.innerText = 'Treino Livre';
+        
+        const inactiveCard = document.getElementById('workout-inactive-card');
+        const activeContent = document.getElementById('workout-active-content');
+        if (inactiveCard) inactiveCard.classList.add('hidden');
+        if (activeContent) activeContent.classList.remove('hidden');
+
+        app.renderWorkout();
+        app.saveActiveWorkoutState();
+        app.setView('active-workout');
+        app.startTimer();
+        app.requestWakeLock();
+        app.showExerciseLibrary('workout');
+        app.toast('Treino Livre iniciado! Escolha seus exercícios.', 'info', 2500);
     },
 
     showNewPlanForm: () => {
@@ -600,31 +659,99 @@ const app = {
         return Math.round(w * (1 + r / 30));
     },
 
-    getExerciseHistoryDetailed: async (exName) => {
-        const record = await db.records.get(exName);
-        const sessions = await db.sessions.orderBy('date').reverse().toArray();
-        const recent = [];
+    calculateEffectiveVolume: (weight, reps, isPrimary = true) => {
+        const w = parseFloat(weight) || 0;
+        const r = parseInt(reps) || 0;
+        if (w <= 0 || r <= 0) return 0;
+        const rawVol = w * r;
+        return isPrimary ? rawVol : Math.round(rawVol * 0.4);
+    },
+
+    calculateWorkoutMuscleRecruitment: async (exercises) => {
+        const templates = await db.templates.toArray();
+        const templateMap = Object.fromEntries(templates.map(t => [t.name, t]));
         
-        for (let s of sessions) {
-            const match = s.exercises && s.exercises.find(e => e.name === exName);
-            if (match) {
-                const validSets = (match.sets || []).filter(st => st.completed);
-                if (validSets.length > 0) {
-                    recent.push({
-                        date: s.date,
-                        planName: s.planName,
-                        sets: validSets
-                    });
-                    if (recent.length >= 5) break;
+        const volumeByGroup = {};
+        let totalEffectiveVolume = 0;
+
+        for (const ex of exercises) {
+            const tmpl = templateMap[ex.name] || {};
+            const primaryGroup = tmpl.primary_muscle_group || app.inferMuscleGroupLocal(ex.name, ex.muscleGroup || ex.body_part) || 'other';
+            const secondaryGroups = tmpl.secondary_muscle_groups || [];
+
+            for (const set of (ex.sets || [])) {
+                if (!set.completed) continue;
+                const setWeight = parseFloat(set.weight) || 0;
+                const setReps = parseInt(set.reps) || 0;
+                if (setWeight <= 0 || setReps <= 0) continue;
+
+                const primaryVol = app.calculateEffectiveVolume(setWeight, setReps, true);
+                if (primaryVol > 0) {
+                    volumeByGroup[primaryGroup] = (volumeByGroup[primaryGroup] || 0) + primaryVol;
+                    totalEffectiveVolume += primaryVol;
+                }
+
+                for (const secGroup of secondaryGroups) {
+                    const secVol = app.calculateEffectiveVolume(setWeight, setReps, false);
+                    if (secVol > 0) {
+                        volumeByGroup[secGroup] = (volumeByGroup[secGroup] || 0) + secVol;
+                        totalEffectiveVolume += secVol;
+                    }
                 }
             }
         }
-        
-        let estimated1RM = 0;
-        if (record && record.weight && record.reps) {
-            estimated1RM = app.calculate1RM(record.weight, record.reps);
+
+        const maxVol = Math.max(...Object.values(volumeByGroup), 0);
+        const heatLevels = {};
+        for (const [group, vol] of Object.entries(volumeByGroup)) {
+            if (vol <= 0) {
+                heatLevels[group] = 0;
+            } else if (vol > 150 && vol >= maxVol * 0.75) {
+                heatLevels[group] = 4; // Crimson (Recrutamento Máximo)
+            } else if (vol >= maxVol * 0.50) {
+                heatLevels[group] = 3; // Amber (Recrutamento Intenso)
+            } else if (vol >= maxVol * 0.25) {
+                heatLevels[group] = 2; // Neon Mint (Recrutamento Efetivo)
+            } else {
+                heatLevels[group] = 1; // Cyan (Recrutamento Leve / Sinergista)
+            }
         }
-        
+
+        return {
+            volumeByGroup,
+            totalEffectiveVolume,
+            heatLevels
+        };
+    },
+
+    getExerciseHistoryDetailed: async (exName) => {
+        const sessions = await db.sessions.orderBy('date').reverse().toArray();
+        const recent = [];
+        let record = await db.records.get(exName);
+        let max1RM = 0;
+
+        for (let s of sessions) {
+            const ex = (s.exercises || []).find(e => e.name === exName);
+            if (ex && ex.sets && ex.sets.length > 0) {
+                const completedSets = ex.sets.filter(st => st.completed && (parseFloat(st.weight) || 0) > 0 && (parseInt(st.reps) || 0) > 0);
+                if (completedSets.length > 0) {
+                    if (recent.length < 5) {
+                        recent.push({
+                            date: s.date,
+                            planName: s.planName,
+                            sets: completedSets
+                        });
+                    }
+                    completedSets.forEach(st => {
+                        const est1RM = app.calculate1RM(st.weight, st.reps);
+                        if (est1RM > max1RM) max1RM = est1RM;
+                    });
+                }
+            }
+        }
+
+        const estimated1RM = record ? Math.max(max1RM, app.calculate1RM(record.weight, record.reps)) : max1RM;
+
         return {
             record,
             estimated1RM,
@@ -661,6 +788,12 @@ const app = {
         app.activeWorkout = { ...plan, startTime: Date.now(), exercises: workoutExercises };
         app.startTime = app.activeWorkout.startTime;
         document.getElementById('active-workout-name').innerText = plan.name;
+        
+        const inactiveCard = document.getElementById('workout-inactive-card');
+        const activeContent = document.getElementById('workout-active-content');
+        if (inactiveCard) inactiveCard.classList.add('hidden');
+        if (activeContent) activeContent.classList.remove('hidden');
+
         app.renderWorkout();
         app.saveActiveWorkoutState();
         app.setView('active-workout');
@@ -680,46 +813,104 @@ const app = {
         return null;
     },
 
+    showExerciseDetailsByName: async (name) => {
+        if (!name) return;
+        let tmpl = await db.templates.where('name').equals(name).first();
+        if (!tmpl) {
+            const all = await db.templates.toArray();
+            const q = name.toLowerCase().trim();
+            tmpl = all.find(t => t.name && t.name.toLowerCase() === q) ||
+                   all.find(t => t.name_en && t.name_en.toLowerCase() === q) ||
+                   all.find(t => t.name && t.name.toLowerCase().includes(q)) ||
+                   all.find(t => q.includes(t.name.toLowerCase()));
+        }
+        if (tmpl && tmpl.id) {
+            app.showExerciseDetails(tmpl.id);
+        } else {
+            app.toast(`Buscando "${name}" na biblioteca...`, 'info', 1500);
+            app.showExerciseLibrary('workout');
+            const searchInput = document.getElementById('exercise-search-input');
+            if (searchInput) {
+                searchInput.value = name;
+                app.filterExerciseLibrary();
+            }
+        }
+    },
+
     renderWorkout: () => {
         const list = document.getElementById('exercise-list');
         if (!list || !app.activeWorkout) return;
 
+        const hasExercises = app.activeWorkout.exercises && app.activeWorkout.exercises.length > 0;
+        const inactiveCard = document.getElementById('workout-inactive-card');
+        const activeContent = document.getElementById('workout-active-content');
+
+        if (!hasExercises) {
+            list.innerHTML = `
+                <div class="glass p-6 text-center space-y-3 rounded-2xl border-dashed border-2 border-white/10">
+                    <p class="text-xs font-black uppercase tracking-wider text-gray-400">Nenhum exercício neste treino</p>
+                    <button onclick="app.showExerciseLibrary('workout')" class="bg-[#00FF9D] text-black text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:scale-95 transition-all">+ Injetar Primeiro Exercício</button>
+                </div>
+            `;
+            return;
+        }
+
+        if (inactiveCard) inactiveCard.classList.add('hidden');
+        if (activeContent) activeContent.classList.remove('hidden');
+
         list.innerHTML = app.activeWorkout.exercises.map((ex, exIdx) => {
             const muscleTag = ex.muscleGroup || ex.body_part || ex.target || 'Musculação';
             return `
-            <div class="glass p-6 space-y-4 animate-fade" data-exercise-index="${exIdx}">
+            <div class="glass p-5 space-y-4 animate-fade" data-exercise-index="${exIdx}">
                 <div class="flex justify-between items-start">
-                    <div>
-                        <h4 class="font-black text-[#00FF9D] uppercase tracking-tighter text-lg italic leading-tight">${app.sanitize(ex.name)}</h4>
-                        <div class="flex items-center flex-wrap gap-2 mt-1.5">
+                    <div class="space-y-1">
+                        <h4 onclick="app.showExerciseDetailsByName('${app.sanitize(ex.name)}')" class="font-black text-[#00FF9D] uppercase tracking-tighter text-base italic leading-tight cursor-pointer hover:underline flex items-center gap-1.5" title="Toque para ver execução e biomecânica">
+                            ${app.sanitize(ex.name)}
+                            <i data-lucide="info" class="w-3.5 h-3.5 opacity-60"></i>
+                        </h4>
+                        <div class="flex items-center flex-wrap gap-2 pt-0.5">
                             <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-[#00FF9D]/10 text-[#00FF9D] border border-[#00FF9D]/20">${app.sanitize(muscleTag)}</span>
-                            <div class="text-[9px] font-black text-gray-600 uppercase tracking-widest">Base: ${ex.historyPreview}</div>
-                            <div class="text-[9px] font-black text-[#00FF9D]/40 uppercase tracking-widest cursor-pointer" onclick="app.setRest(${exIdx})">Descanso: ${ex.restTime}s</div>
+                            <div class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Base: ${ex.historyPreview}</div>
+                            <div class="text-[9px] font-black text-[#00FF9D]/60 uppercase tracking-widest cursor-pointer hover:text-[#00FF9D]" onclick="app.setRest(${exIdx})">Descanso: ${ex.restTime}s</div>
                         </div>
                     </div>
-                    <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-700 hover:text-red-500 active:text-red-500 transition-colors" title="Remover Exercício"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-600 hover:text-red-500 active:text-red-500 transition-colors" title="Remover Exercício"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
+
+                <!-- Table Header for Sets -->
+                <div class="grid grid-cols-12 text-[8px] font-black uppercase text-gray-500 tracking-wider px-2 pt-1 pb-1 border-b border-white/5">
+                    <div class="col-span-2">TIPO</div>
+                    <div class="col-span-3 text-center">CARGA (KG)</div>
+                    <div class="col-span-3 text-center">REPS</div>
+                    <div class="col-span-2 text-center">RPE</div>
+                    <div class="col-span-2 text-right pr-1">CONCLUIR</div>
+                </div>
+
                 <div class="space-y-2.5" id="exercise-sets-container-${exIdx}">${ex.sets.map((s, sIdx) => app.renderSetRow(exIdx, sIdx, s)).join('')}</div>
-                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-3.5 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-400 active:bg-white/15 uppercase transition-all">+ Add Série</button>
+                <button onclick="app.addSetToWorkout(${exIdx})" class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] font-black tracking-[0.3em] text-gray-400 active:bg-white/15 uppercase transition-all">+ Add Série</button>
             </div>
         `}).join('');
         lucide.createIcons();
     },
 
     // In-Workout Ergonomics: Smart Steppers & Fast 1-Touch Adjust
-    renderSetRow: (exI, sI, s) => `
+    renderSetRow: (exI, sI, s) => {
+        const typeBadgeClass = s.type === 'Warmup' ? 'badge-set-warmup' : (s.type === 'Failure' ? 'badge-set-failure' : (s.type === 'Drop' ? 'badge-set-drop' : 'badge-set-normal'));
+        const typeLetter = s.type === 'Warmup' ? 'W' : (s.type === 'Failure' ? 'F' : (s.type === 'Drop' ? 'D' : 'N'));
+
+        return `
         <div class="space-y-2 p-2.5 rounded-2xl bg-black/40 border border-white/5 ${s.completed ? 'opacity-40 grayscale' : ''} transition-all" id="set-row-${exI}-${sI}">
             <div class="flex items-center gap-2">
-                <button onclick="app.cycleSetType(${exI},${sI})" class="w-8 h-9 flex items-center justify-center glass text-[9px] font-black text-[#00FF9D] uppercase italic shrink-0" title="Tipo de Série">${s.type[0]}</button>
+                <button onclick="app.openSetTypePicker(${exI},${sI})" class="w-8 h-9 flex items-center justify-center rounded-xl ${typeBadgeClass} text-[10px] font-black uppercase italic shrink-0 active:scale-90" title="Tipo: ${s.type} (Toque para alterar)">${typeLetter}</button>
                 <div class="flex-1 grid grid-cols-3 gap-1.5 h-9">
                     <div class="flex items-center glass px-1">
-                        <input id="set-weight-input-${exI}-${sI}" onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="KG">
+                        <input id="set-weight-input-${exI}-${sI}" onfocus="this.select()" oninput="app.updateSet(${exI},${sI},'weight',this.value)" onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="KG">
                     </div>
                     <div class="flex items-center glass px-1">
-                        <input id="set-reps-input-${exI}-${sI}" onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="REPS">
+                        <input id="set-reps-input-${exI}-${sI}" onfocus="this.select()" oninput="app.updateSet(${exI},${sI},'reps',this.value)" onchange="app.updateSet(${exI},${sI},'reps',this.value)" type="number" inputmode="numeric" value="${s.reps}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="REPS">
                     </div>
-                    <div class="flex items-center glass px-1 bg-white/[0.01]">
-                        <input id="set-rpe-input-${exI}-${sI}" onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="decimal" step="0.5" min="1" max="10" value="${s.rpe !== undefined ? s.rpe : ''}" class="w-full text-center text-[10px] font-black text-gray-400 focus:text-[#00FF9D] focus:outline-none bg-transparent" placeholder="RPE">
+                    <div class="flex items-center glass px-1 bg-white/[0.01] cursor-pointer" onclick="app.openRpePicker(${exI},${sI})">
+                        <input id="set-rpe-input-${exI}-${sI}" onfocus="this.select()" oninput="app.updateSet(${exI},${sI},'rpe',this.value)" onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="decimal" step="0.5" min="1" max="10" value="${s.rpe !== undefined ? s.rpe : ''}" class="w-full text-center text-[10px] font-black text-gray-300 focus:text-[#00FF9D] focus:outline-none bg-transparent cursor-pointer" placeholder="RPE">
                     </div>
                 </div>
                 <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}" title="Concluir Série">
@@ -755,7 +946,8 @@ const app = {
                 </div>
             </div>
         </div>
-    `,
+    `;
+    },
 
     stepWeight: (exI, sI, delta) => {
         if (!app.activeWorkout || !app.activeWorkout.exercises[exI] || !app.activeWorkout.exercises[exI].sets[sI]) return;
@@ -831,6 +1023,100 @@ const app = {
         app.saveActiveWorkoutState();
     },
 
+    openSetTypePicker: (exI, sI) => {
+        if (!app.activeWorkout || !app.activeWorkout.exercises[exI] || !app.activeWorkout.exercises[exI].sets[sI]) return;
+        app.activeSetPickerTarget = { exI, sI };
+        const cur = app.activeWorkout.exercises[exI].sets[sI].type;
+        const list = document.getElementById('set-type-options-list');
+        if (!list) return;
+
+        const options = [
+            { type: 'Normal', badge: 'badge-set-normal', letter: 'N', title: 'Série Normal', desc: 'Série de trabalho padrão na faixa alvo de hipertrofia.' },
+            { type: 'Warmup', badge: 'badge-set-warmup', letter: 'W', title: 'Aquecimento (Warmup)', desc: 'Carga preparatória leve (não conta no cálculo de fadiga).' },
+            { type: 'Failure', badge: 'badge-set-failure', letter: 'F', title: 'Até a Falha (Failure)', desc: 'Executada até a falha concêntrica total (RPE 10 / RIR 0).' },
+            { type: 'Drop', badge: 'badge-set-drop', letter: 'D', title: 'Drop-set', desc: 'Redução imediata de carga sem descanso pós-falha.' }
+        ];
+
+        list.innerHTML = options.map(opt => `
+            <div onclick="app.selectSetType('${opt.type}')" class="glass p-3.5 rounded-2xl flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all ${cur === opt.type ? 'border-[#00FF9D]/60 bg-[#00FF9D]/10' : 'border-white/5 bg-white/[0.01]'}">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl ${opt.badge} flex items-center justify-center text-xs font-black">${opt.letter}</span>
+                    <div>
+                        <h4 class="font-black text-xs uppercase text-white">${opt.title}</h4>
+                        <p class="text-[9px] text-gray-400">${opt.desc}</p>
+                    </div>
+                </div>
+                ${cur === opt.type ? '<i data-lucide="check" class="w-4 h-4 text-[#00FF9D]"></i>' : ''}
+            </div>
+        `).join('');
+
+        lucide.createIcons();
+        document.getElementById('set-type-picker-modal').classList.remove('hidden');
+    },
+
+    selectSetType: (type) => {
+        const { exI, sI } = app.activeSetPickerTarget;
+        if (app.activeWorkout && app.activeWorkout.exercises[exI] && app.activeWorkout.exercises[exI].sets[sI]) {
+            app.activeWorkout.exercises[exI].sets[sI].type = type;
+            app.renderWorkout();
+            app.saveActiveWorkoutState();
+        }
+        app.closeModal('set-type-picker-modal');
+    },
+
+    openRpePicker: (exI, sI) => {
+        if (!app.activeWorkout || !app.activeWorkout.exercises[exI] || !app.activeWorkout.exercises[exI].sets[sI]) return;
+        app.activeRpePickerTarget = { exI, sI };
+        const cur = parseFloat(app.activeWorkout.exercises[exI].sets[sI].rpe) || null;
+        const list = document.getElementById('rpe-options-list');
+        if (!list) return;
+
+        const scales = [
+            { rpe: 10, rir: 'RIR 0', label: 'Falha Muscular Absoluta', color: 'text-red-400' },
+            { rpe: 9.5, rir: 'RIR 0-1', label: 'Quase Falha (talvez 0.5 rep)', color: 'text-orange-400' },
+            { rpe: 9.0, rir: 'RIR 1', label: 'Esforço Máximo (1 rep reserva)', color: 'text-amber-400' },
+            { rpe: 8.5, rir: 'RIR 1-2', label: 'Esforço Alto (1-2 reps reserva)', color: 'text-amber-300' },
+            { rpe: 8.0, rir: 'RIR 2', label: 'Hipertrofia Ótima (2 reps reserva)', color: 'text-[#00FF9D]' },
+            { rpe: 7.5, rir: 'RIR 2-3', label: 'Esforço Moderado Alto', color: 'text-[#00FF9D]' },
+            { rpe: 7.0, rir: 'RIR 3', label: 'Velocidade e Força Dinâmica', color: 'text-cyan-400' },
+            { rpe: 6.5, rir: 'RIR 3+', label: 'Série Leve / Técnica', color: 'text-blue-400' },
+            { rpe: 6.0, rir: 'RIR 4+', label: 'Aquecimento / Séries Iniciais', color: 'text-gray-400' }
+        ];
+
+        list.innerHTML = `
+            <div onclick="app.selectRpe('')" class="glass p-2.5 rounded-xl flex justify-between items-center cursor-pointer mb-2 border-dashed border-white/10 active:scale-[0.98]">
+                <span class="text-[10px] font-black uppercase text-gray-500">Limpar RPE (Sem valor)</span>
+                ${cur === null ? '<i data-lucide="check" class="w-3.5 h-3.5 text-gray-400"></i>' : ''}
+            </div>
+            ${scales.map(sc => `
+                <div onclick="app.selectRpe(${sc.rpe})" class="glass p-3 rounded-xl flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all ${cur === sc.rpe ? 'border-[#00FF9D]/60 bg-[#00FF9D]/10' : 'border-white/5 bg-white/[0.01]'}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-black font-mono ${sc.color} w-16">RPE ${sc.rpe}</span>
+                        <div>
+                            <div class="text-xs font-black text-white">${sc.label}</div>
+                            <div class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">${sc.rir}</div>
+                        </div>
+                    </div>
+                    ${cur === sc.rpe ? '<i data-lucide="check" class="w-4 h-4 text-[#00FF9D]"></i>' : ''}
+                </div>
+            `).join('')}
+        `;
+
+        lucide.createIcons();
+        document.getElementById('rpe-picker-modal').classList.remove('hidden');
+    },
+
+    selectRpe: (value) => {
+        const { exI, sI } = app.activeRpePickerTarget;
+        if (app.activeWorkout && app.activeWorkout.exercises[exI] && app.activeWorkout.exercises[exI].sets[sI]) {
+            app.activeWorkout.exercises[exI].sets[sI].rpe = value;
+            const inputEl = document.getElementById(`set-rpe-input-${exI}-${sI}`);
+            if (inputEl) inputEl.value = value;
+            app.saveActiveWorkoutState();
+        }
+        app.closeModal('rpe-picker-modal');
+    },
+
     toggleSet: (exI, sI) => {
         const s = app.activeWorkout.exercises[exI].sets[sI];
         s.completed = !s.completed;
@@ -852,6 +1138,19 @@ const app = {
     },
 
     addExerciseToActiveWorkout: async (n) => { 
+        if (!app.activeWorkout) {
+            app.activeWorkout = {
+                id: null,
+                name: 'Treino Livre',
+                startTime: Date.now(),
+                exercises: []
+            };
+            app.startTime = app.activeWorkout.startTime;
+            document.getElementById('active-workout-name').innerText = 'Treino Livre';
+            app.startTimer();
+            app.requestWakeLock();
+        }
+
         const lastData = await app.getExerciseHistory(n);
         const tmpl = await db.templates.where('name').equals(n).first();
         const muscleGroup = tmpl ? (tmpl.body_part || tmpl.target || tmpl.primary_muscle_group) : (app.inferMuscleGroupLocal(n, '') || 'Geral');
@@ -1685,8 +1984,10 @@ const app = {
             app.activeWorkout = session.workout;
             app.startTime = session.startTime || Date.now();
             
-            document.getElementById('workout-recovery-banner').classList.add('hidden');
-            document.getElementById('active-workout-name').innerText = app.activeWorkout.name;
+            const banner = document.getElementById('workout-recovery-banner');
+            if (banner) banner.classList.add('hidden');
+            const nameEl = document.getElementById('active-workout-name');
+            if (nameEl && app.activeWorkout) nameEl.innerText = app.activeWorkout.name;
             
             app.startTimer();
             app.renderWorkout();
@@ -2344,7 +2645,288 @@ const app = {
                 } 
             }
         });
+    },
+
+    // =========================================================================
+    // 📖 ONBOARDING, GUIA INTERATIVO & CENTRAL DE AJUDA
+    // =========================================================================
+
+    checkOnboarding: () => {
+        const onboarded = localStorage.getItem('stronglog_onboarded_v51');
+        if (!onboarded) {
+            setTimeout(() => {
+                app.showOnboarding(false);
+            }, 600);
+        }
+    },
+
+    showOnboarding: (force = true) => {
+        app.onboardingCurrentSlide = 0;
+        app.renderOnboardingSlide();
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+    },
+
+    closeOnboarding: () => {
+        localStorage.setItem('stronglog_onboarded_v51', 'true');
+        document.getElementById('onboarding-modal').classList.add('hidden');
+    },
+
+    nextOnboardingSlide: () => {
+        const total = app.getOnboardingSlides().length;
+        if (app.onboardingCurrentSlide < total - 1) {
+            app.onboardingCurrentSlide++;
+            app.renderOnboardingSlide();
+        } else {
+            app.closeOnboarding();
+            app.toast('Pronto para treinar!', 'success', 2000);
+        }
+    },
+
+    prevOnboardingSlide: () => {
+        if (app.onboardingCurrentSlide > 0) {
+            app.onboardingCurrentSlide--;
+            app.renderOnboardingSlide();
+        }
+    },
+
+    goToOnboardingSlide: (idx) => {
+        app.onboardingCurrentSlide = idx;
+        app.renderOnboardingSlide();
+    },
+
+    getOnboardingSlides: () => [
+        {
+            icon: 'dumbbell',
+            tag: 'Bem-Vindo ao StrongLog Pro',
+            title: 'Base Científica & 1.324 Exercícios',
+            desc: 'Desenvolvido para máxima precisão hipertrófica. Tenha acesso a um catálogo completo com vídeos de execução em GIF, músculos primários e sinergistas mapeados, e funcionamento 100% offline.',
+            highlights: [
+                { icon: 'database', text: '100% Offline First — funciona sem internet na academia' },
+                { icon: 'shield-check', text: 'Privacidade total — seus dados ficam salvos no seu aparelho' },
+                { icon: 'activity', text: 'Anatomia interativa em 2D e Holograma 3D procedural' }
+            ]
+        },
+        {
+            icon: 'zap',
+            tag: 'Praticidade & Foco',
+            title: 'Ergonomia In-Workout de 1 Mão',
+            desc: 'Diga adeus ao teclado virtual desconfortável na academia. O StrongLog Pro foi projetado para ser operado com apenas uma mão entre as séries.',
+            highlights: [
+                { icon: 'sliders', text: 'Smart Steppers táteis: Ajuste rápido de ±2.5kg, ±5kg e ±1 rep' },
+                { icon: 'clock', text: 'Timer de Descanso Automático com avisos sonoros e vibração' },
+                { icon: 'sun', text: 'Wake Lock: Tela sempre acesa durante toda a sessão' }
+            ]
+        },
+        {
+            icon: 'gauge',
+            tag: 'Intensidade & Biomecânica',
+            title: 'Escala RPE e Tipos de Série',
+            desc: 'Monitore o esforço real de cada série usando a escala RPE baseada em Repetições em Reserva (RIR) e registre a natureza de cada repetição.',
+            highlights: [
+                { icon: 'check-circle-2', text: '🟢 Normal (N): Séries principais de hipertrofia' },
+                { icon: 'flame', text: '🟡 Aquecimento (W): Séries preparatórias leves' },
+                { icon: 'alert-octagon', text: '🔴 Até a Falha (F) & 🟣 Drop-sets (D) para exaustão máxima' },
+                { icon: 'target', text: 'RPE 10 = Falha total | RPE 9 = 1 rep reserva | RPE 8 = 2 reps' }
+            ]
+        },
+        {
+            icon: 'box',
+            tag: 'Pós-Treino & Evolução',
+            title: 'Volume Efetivo & Holograma 3D',
+            desc: 'Ao finalizar o treino, o motor científico calcula o Volume Efetivo (Veff), gera seus recordes de 1RM estimada (fórmula de Epley) e ilumina o mapa de calor muscular.',
+            highlights: [
+                { icon: 'trophy', text: 'Hall of Fame: Acompanhe seus Recordes Pessoais (PR)' },
+                { icon: 'layers', text: 'Heatmap Térmico: Ciano, Neon Mint, Âmbar e Coral' },
+                { icon: 'bar-chart-3', text: 'Gráficos semanais e distribuição por grupo muscular' }
+            ]
+        }
+    ],
+
+    renderOnboardingSlide: () => {
+        const slides = app.getOnboardingSlides();
+        const cur = slides[app.onboardingCurrentSlide];
+        const contentEl = document.getElementById('onboarding-slide-content');
+        const dotsEl = document.getElementById('onboarding-dots-container');
+        const prevBtn = document.getElementById('onboarding-prev-btn');
+        const nextBtn = document.getElementById('onboarding-next-btn');
+
+        if (!contentEl || !cur) return;
+
+        contentEl.innerHTML = `
+            <div class="space-y-4">
+                <div class="w-16 h-16 rounded-3xl bg-[#00FF9D]/10 border border-[#00FF9D]/30 flex items-center justify-center text-[#00FF9D] mx-auto shadow-lg shadow-[#00FF9D]/10">
+                    <i data-lucide="${cur.icon}" class="w-8 h-8"></i>
+                </div>
+                <div class="text-center space-y-1.5 px-2">
+                    <span class="text-[9px] font-mono font-bold text-[#00FF9D] bg-[#00FF9D]/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">${cur.tag}</span>
+                    <h3 class="text-xl font-black italic tracking-tighter uppercase text-white leading-tight">${cur.title}</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto">${cur.desc}</p>
+                </div>
+                <div class="space-y-2 pt-2">
+                    ${cur.highlights.map(h => `
+                        <div class="glass p-3 rounded-2xl flex items-center gap-3 bg-white/[0.02] border-white/5">
+                            <span class="p-1.5 rounded-xl bg-white/5 text-[#00FF9D] shrink-0"><i data-lucide="${h.icon}" class="w-4 h-4"></i></span>
+                            <span class="text-xs font-semibold text-gray-300 leading-snug">${h.text}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        if (dotsEl) {
+            dotsEl.innerHTML = slides.map((_, i) => `
+                <button onclick="app.goToOnboardingSlide(${i})" class="h-2 rounded-full transition-all ${i === app.onboardingCurrentSlide ? 'w-6 bg-[#00FF9D]' : 'w-2 bg-white/20'}" title="Slide ${i + 1}"></button>
+            `).join('');
+        }
+
+        if (prevBtn) {
+            prevBtn.classList.toggle('hidden', app.onboardingCurrentSlide === 0);
+        }
+
+        if (nextBtn) {
+            nextBtn.innerText = app.onboardingCurrentSlide === slides.length - 1 ? 'Começar a Treinar 🚀' : 'Próximo →';
+        }
+
+        lucide.createIcons();
+    },
+
+    showHelpModal: () => {
+        app.switchHelpTab('guide');
+        document.getElementById('help-modal').classList.remove('hidden');
+    },
+
+    switchHelpTab: (tab) => {
+        app.currentHelpTab = tab;
+        const btnGuide = document.getElementById('help-tab-guide-btn');
+        const btnRpe = document.getElementById('help-tab-rpe-btn');
+        const btnBio = document.getElementById('help-tab-bio-btn');
+        const content = document.getElementById('help-modal-tab-content');
+
+        if (btnGuide) btnGuide.className = tab === 'guide' ? 'flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all' : 'flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all';
+        if (btnRpe) btnRpe.className = tab === 'rpe' ? 'flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all' : 'flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all';
+        if (btnBio) btnBio.className = tab === 'bio' ? 'flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all' : 'flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all';
+
+        if (!content) return;
+
+        if (tab === 'guide') {
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div class="glass p-4 rounded-2xl space-y-1.5 border-[#00FF9D]/20 bg-[#00FF9D]/5">
+                        <div class="flex items-center gap-2 text-[#00FF9D]">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                            <h4 class="text-xs font-black uppercase tracking-wider text-white">Como Fazer seu Treino</h4>
+                        </div>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">Em 3 passos simples para o treino mais produtivo da sua vida:</p>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-1 bg-white/[0.02] border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-[#00FF9D] text-black font-black text-[10px] flex items-center justify-center">1</span>
+                            <h4 class="text-xs font-black text-white uppercase">Inicie a Sessão</h4>
+                        </div>
+                        <p class="text-[11px] text-gray-400 pl-7">Toque em <b>"Treinar Agora"</b> para um treino livre instantâneo ou selecione uma rotina na tela inicial.</p>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-1 bg-white/[0.02] border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-[#00FF9D] text-black font-black text-[10px] flex items-center justify-center">2</span>
+                            <h4 class="text-xs font-black text-white uppercase">Registre Carga & Repetições</h4>
+                        </div>
+                        <p class="text-[11px] text-gray-400 pl-7">Use os <b>Smart Steppers (±2.5kg, ±1 rep)</b>. Toque no botão de check <b>[✓]</b> para concluir a série e disparar o temporizador de descanso automático.</p>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-1 bg-white/[0.02] border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-[#00FF9D] text-black font-black text-[10px] flex items-center justify-center">3</span>
+                            <h4 class="text-xs font-black text-white uppercase">Finalize & Veja a Anatomia</h4>
+                        </div>
+                        <p class="text-[11px] text-gray-400 pl-7">Toque em <b>"Finalizar Sessão"</b> para salvar os PRs de 1RM e conferir o mapa térmico de ativação muscular em 3D.</p>
+                    </div>
+                </div>
+            `;
+        } else if (tab === 'rpe') {
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div class="glass p-4 rounded-2xl space-y-1 border-white/10">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-[#00FF9D]"></i> O que é a Escala RPE?</h4>
+                        <p class="text-[11px] text-gray-300 leading-relaxed"><b>RPE (Rating of Perceived Exertion)</b> mede a proximidade da falha muscular através das <b>Repetições em Reserva (RIR)</b>.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="glass p-3 rounded-xl border-red-500/20 bg-red-500/5 flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-black text-red-400">RPE 10 (RIR 0)</span>
+                                <p class="text-[10px] text-gray-400">Falha Muscular Concêntrica Total — nenhuma repetição adicional possível.</p>
+                            </div>
+                        </div>
+                        <div class="glass p-3 rounded-xl border-amber-500/20 bg-amber-500/5 flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-black text-amber-400">RPE 9 (RIR 1)</span>
+                                <p class="text-[10px] text-gray-400">Esforço Máximo com 1 repetição restante no tanque. Ideal para força/hipertrofia.</p>
+                            </div>
+                        </div>
+                        <div class="glass p-3 rounded-xl border-[#00FF9D]/20 bg-[#00FF9D]/5 flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-black text-[#00FF9D]">RPE 8 (RIR 2)</span>
+                                <p class="text-[10px] text-gray-400">Zona Áurea de Hipertrofia: 2 repetições em reserva. Alta tensão com fadiga neural controlada.</p>
+                            </div>
+                        </div>
+                        <div class="glass p-3 rounded-xl border-cyan-500/20 bg-cyan-500/5 flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-black text-cyan-400">RPE 7 (RIR 3)</span>
+                                <p class="text-[10px] text-gray-400">Carga moderada/pesada com foco em velocidade e potência de contração.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-2 bg-white/[0.02] border-white/5">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-white">Tipos de Série</h4>
+                        <div class="grid grid-cols-2 gap-2 text-[10px]">
+                            <div class="p-2 rounded-xl badge-set-normal font-bold"><b>[N] Normal:</b> Série alvo efetiva</div>
+                            <div class="p-2 rounded-xl badge-set-warmup font-bold"><b>[W] Aquecimento:</b> Preparação articular</div>
+                            <div class="p-2 rounded-xl badge-set-failure font-bold"><b>[F] Falha:</b> Até esgotamento 100%</div>
+                            <div class="p-2 rounded-xl badge-set-drop font-bold"><b>[D] Drop-set:</b> Sem descanso</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div class="glass p-4 rounded-2xl space-y-1 border-white/10">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2"><i data-lucide="box" class="w-4 h-4 text-[#00FF9D]"></i> Holograma 3D & Volume Efetivo (Veff)</h4>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">O StrongLog Pro utiliza uma matriz biomecânica que calcula o recrutamento muscular ponderado de cada exercício.</p>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-1.5 bg-white/[0.02] border-white/5">
+                        <h4 class="text-xs font-black text-[#00FF9D] uppercase">Cálculo de Volume Efetivo</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">Músculo Primário (Target) recebe <b>100%</b> do volume bruto (Carga × Reps), enquanto músculos sinergistas secundários recebem <b>40%</b>.</p>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-1.5 bg-white/[0.02] border-white/5">
+                        <h4 class="text-xs font-black text-white uppercase">Níveis Térmicos do Heatmap</h4>
+                        <div class="space-y-1 text-[10px]">
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#00e5ff]"></span> <b>Ciano (Heat 1):</b> Estímulo leve / sinergista</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#00FF9D]"></span> <b>Neon Mint (Heat 2):</b> Estímulo efetivo ótimo</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#ffab00]"></span> <b>Âmbar (Heat 3):</b> Estímulo intenso</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#ff1744]"></span> <b>Crimson (Heat 4):</b> Recrutamento e exaustão máxima</div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-3.5 rounded-2xl space-y-1.5 bg-white/[0.02] border-white/5">
+                        <h4 class="text-xs font-black text-white uppercase">1RM Estimada (Fórmula de Epley)</h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">Sua carga máxima teórica para 1 repetição é calculada automaticamente: <b>1RM = Carga × (1 + Reps/30)</b>.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        lucide.createIcons();
     }
 };
 
+window.app = app;
+window.db = db;
+
 window.addEventListener('load', app.init);
+

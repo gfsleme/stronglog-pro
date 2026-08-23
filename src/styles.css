@@ -194,11 +194,13 @@ select:focus {
     letter-spacing: 0.1em;
 }
 
-/* Centralização e largura máxima para modais flutuantes no desktop e mobile */
+/* Centralização e largura máxima para bottom-sheets no desktop e mobile */
 #exercise-detail-modal > div,
 #exercise-library-modal > div,
-#records-modal > div {
-    max-width: 400px !important;
+#records-modal > div,
+#help-modal > div,
+#onboarding-modal > div {
+    max-width: 420px !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) !important;
@@ -206,6 +208,74 @@ select:focus {
     bottom: 0 !important;
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+}
+
+/* Diálogos centralizados flutuantes */
+#set-type-picker-modal:not(.hidden),
+#rpe-picker-modal:not(.hidden),
+#confirm-dialog-modal:not(.hidden),
+#custom-exercise-modal:not(.hidden) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+}
+
+#set-type-picker-modal .glass,
+#rpe-picker-modal .glass,
+#confirm-dialog-modal .glass,
+#custom-exercise-modal .glass {
+    max-width: 380px !important;
+    width: 100% !important;
+    margin: auto !important;
+}
+
+/* Set Type Badges & Indicators */
+.badge-set-normal {
+    background: rgba(0, 255, 157, 0.12);
+    color: #00FF9D;
+    border: 1px solid rgba(0, 255, 157, 0.3);
+}
+.badge-set-warmup {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.badge-set-failure {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+.badge-set-drop {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+/* Stepper Pill Micro Buttons */
+.stepper-pill {
+    min-height: 32px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 800;
+    transition: all 0.12s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+.stepper-pill:active {
+    transform: scale(0.92);
+    background: rgba(0, 255, 157, 0.2) !important;
+    border-color: rgba(0, 255, 157, 0.4) !important;
+    color: #00FF9D !important;
 }
 
 /* O rest-timer-overlay centralizado no topo */

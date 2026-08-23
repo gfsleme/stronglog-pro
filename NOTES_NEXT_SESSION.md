@@ -1,43 +1,45 @@
 # 🔁 Handover — StrongLog Pro
 
-> Atualizado em: 2026-08-23 18:50 | Por: Antigravity (Líder Técnico & Maestro)
+> Atualizado em: 2026-08-23 19:30 | Por: Antigravity (Líder Técnico & Maestro)
 
 ## Estado atual do projeto
-O **StrongLog Pro v5.0 (3D Pro: Ergonomia In-Workout, Ontologia Muscular e Anatomia 3D)** foi concluído, auditado e homologado com **100% de sucesso (13/13 PASS)** pelo Swarm do Maestri (`Atlas`, `Vortex`, `Sentinel`, `Argos`). O código está com deploy atualizado em produção no **GitHub Pages**.
+O **StrongLog Pro v5.1 (Redesign Ergonômico de UI/UX In-Workout, Correção de Botões & Central de Ensino/Onboarding)** foi concluído com sucesso, validado por 19 testes automatizados E2E (**19/19 PASS**) e auditado visualmente em viewport móvel de 390x844px.
 
-A versão v5.0 traz:
-1. **Ergonomia In-Workout de 1 Mão**: Smart Steppers táteis (`±2.5kg`, `±5kg`, `±1 rep`, `±5 reps`) com touch target $\ge 36\text{px}$, atualização pontual do DOM (sem layout thrashing), Wake Lock API e feedback háptico.
-2. **Biomecânica & Volume Efetivo ($V_{\text{eff}}$)**: 1.324 exercícios mapeados, eliminação de fallback incorreto de peso, fórmula de 1RM de Epley blindada e limiares térmicos híbridos para o Heatmap.
-3. **Anatomia 2D & 3D WebGL**: Mapa vetorial SVG frontal/dorsal com filtros rápidos e Holograma Sci-Fi procedural em Three.js (com `ResizeObserver` e gerenciamento limpo de GPU).
-4. **UX & Qualidade de Vida**: Modais com fechamento por toque no backdrop (click-outside), input de RPE decimal (`inputmode="decimal"`), remoção granular de séries e histórico interativo com reabertura do Resumo 3D (`showWorkoutSummaryById`).
+A versão v5.1 traz:
+1. **Redesign Ergonômico In-Workout**:
+   - Cabeçalhos de coluna nas tabelas de séries (`TIPO`, `CARGA (KG)`, `REPS`, `RPE`, `CONCLUIR`).
+   - Micro Smart Steppers (`.stepper-pill`) compactos e integrados, reduzindo drasticamente a poluição visual.
+   - Badges coloridos de Tipo de Série (`[N]` Normal, `[W]` Aquecimento, `[F]` Falha, `[D]` Drop-set).
+   - Bottom navigation com legendas e espaçamento inferior seguro (`pb-40`).
+2. **Correção de Rotas, Botões & Estado**:
+   - Unificação de aliases de rotas (`showPlanEditor` / `showNewPlanForm`).
+   - Card Hero de "Treino Rápido Avulso" no Dashboard e injeção automática de treino livre (`startFreeWorkout`).
+   - Títulos de exercícios clicáveis na tela de treino (`showExerciseDetailsByName`) abrindo o modal biomecânico/GIF.
+   - Botão explícito "Descartar Treino" com confirmação amigável.
+3. **Sistema de Ensino & Onboarding Didático**:
+   - Modal de Onboarding de 4 passos com carrossel dinâmico e flag de persistência.
+   - Central de Ajuda & Biomecânica (`#help-modal`) com 3 abas: *Guia Rápido*, *Tabela RPE / RIR & Tipos de Série* e *Anatomia 3D*.
+   - Popovers seletores de Tipo de Série e RPE com explicações didáticas.
+   - Empty states educativos no Dashboard, Treino Ativo e Histórico.
 
 ## O que foi feito nesta sessão
-*   **Implementação Completa da v5.0**:
-    *   Ergonomia de 1 mão com Smart Steppers, Wake Lock API e persistência no IndexedDB v4.
-    *   Ontologia de 1.324 exercícios e motor de cálculo de Volume Efetivo.
-    *   Visualizador 3D Three.js com iluminação térmica por grupo muscular no pós-treino.
-    *   Hardware Tiering (Tier 0, 1 e 2) e suporte offline via Service Worker.
-*   **Auditoria Rigorosa & Refatoração Multiagente (Maestri Swarm)**:
-    *   Auditoria conduzida pelo `Sentinel` mapeando 13 pontos de melhoria (P1, P2, P3).
-    *   Refatoração de Frontend pelo `Atlas` (steppers táteis $\ge 36\text{px}$, $\pm 5\text{ reps}$, in-place DOM, modais com backdrop dismiss, RPE decimal, active muscle tags, paleta dinâmica HSL).
-    *   Refatoração de Backend/3D pelo `Vortex` (fórmula de $V_{\text{eff}}$ limpa, 1RM Epley real, limiares de calor híbridos, `ResizeObserver` e limpeza Three.js, `showWorkoutSummaryById`).
-    *   Validação E2E automatizada pelo `Sentinel` via [`scripts/run_e2e_qa_suite.js`](file:///C:/Users/Gabriel/OneDrive/Desktop/Projetos%20Python/StrongLog/scripts/run_e2e_qa_suite.js) com resultado **13 PASS / 0 FAIL (100%)**.
-    *   Sincronização de memória e documentação no Obsidian Vault e Canvas pelo `Argos`.
-*   **Governança & Delegação Compulsória no Maestri**:
-    *   Formalizada a Regra Global 11 no `AGENTS.md` e nos fichários do Canvas proibindo execução monolítica do Maestro quando o Swarm estiver conectado.
+*   **Fase 1**: Correção de bindings e botões quebrados em `app.js` e `index.html`.
+*   **Fase 2**: Redesign visual das séries, badges, micro-steppers e cabeçalhos de coluna em `styles.css` e `app.js`.
+*   **Fase 3**: Implementação dos modais de Onboarding, Central de Ajuda, Seletores de Série/RPE e empty states ricos.
+*   **Fase 4**: Expansão da suíte E2E em `scripts/run_e2e_qa_suite.js` (19/19 PASS) e verificação visual no Chrome DevTools.
+*   **Fase 5**: Sincronização em 3 Camadas de Memória (Antigravity, Obsidian e Notas de Sessão).
 
 ## ⏳ Pendências & Roadmap Futuro (prioridade decrescente)
 1.  **Visualizador de Recuperação Semanal:** Exibir na aba de Histórico um mapa de calor acumulado dos últimos 7 dias com curva de recuperação temporal ($e^{-\lambda t}$).
 2.  **Exportação em Formato CSV / Excel:** Adicionar opção de exportar o histórico de treinos em formato CSV para análise externa.
 
 ## 🔴 Armadilhas e alertas
-*   **Limpeza de Cena Three.js**: Sempre utilizar `app.destroy3DScene(context)` ao fechar modais com canvas 3D para desconectar o `ResizeObserver` e liberar recursos da GPU.
-*   **Delegação no Maestri**: Toda nova missão deve obrigatoriamente decompor tarefas para o Swarm (`Atlas` = Frontend, `Vortex` = Backend/3D, `Sentinel` = QA, `Argos` = Memória).
+*   **Modais de Diálogo vs Bottom Sheets**: Modais flutuantes centralizados (`#set-type-picker-modal`, `#rpe-picker-modal`) usam display flex e centralização automática, enquanto modais bottom-sheet usam `bottom: 0`.
 
 ## 🧩 Contexto técnico importante
 *   **Deploy Host**: URL de produção `https://gfsleme.github.io/stronglog-pro/`.
-*   **Versão**: v5.0 • Cache: `stronglog-pro-v5.0`.
-*   **Último Commit**: `87431a6` na branch `main`.
+*   **Versão**: v5.1 • Cache: `stronglog-pro-v5.1`.
 
 ## 💡 Próximo passo recomendado
-*   Utilizar a aplicação em treinos reais na academia para validar a ergonomia dos Smart Steppers com uma mão e colher feedback de usabilidade.
+*   Utilizar a aplicação no celular durante o treino na academia e conferir a fluidez dos novos seletores de RPE e badges de séries.
+

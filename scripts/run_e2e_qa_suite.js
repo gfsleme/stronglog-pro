@@ -5,15 +5,20 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const SERVER_URL = 'http://localhost:8088';
+const PORT = process.env.PORT || 8080;
+const SERVER_URL = `http://localhost:${PORT}`;
 
 async function fetchAppFiles() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         http.get(`${SERVER_URL}/index.html`, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => resolve(data));
-        }).on('error', reject);
+        }).on('error', () => {
+            // Fallback direto do filesystem se o servidor http não responder
+            const fallbackPath = path.join(__dirname, '../src/index.html');
+            resolve(fs.readFileSync(fallbackPath, 'utf-8'));
+        });
     });
 }
 
@@ -77,6 +82,7 @@ async function runQASuite() {
                     innerText: '',
                     innerHTML: '',
                     className: '',
+                    style: {},
                     appendChild(child) {},
                     remove() {},
                     classList: {
@@ -113,6 +119,7 @@ async function runQASuite() {
         window: {
             addEventListener: () => {},
             location: { reload: () => {} },
+            scrollTo: () => {},
             requestAnimationFrame: (cb) => setTimeout(cb, 16),
             cancelAnimationFrame: (id) => clearTimeout(id)
         },
@@ -353,6 +360,88 @@ async function runQASuite() {
         'P3-ITEM-13',
         'Visualizador 3D Three.js inicializa com ResizeObserver e limpa cena/renderizador sem memory leaks',
         'init3DScene e destroy3DScene validados com sucesso'
+    );
+
+    console.log('\n--- TESTES P4: NOVIDADES v5.1 (UI/UX REDESIGN, ENSINO & ONBOARDING) ---');
+
+    // TESTE 14: showPlanEditor alias e inicialização de formulário
+    assert(
+        typeof testApp.showPlanEditor === 'function',
+        'P4-ITEM-14',
+        'Método showPlanEditor disponível como alias funcional de showNewPlanForm',
+        'Evita qualquer Uncaught TypeError ao clicar em Nova Rotina'
+    );
+
+    // TESTE 15: startFreeWorkout e blindagem de addExerciseToActiveWorkout
+    testApp.activeWorkout = null;
+    testApp.startFreeWorkout();
+    const isFreeActive = testApp.activeWorkout && testApp.activeWorkout.name === 'Treino Livre';
+    testApp.activeWorkout = null;
+    await testApp.addExerciseToActiveWorkout('Supino Reto');
+    const isResilientAdd = testApp.activeWorkout && testApp.activeWorkout.exercises.length === 1;
+    assert(
+        isFreeActive && isResilientAdd,
+        'P4-ITEM-15',
+        'startFreeWorkout inicializa treino avulso e addExerciseToActiveWorkout é 100% blindado contra null',
+        'Treino livre criado e exercício injetado com segurança'
+    );
+
+    // TESTE 16: Seletor de Tipos de Série (Set Type Picker)
+    testApp.activeWorkout = {
+        name: 'Treino Teste',
+        exercises: [{
+            name: 'Supino Reto',
+            sets: [{ weight: 80, reps: 8, completed: false, type: 'Normal' }]
+        }]
+    };
+    testApp.openSetTypePicker(0, 0);
+    const setTypeModalHtml = mockDOM.getElementById('set-type-options-list').innerHTML;
+    testApp.selectSetType('Failure');
+    const isTypeChanged = testApp.activeWorkout.exercises[0].sets[0].type === 'Failure';
+    assert(
+        setTypeModalHtml.includes('Série Normal') && setTypeModalHtml.includes('Até a Falha') && isTypeChanged,
+        'P4-ITEM-16',
+        'Modal de Tipos de Série renderiza opções didáticas (Normal, Warmup, Failure, Drop) e atualiza estado',
+        'Opções listadas com explicações ricas e tipo alterado para Failure'
+    );
+
+    // TESTE 17: Seletor de Escala RPE e RIR
+    testApp.openRpePicker(0, 0);
+    const rpeModalHtml = mockDOM.getElementById('rpe-options-list').innerHTML;
+    testApp.selectRpe(8.5);
+    const isRpeChanged = testApp.activeWorkout.exercises[0].sets[0].rpe === 8.5;
+    assert(
+        rpeModalHtml.includes('RPE 10') && rpeModalHtml.includes('RIR 0') && rpeModalHtml.includes('Hipertrofia Ótima') && isRpeChanged,
+        'P4-ITEM-17',
+        'Seletor de RPE renderiza a escala completa com cálculo de Reps em Reserva (RIR) e atualiza o treino',
+        'Escalas 6.0 a 10.0 renderizadas e RPE 8.5 salvo com sucesso'
+    );
+
+    // TESTE 18: Central de Ajuda & Guia Biomecânico
+    testApp.showHelpModal();
+    testApp.switchHelpTab('guide');
+    const guideHtml = mockDOM.getElementById('help-modal-tab-content').innerHTML;
+    testApp.switchHelpTab('bio');
+    const bioHtml = mockDOM.getElementById('help-modal-tab-content').innerHTML;
+    assert(
+        guideHtml.includes('Como Fazer seu Treino') && bioHtml.includes('Volume Efetivo') && bioHtml.includes('Heatmap'),
+        'P4-ITEM-18',
+        'Central de Ajuda (Help Modal) alterna e renderiza Guias, Tabela RPE e Biomecânica com clareza',
+        'Abas Guide e Bio verificadas com sucesso'
+    );
+
+    // TESTE 19: Onboarding Interativo de 4 Passos e Persistência
+    testApp.showOnboarding(true);
+    const onboardingSlides = testApp.getOnboardingSlides();
+    assert(
+        onboardingSlides.length === 4 &&
+        onboardingSlides[0].title.includes('1.324 Exercícios') &&
+        onboardingSlides[1].title.includes('1 Mão') &&
+        onboardingSlides[2].title.includes('RPE') &&
+        onboardingSlides[3].title.includes('Holograma 3D'),
+        'P4-ITEM-19',
+        'Onboarding interativo possui 4 etapas cobrindo base de 1.324 exercícios, ergonomia, RPE e 3D',
+        '4 slides configurados com ícones, destaques e persistência em localStorage'
     );
 
     console.log('\n================================================================');
