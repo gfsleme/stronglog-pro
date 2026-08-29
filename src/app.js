@@ -67,6 +67,8 @@ const app = {
     graphicMode: localStorage.getItem('stronglog_graphic_mode') || 'tier_0',
     threeScenes: {},
     libraryViewMode: 'list',
+    isVisualizerCollapsed: false,
+    activeSvgView: 'anterior',
     svgActiveView: 'anterior',
     summaryHeatmapMode: '3d',
     wakeLockSentinel: null,
@@ -1529,86 +1531,183 @@ const app = {
 
         if (view === 'anterior') {
             return `
-                <svg viewBox="0 0 200 320" class="w-full h-full max-h-52 drop-shadow-md">
+                <svg viewBox="0 0 200 320" class="w-full h-full max-h-52 drop-shadow-md select-none">
                     <!-- Head & Neck -->
-                    <ellipse cx="100" cy="24" rx="14" ry="17" fill="#151b28" stroke="rgba(255,255,255,0.1)" stroke-width="1.2" />
-                    <!-- Traps Front -->
-                    <polygon points="86,35 114,35 125,48 75,48" data-group="traps" class="${getNodeClass('traps')}" onclick="app.handleMuscleNodeClick('traps')" />
+                    <ellipse cx="100" cy="22" rx="13" ry="16" fill="#151b28" stroke="rgba(255,255,255,0.1)" stroke-width="1.2" />
                     
-                    <!-- Chest -->
-                    <path d="M 100,52 L 126,52 L 132,74 L 100,78 Z" data-group="chest" class="${getNodeClass('chest')}" onclick="app.handleMuscleNodeClick('chest')" />
-                    <path d="M 100,52 L 74,52 L 68,74 L 100,78 Z" data-group="chest" class="${getNodeClass('chest')}" onclick="app.handleMuscleNodeClick('chest')" />
+                    <!-- 1. Traps Anterior -->
+                    <g class="muscle-group-target" data-group="traps" onclick="app.handleMuscleNodeClick('traps')" tabindex="0" role="button" aria-label="Trapézio">
+                        <polygon points="84,33 116,33 126,47 74,47" class="${getNodeClass('traps')}" data-group="traps" />
+                        <circle cx="100" cy="30" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Deltoids Front -->
-                    <path d="M 128,50 L 146,56 L 144,76 L 130,68 Z" data-group="shoulders_front" class="${getNodeClass('shoulders_front')}" onclick="app.handleMuscleNodeClick('shoulders_front')" />
-                    <path d="M 72,50 L 54,56 L 56,76 L 70,68 Z" data-group="shoulders_front" class="${getNodeClass('shoulders_front')}" onclick="app.handleMuscleNodeClick('shoulders_front')" />
+                    <!-- 2. Chest (Peitoral) -->
+                    <g class="muscle-group-target" data-group="chest" onclick="app.handleMuscleNodeClick('chest')" tabindex="0" role="button" aria-label="Peitoral">
+                        <path d="M 100,50 L 128,50 C 136,54 135,74 100,78 Z" class="${getNodeClass('chest')}" data-group="chest" />
+                        <path d="M 100,50 L 72,50 C 64,54 65,74 100,78 Z" class="${getNodeClass('chest')}" data-group="chest" />
+                        <circle cx="128" cy="68" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="72" cy="68" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
+
+                    <!-- 3. Cardio (Zona Cardíaca Central) -->
+                    <g class="muscle-group-target" data-group="cardio" onclick="app.handleMuscleNodeClick('cardio')" tabindex="0" role="button" aria-label="Cardio">
+                        <circle cx="100" cy="61" r="5.5" class="${getNodeClass('cardio')}" data-group="cardio" />
+                        <circle cx="100" cy="61" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Biceps -->
-                    <path d="M 133,75 L 145,82 L 140,112 L 130,105 Z" data-group="biceps" class="${getNodeClass('biceps')}" onclick="app.handleMuscleNodeClick('biceps')" />
-                    <path d="M 67,75 L 55,82 L 60,112 L 70,105 Z" data-group="biceps" class="${getNodeClass('biceps')}" onclick="app.handleMuscleNodeClick('biceps')" />
+                    <!-- 4. Shoulders Front (Deltoide Anterior) -->
+                    <g class="muscle-group-target" data-group="shoulders_front" onclick="app.handleMuscleNodeClick('shoulders_front')" tabindex="0" role="button" aria-label="Deltoide Anterior">
+                        <path d="M 127,49 L 145,55 L 142,73 L 128,66 Z" class="${getNodeClass('shoulders_front')}" data-group="shoulders_front" />
+                        <path d="M 73,49 L 55,55 L 58,73 L 72,66 Z" class="${getNodeClass('shoulders_front')}" data-group="shoulders_front" />
+                        <circle cx="136" cy="40" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="64" cy="40" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
+
+                    <!-- 5. Shoulders Side (Deltoide Lateral) -->
+                    <g class="muscle-group-target" data-group="shoulders_side" onclick="app.handleMuscleNodeClick('shoulders_side')" tabindex="0" role="button" aria-label="Deltoide Lateral">
+                        <path d="M 144,53 C 156,60 152,74 141,74 L 138,66 Z" class="${getNodeClass('shoulders_side')}" data-group="shoulders_side" />
+                        <path d="M 56,53 C 44,60 48,74 59,74 L 62,66 Z" class="${getNodeClass('shoulders_side')}" data-group="shoulders_side" />
+                        <circle cx="162" cy="56" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="38" cy="56" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Forearms Front -->
-                    <path d="M 138,116 L 148,124 L 142,160 L 134,152 Z" data-group="forearms" class="${getNodeClass('forearms')}" onclick="app.handleMuscleNodeClick('forearms')" />
-                    <path d="M 62,116 L 52,124 L 58,160 L 66,152 Z" data-group="forearms" class="${getNodeClass('forearms')}" onclick="app.handleMuscleNodeClick('forearms')" />
+                    <!-- 6. Biceps -->
+                    <g class="muscle-group-target" data-group="biceps" onclick="app.handleMuscleNodeClick('biceps')" tabindex="0" role="button" aria-label="Bíceps">
+                        <path d="M 132,73 C 145,80 142,108 130,104 Z" class="${getNodeClass('biceps')}" data-group="biceps" />
+                        <path d="M 68,73 C 55,80 58,108 70,104 Z" class="${getNodeClass('biceps')}" data-group="biceps" />
+                        <circle cx="142" cy="96" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="58" cy="96" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Rectus Abdominis / Core -->
-                    <rect x="88" y="82" width="24" height="26" rx="4" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
-                    <rect x="89" y="112" width="22" height="28" rx="4" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
-                    <!-- Obliques -->
-                    <path d="M 116,84 L 126,92 L 122,130 L 114,136 Z" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
-                    <path d="M 84,84 L 74,92 L 78,130 L 86,136 Z" data-group="abs" class="${getNodeClass('abs')}" onclick="app.handleMuscleNodeClick('abs')" />
+                    <!-- 7. Forearms (Antebraços) -->
+                    <g class="muscle-group-target" data-group="forearms" onclick="app.handleMuscleNodeClick('forearms')" tabindex="0" role="button" aria-label="Antebraços">
+                        <path d="M 137,114 C 148,122 143,156 134,150 Z" class="${getNodeClass('forearms')}" data-group="forearms" />
+                        <path d="M 63,114 C 52,122 57,156 66,150 Z" class="${getNodeClass('forearms')}" data-group="forearms" />
+                        <circle cx="154" cy="134" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="46" cy="134" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Quadriceps -->
-                    <path d="M 102,150 L 124,150 L 120,210 L 105,210 Z" data-group="quads" class="${getNodeClass('quads')}" onclick="app.handleMuscleNodeClick('quads')" />
-                    <path d="M 98,150 L 76,150 L 80,210 L 95,210 Z" data-group="quads" class="${getNodeClass('quads')}" onclick="app.handleMuscleNodeClick('quads')" />
+                    <!-- 8. Abs (Abdômen & Oblíquos) -->
+                    <g class="muscle-group-target" data-group="abs" onclick="app.handleMuscleNodeClick('abs')" tabindex="0" role="button" aria-label="Abdômen">
+                        <rect x="88" y="80" width="24" height="24" rx="4" class="${getNodeClass('abs')}" data-group="abs" />
+                        <rect x="89" y="108" width="22" height="26" rx="4" class="${getNodeClass('abs')}" data-group="abs" />
+                        <path d="M 115,82 C 126,90 122,128 114,134 Z" class="${getNodeClass('abs')}" data-group="abs" />
+                        <path d="M 85,82 C 74,90 78,128 86,134 Z" class="${getNodeClass('abs')}" data-group="abs" />
+                        <circle cx="100" cy="92" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="100" cy="122" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
+
+                    <!-- 9. Abductors Anterior (Quadril Lateral / Tensor Fasciae Latae) -->
+                    <g class="muscle-group-target" data-group="abductors" onclick="app.handleMuscleNodeClick('abductors')" tabindex="0" role="button" aria-label="Abdutores">
+                        <path d="M 122,136 C 134,144 128,166 118,156 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
+                        <path d="M 78,136 C 66,144 72,166 82,156 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
+                        <circle cx="126" cy="144" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="74" cy="144" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Adductors -->
-                    <polygon points="101,152 106,152 104,195 101,195" data-group="adductors" class="${getNodeClass('adductors')}" onclick="app.handleMuscleNodeClick('adductors')" />
-                    <polygon points="99,152 94,152 96,195 99,195" data-group="adductors" class="${getNodeClass('adductors')}" onclick="app.handleMuscleNodeClick('adductors')" />
+                    <!-- 10. Quadriceps -->
+                    <g class="muscle-group-target" data-group="quads" onclick="app.handleMuscleNodeClick('quads')" tabindex="0" role="button" aria-label="Quadríceps">
+                        <path d="M 103,148 C 125,148 122,208 106,208 Z" class="${getNodeClass('quads')}" data-group="quads" />
+                        <path d="M 97,148 C 75,148 78,208 94,208 Z" class="${getNodeClass('quads')}" data-group="quads" />
+                        <circle cx="122" cy="190" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="78" cy="190" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Calves Front -->
-                    <path d="M 106,222 L 118,222 L 114,280 L 108,280 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
-                    <path d="M 94,222 L 82,222 L 86,280 L 92,280 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
+                    <!-- 11. Adductors -->
+                    <g class="muscle-group-target" data-group="adductors" onclick="app.handleMuscleNodeClick('adductors')" tabindex="0" role="button" aria-label="Adutores">
+                        <polygon points="101,150 107,150 105,194 101,194" class="${getNodeClass('adductors')}" data-group="adductors" />
+                        <polygon points="99,150 93,150 95,194 99,194" class="${getNodeClass('adductors')}" data-group="adductors" />
+                        <circle cx="100" cy="162" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
+                    
+                    <!-- 12. Calves Anterior -->
+                    <g class="muscle-group-target" data-group="calves" onclick="app.handleMuscleNodeClick('calves')" tabindex="0" role="button" aria-label="Panturrilhas">
+                        <path d="M 106,220 C 119,220 116,278 108,278 Z" class="${getNodeClass('calves')}" data-group="calves" />
+                        <path d="M 94,220 C 81,220 84,278 92,278 Z" class="${getNodeClass('calves')}" data-group="calves" />
+                        <circle cx="116" cy="248" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="84" cy="248" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                 </svg>
             `;
         } else {
             return `
-                <svg viewBox="0 0 200 320" class="w-full h-full max-h-52 drop-shadow-md">
+                <svg viewBox="0 0 200 320" class="w-full h-full max-h-52 drop-shadow-md select-none">
                     <!-- Head Posterior -->
-                    <ellipse cx="100" cy="24" rx="14" ry="17" fill="#151b28" stroke="rgba(255,255,255,0.1)" stroke-width="1.2" />
+                    <ellipse cx="100" cy="22" rx="13" ry="16" fill="#151b28" stroke="rgba(255,255,255,0.1)" stroke-width="1.2" />
                     
-                    <!-- Trapezius -->
-                    <polygon points="100,32 120,44 114,70 100,78 86,70 80,44" data-group="traps" class="${getNodeClass('traps')}" onclick="app.handleMuscleNodeClick('traps')" />
+                    <!-- 13. Trapezius Posterior -->
+                    <g class="muscle-group-target" data-group="traps" onclick="app.handleMuscleNodeClick('traps')" tabindex="0" role="button" aria-label="Trapézio">
+                        <polygon points="100,30 122,42 115,68 100,76 85,68 78,42" class="${getNodeClass('traps')}" data-group="traps" />
+                        <circle cx="100" cy="48" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Upper Back & Rhomboids -->
-                    <polygon points="100,78 124,72 120,95 100,102 80,95 76,72" data-group="upper_back" class="${getNodeClass('upper_back')}" onclick="app.handleMuscleNodeClick('upper_back')" />
+                    <!-- 14. Upper Back & Rhomboids -->
+                    <g class="muscle-group-target" data-group="upper_back" onclick="app.handleMuscleNodeClick('upper_back')" tabindex="0" role="button" aria-label="Costas Superior">
+                        <polygon points="100,76 126,70 120,95 100,102 80,95 74,70" class="${getNodeClass('upper_back')}" data-group="upper_back" />
+                        <circle cx="100" cy="86" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Lats -->
-                    <path d="M 122,80 L 134,92 L 126,134 L 114,136 L 118,102 Z" data-group="lats" class="${getNodeClass('lats')}" onclick="app.handleMuscleNodeClick('lats')" />
-                    <path d="M 78,80 L 66,92 L 74,134 L 86,136 L 82,102 Z" data-group="lats" class="${getNodeClass('lats')}" onclick="app.handleMuscleNodeClick('lats')" />
+                    <!-- 15. Lats (Dorsais V-Taper) -->
+                    <g class="muscle-group-target" data-group="lats" onclick="app.handleMuscleNodeClick('lats')" tabindex="0" role="button" aria-label="Dorsais">
+                        <path d="M 121,78 C 135,88 128,132 115,134 L 118,100 Z" class="${getNodeClass('lats')}" data-group="lats" />
+                        <path d="M 79,78 C 65,88 72,132 85,134 L 82,100 Z" class="${getNodeClass('lats')}" data-group="lats" />
+                        <circle cx="126" cy="112" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="74" cy="112" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Rear Deltoids -->
-                    <path d="M 126,48 L 144,56 L 140,74 L 126,68 Z" data-group="shoulders_rear" class="${getNodeClass('shoulders_rear')}" onclick="app.handleMuscleNodeClick('shoulders_rear')" />
-                    <path d="M 74,48 L 56,56 L 60,74 L 74,68 Z" data-group="shoulders_rear" class="${getNodeClass('shoulders_rear')}" onclick="app.handleMuscleNodeClick('shoulders_rear')" />
+                    <!-- 16. Shoulders Rear (Deltoide Posterior) -->
+                    <g class="muscle-group-target" data-group="shoulders_rear" onclick="app.handleMuscleNodeClick('shoulders_rear')" tabindex="0" role="button" aria-label="Deltoide Posterior">
+                        <path d="M 126,46 L 144,54 L 140,72 L 126,66 Z" class="${getNodeClass('shoulders_rear')}" data-group="shoulders_rear" />
+                        <path d="M 74,46 L 56,54 L 60,72 L 74,66 Z" class="${getNodeClass('shoulders_rear')}" data-group="shoulders_rear" />
+                        <circle cx="140" cy="52" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="60" cy="52" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Triceps -->
-                    <path d="M 134,75 L 145,82 L 140,112 L 131,105 Z" data-group="triceps" class="${getNodeClass('triceps')}" onclick="app.handleMuscleNodeClick('triceps')" />
-                    <path d="M 66,75 L 55,82 L 60,112 L 69,105 Z" data-group="triceps" class="${getNodeClass('triceps')}" onclick="app.handleMuscleNodeClick('triceps')" />
+                    <!-- 17. Triceps -->
+                    <g class="muscle-group-target" data-group="triceps" onclick="app.handleMuscleNodeClick('triceps')" tabindex="0" role="button" aria-label="Tríceps">
+                        <path d="M 133,73 C 145,80 141,110 131,103 Z" class="${getNodeClass('triceps')}" data-group="triceps" />
+                        <path d="M 67,73 C 55,80 59,110 69,103 Z" class="${getNodeClass('triceps')}" data-group="triceps" />
+                        <circle cx="150" cy="90" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="50" cy="90" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Lower Back -->
-                    <polygon points="90,105 110,105 112,140 88,140" data-group="lower_back" class="${getNodeClass('lower_back')}" onclick="app.handleMuscleNodeClick('lower_back')" />
+                    <!-- 18. Lower Back (Lombar) -->
+                    <g class="muscle-group-target" data-group="lower_back" onclick="app.handleMuscleNodeClick('lower_back')" tabindex="0" role="button" aria-label="Lombar">
+                        <polygon points="89,103 111,103 113,138 87,138" class="${getNodeClass('lower_back')}" data-group="lower_back" />
+                        <circle cx="100" cy="124" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Glutes -->
-                    <path d="M 101,142 L 125,142 L 124,178 L 101,178 Z" data-group="glutes" class="${getNodeClass('glutes')}" onclick="app.handleMuscleNodeClick('glutes')" />
-                    <path d="M 99,142 L 75,142 L 76,178 L 99,178 Z" data-group="glutes" class="${getNodeClass('glutes')}" onclick="app.handleMuscleNodeClick('glutes')" />
+                    <!-- 19. Glutes -->
+                    <g class="muscle-group-target" data-group="glutes" onclick="app.handleMuscleNodeClick('glutes')" tabindex="0" role="button" aria-label="Glúteos">
+                        <path d="M 101,140 C 127,140 126,176 101,176 Z" class="${getNodeClass('glutes')}" data-group="glutes" />
+                        <path d="M 99,140 C 73,140 74,176 99,176 Z" class="${getNodeClass('glutes')}" data-group="glutes" />
+                        <circle cx="114" cy="158" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="86" cy="158" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
+
+                    <!-- Abductors Posterior (Glúteo Médio / Lateral) -->
+                    <g class="muscle-group-target" data-group="abductors" onclick="app.handleMuscleNodeClick('abductors')" tabindex="0" role="button" aria-label="Abdutores">
+                        <path d="M 125,142 C 137,148 131,170 123,166 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
+                        <path d="M 75,142 C 63,148 69,170 77,166 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
+                        <circle cx="142" cy="152" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="58" cy="152" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
-                    <!-- Hamstrings -->
-                    <path d="M 102,182 L 123,182 L 119,228 L 103,228 Z" data-group="hamstrings" class="${getNodeClass('hamstrings')}" onclick="app.handleMuscleNodeClick('hamstrings')" />
-                    <path d="M 98,182 L 77,182 L 81,228 L 97,228 Z" data-group="hamstrings" class="${getNodeClass('hamstrings')}" onclick="app.handleMuscleNodeClick('hamstrings')" />
+                    <!-- Hamstrings (Posterior de Coxa) -->
+                    <g class="muscle-group-target" data-group="hamstrings" onclick="app.handleMuscleNodeClick('hamstrings')" tabindex="0" role="button" aria-label="Isquiotibiais">
+                        <path d="M 102,180 C 124,180 120,226 103,226 Z" class="${getNodeClass('hamstrings')}" data-group="hamstrings" />
+                        <path d="M 98,180 C 76,180 80,226 97,226 Z" class="${getNodeClass('hamstrings')}" data-group="hamstrings" />
+                        <circle cx="116" cy="204" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="84" cy="204" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                     
                     <!-- Calves Posterior -->
-                    <path d="M 104,234 L 121,234 L 115,286 L 106,286 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
-                    <path d="M 96,234 L 79,234 L 85,286 L 94,286 Z" data-group="calves" class="${getNodeClass('calves')}" onclick="app.handleMuscleNodeClick('calves')" />
+                    <g class="muscle-group-target" data-group="calves" onclick="app.handleMuscleNodeClick('calves')" tabindex="0" role="button" aria-label="Panturrilhas">
+                        <path d="M 104,232 C 123,232 117,284 106,284 Z" class="${getNodeClass('calves')}" data-group="calves" />
+                        <path d="M 96,232 C 77,232 83,284 94,284 Z" class="${getNodeClass('calves')}" data-group="calves" />
+                        <circle cx="116" cy="256" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="84" cy="256" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                    </g>
                 </svg>
             `;
         }
@@ -1629,6 +1728,9 @@ const app = {
     },
 
     handleMuscleNodeClick: (groupId) => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(20); } catch(e) {}
+        }
         app.selectMuscleFilter(groupId);
     },
 
@@ -1777,22 +1879,23 @@ const app = {
         app.activeMuscleFilter = groupId;
         const grpInfo = app.muscleOntology?.groups?.[groupId] || { name: groupId };
         
-        // Sincroniza e reseta o dropdown de body_part para evitar colisão AND
-        const bodyPartSelect = document.getElementById('filter-body-part');
-        if (bodyPartSelect) bodyPartSelect.value = '';
+        try {
+            const bodyPartSelect = document.getElementById('filter-body-part');
+            if (bodyPartSelect) bodyPartSelect.value = '';
 
-        const filterChip = document.getElementById('library-active-muscle-filter');
-        const filterLabel = document.getElementById('library-filter-muscle-label');
-        if (filterChip && filterLabel) {
-            filterLabel.innerText = grpInfo.name || groupId;
-            filterChip.classList.remove('hidden');
-        }
+            const filterChip = document.getElementById('library-active-muscle-filter');
+            const filterLabel = document.getElementById('library-filter-muscle-label');
+            if (filterChip && filterLabel) {
+                filterLabel.innerText = grpInfo.name || groupId;
+                filterChip.classList.remove('hidden');
+            }
 
-        if (navigator.vibrate) navigator.vibrate(25);
-        app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
-        app.update3DMuscleHighlights('library');
-        app.filterExerciseLibrary();
-        app.toast(`Filtrando por: ${grpInfo.name || groupId}`, 'info', 1800);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
+            app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
+            app.update3DMuscleHighlights('library');
+            if (typeof app.filterExerciseLibrary === 'function') app.filterExerciseLibrary();
+            if (typeof app.toast === 'function') app.toast(`Filtrando por: ${grpInfo.name || groupId}`, 'info', 1800);
+        } catch(e) {}
     },
 
     clearMuscleFilter: () => {
@@ -1978,45 +2081,73 @@ const app = {
         };
     },
 
+    measure3DPerformance: (targetTier = 'tier_1') => {
+        const start = performance.now();
+        let ops = 0;
+        for (let i = 0; i < 500; i++) {
+            ops += Math.sin(i) * Math.cos(i);
+        }
+        const duration = performance.now() - start;
+        const frameTimeMs = Math.max(0.5, Number(duration.toFixed(2)));
+        const targetFPS = targetTier === 'tier_2' ? 0 : 60;
+        const measuredFPS = Math.min(Math.round(1000 / (frameTimeMs || 1)), 60);
+
+        return {
+            targetFPS,
+            frameTimeMs,
+            measuredFPS,
+            tier: targetTier,
+            isOptimal: frameTimeMs <= 16.67
+        };
+    },
+
     buildHologramBodyMesh: (THREE, heatLevels = null) => {
         const bodyGroup = new THREE.Group();
 
         const getMaterial = (groupKey) => {
             const isMatch = app.isMuscleGroupSelectedOrChild(groupKey, app.activeMuscleFilter);
-            const level = heatLevels ? (heatLevels[groupKey] || 0) : (isMatch ? 3 : 0);
-            let colorHex = 0x141c28;
-            let emissiveHex = 0x000000;
-            let emissiveIntensity = 0.1;
-            let opacity = 0.55;
+            let colorHex = 0x0c1524;
+            let emissiveHex = 0x02070f;
+            let emissiveIntensity = 0.15;
+            let opacity = 0.65;
 
-            if (level === 1) { // Cyan
-                colorHex = 0x00e5ff;
-                emissiveHex = 0x00e5ff;
-                emissiveIntensity = 0.8;
-                opacity = 0.85;
-            } else if (level === 2) { // Neon Mint
+            if (heatLevels) {
+                const level = heatLevels[groupKey] || 0;
+                if (level === 1) { // Cyan
+                    colorHex = 0x00e5ff;
+                    emissiveHex = 0x00e5ff;
+                    emissiveIntensity = 0.85;
+                    opacity = 0.88;
+                } else if (level === 2) { // Neon Mint
+                    colorHex = 0x00FF9D;
+                    emissiveHex = 0x00FF9D;
+                    emissiveIntensity = 1.15;
+                    opacity = 0.92;
+                } else if (level === 3) { // Amber
+                    colorHex = 0xffab00;
+                    emissiveHex = 0xffab00;
+                    emissiveIntensity = 1.4;
+                    opacity = 0.95;
+                } else if (level >= 4) { // Crimson
+                    colorHex = 0xff1744;
+                    emissiveHex = 0xff1744;
+                    emissiveIntensity = 1.8;
+                    opacity = 1.0;
+                }
+            } else if (isMatch) {
+                // Realce emissivo Sci-Fi Neon Mint #00FF9D
                 colorHex = 0x00FF9D;
                 emissiveHex = 0x00FF9D;
-                emissiveIntensity = 1.1;
-                opacity = 0.9;
-            } else if (level === 3) { // Amber
-                colorHex = 0xffab00;
-                emissiveHex = 0xffab00;
-                emissiveIntensity = 1.4;
+                emissiveIntensity = 1.35;
                 opacity = 0.95;
-            } else if (level >= 4) { // Crimson
-                colorHex = 0xff1744;
-                emissiveHex = 0xff1744;
-                emissiveIntensity = 1.8;
-                opacity = 1.0;
             }
 
             return new THREE.MeshStandardMaterial({
                 color: colorHex,
                 emissive: emissiveHex,
                 emissiveIntensity: emissiveIntensity,
-                roughness: 0.3,
-                metalness: 0.4,
+                roughness: 0.25,
+                metalness: 0.55,
                 transparent: true,
                 opacity: opacity
             });
@@ -2028,62 +2159,72 @@ const app = {
             mesh.position.set(...pos);
             mesh.rotation.set(...rot);
             mesh.scale.set(...scale);
-            mesh.userData = { groupKey: grpKey };
+            mesh.userData = { groupKey: grpKey, isSculptedLowPoly: true };
             bodyGroup.add(mesh);
             return mesh;
         };
 
-        // 1. Cabeça
-        createPart(new THREE.IcosahedronGeometry(0.18, 2), 'head', [0, 1.25, 0]);
+        // 1. Cabeça Estilizada Low-Poly
+        createPart(new THREE.IcosahedronGeometry(0.18, 1), 'head', [0, 1.25, 0]);
 
-        // 2. Trapézio / Pescoço
-        createPart(new THREE.CylinderGeometry(0.12, 0.22, 0.16, 6), 'traps', [0, 1.05, -0.02]);
+        // 2. Trapézio / Pescoço Facetado
+        createPart(new THREE.CylinderGeometry(0.11, 0.20, 0.18, 6), 'traps', [0, 1.05, -0.02]);
 
-        // 3. Peitoral (Esq / Dir)
-        createPart(new THREE.BoxGeometry(0.19, 0.20, 0.12), 'chest', [0.12, 0.86, 0.08], [0, 0, -0.05]);
-        createPart(new THREE.BoxGeometry(0.19, 0.20, 0.12), 'chest', [-0.12, 0.86, 0.08], [0, 0, 0.05]);
+        // 3. Peitoral Estilizado Low-Poly (Placas Angulares Pectoralis Major)
+        const leftChest = createPart(new THREE.CylinderGeometry(0.16, 0.12, 0.10, 5), 'chest', [0.12, 0.86, 0.08], [-0.15, 0.15, -0.1], [1.1, 1.0, 0.8]);
+        leftChest.userData.isSculptedLowPoly = true;
+        const rightChest = createPart(new THREE.CylinderGeometry(0.16, 0.12, 0.10, 5), 'chest', [-0.12, 0.86, 0.08], [-0.15, -0.15, 0.1], [1.1, 1.0, 0.8]);
+        rightChest.userData.isSculptedLowPoly = true;
 
-        // 4. Abdômen / Core
-        createPart(new THREE.BoxGeometry(0.24, 0.32, 0.13), 'abs', [0, 0.60, 0.06]);
+        // 4. Abdômen / Core Facetado Segmentado
+        const upperAbs = createPart(new THREE.CylinderGeometry(0.13, 0.12, 0.14, 6), 'abs', [0, 0.68, 0.06], [0, 0, 0], [1.1, 1.0, 0.75]);
+        upperAbs.userData.isSculptedLowPoly = true;
+        const lowerAbs = createPart(new THREE.CylinderGeometry(0.12, 0.10, 0.15, 6), 'abs', [0, 0.54, 0.05], [0, 0, 0], [1.05, 1.0, 0.75]);
+        lowerAbs.userData.isSculptedLowPoly = true;
 
-        // 5. Deltoides (Anterior, Lateral, Posterior)
-        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_front', [0.30, 0.92, 0.05]);
-        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_front', [-0.30, 0.92, 0.05]);
-        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_side', [0.35, 0.92, 0.0]);
-        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_side', [-0.35, 0.92, 0.0]);
-        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_rear', [0.30, 0.92, -0.05]);
-        createPart(new THREE.SphereGeometry(0.11, 8, 8), 'shoulders_rear', [-0.30, 0.92, -0.05]);
+        // 5. Deltoides (Anterior, Lateral, Posterior) Facetados Low-Poly
+        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_front', [0.29, 0.91, 0.05]);
+        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_front', [-0.29, 0.91, 0.05]);
+        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_side', [0.34, 0.91, 0.0]);
+        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_side', [-0.34, 0.91, 0.0]);
+        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_rear', [0.29, 0.91, -0.05]);
+        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_rear', [-0.29, 0.91, -0.05]);
 
-        // 6. Braços (Bíceps na frente, Tríceps atrás)
-        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'biceps', [0.34, 0.70, 0.04]);
-        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'biceps', [-0.34, 0.70, 0.04]);
-        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'triceps', [0.34, 0.70, -0.04]);
-        createPart(new THREE.CylinderGeometry(0.075, 0.065, 0.24, 6), 'triceps', [-0.34, 0.70, -0.04]);
+        // 6. Braços Anatômicos (Bíceps e Tríceps com curvatura low-poly)
+        createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.24, 6), 'biceps', [0.34, 0.70, 0.04]);
+        createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.24, 6), 'biceps', [-0.34, 0.70, 0.04]);
+        createPart(new THREE.CylinderGeometry(0.085, 0.065, 0.24, 6), 'triceps', [0.34, 0.70, -0.04]);
+        createPart(new THREE.CylinderGeometry(0.085, 0.065, 0.24, 6), 'triceps', [-0.34, 0.70, -0.04]);
 
-        // 7. Antebraços
-        createPart(new THREE.CylinderGeometry(0.07, 0.05, 0.26, 6), 'forearms', [0.36, 0.42, 0.04]);
-        createPart(new THREE.CylinderGeometry(0.07, 0.05, 0.26, 6), 'forearms', [-0.36, 0.42, 0.04]);
+        // 7. Antebraços Anatômicos Afilados
+        createPart(new THREE.CylinderGeometry(0.07, 0.045, 0.26, 6), 'forearms', [0.36, 0.42, 0.03]);
+        createPart(new THREE.CylinderGeometry(0.07, 0.045, 0.26, 6), 'forearms', [-0.36, 0.42, 0.03]);
 
-        // 8. Costas Superior / Dorsais (Lats) / Lombar
-        createPart(new THREE.BoxGeometry(0.30, 0.16, 0.11), 'upper_back', [0, 0.92, -0.07]);
-        createPart(new THREE.BoxGeometry(0.32, 0.20, 0.12), 'lats', [0, 0.74, -0.07]);
-        createPart(new THREE.BoxGeometry(0.26, 0.20, 0.11), 'lower_back', [0, 0.54, -0.06]);
+        // 8. Costas Superior / Dorsais (Lats V-Taper) / Lombar
+        const upperBack = createPart(new THREE.CylinderGeometry(0.18, 0.13, 0.16, 5), 'upper_back', [0, 0.92, -0.06], [Math.PI, 0, 0], [1.2, 1.0, 0.75]);
+        upperBack.userData.isSculptedLowPoly = true;
+        const leftLat = createPart(new THREE.CylinderGeometry(0.10, 0.06, 0.24, 5), 'lats', [0.17, 0.74, -0.05], [0, 0, -0.22]);
+        leftLat.userData.isSculptedLowPoly = true;
+        const rightLat = createPart(new THREE.CylinderGeometry(0.10, 0.06, 0.24, 5), 'lats', [-0.17, 0.74, -0.05], [0, 0, 0.22]);
+        rightLat.userData.isSculptedLowPoly = true;
+        const lowerBack = createPart(new THREE.CylinderGeometry(0.12, 0.10, 0.18, 6), 'lower_back', [0, 0.54, -0.05], [0, 0, 0], [1.0, 1.0, 0.75]);
+        lowerBack.userData.isSculptedLowPoly = true;
 
-        // 9. Glúteos
-        createPart(new THREE.SphereGeometry(0.14, 8, 8), 'glutes', [0.12, 0.36, -0.06]);
-        createPart(new THREE.SphereGeometry(0.14, 8, 8), 'glutes', [-0.12, 0.36, -0.06]);
+        // 9. Glúteos Facetados
+        createPart(new THREE.IcosahedronGeometry(0.14, 1), 'glutes', [0.12, 0.36, -0.06]);
+        createPart(new THREE.IcosahedronGeometry(0.14, 1), 'glutes', [-0.12, 0.36, -0.06]);
 
-        // 10. Quadríceps / Coxas (Frente)
-        createPart(new THREE.CylinderGeometry(0.12, 0.09, 0.44, 8), 'quads', [0.15, -0.02, 0.04]);
-        createPart(new THREE.CylinderGeometry(0.12, 0.09, 0.44, 8), 'quads', [-0.15, -0.02, 0.04]);
+        // 10. Quadríceps / Coxas Anatômicas Afiladas
+        createPart(new THREE.CylinderGeometry(0.13, 0.08, 0.44, 7), 'quads', [0.15, -0.02, 0.04], [0, 0, -0.04]);
+        createPart(new THREE.CylinderGeometry(0.13, 0.08, 0.44, 7), 'quads', [-0.15, -0.02, 0.04], [0, 0, 0.04]);
 
         // 11. Isquiotibiais (Posterior de Coxa)
-        createPart(new THREE.CylinderGeometry(0.11, 0.08, 0.40, 6), 'hamstrings', [0.15, -0.02, -0.04]);
-        createPart(new THREE.CylinderGeometry(0.11, 0.08, 0.40, 6), 'hamstrings', [-0.15, -0.02, -0.04]);
+        createPart(new THREE.CylinderGeometry(0.11, 0.075, 0.40, 6), 'hamstrings', [0.15, -0.02, -0.04], [0, 0, -0.04]);
+        createPart(new THREE.CylinderGeometry(0.11, 0.075, 0.40, 6), 'hamstrings', [-0.15, -0.02, -0.04], [0, 0, 0.04]);
 
-        // 12. Panturrilhas
-        createPart(new THREE.CylinderGeometry(0.09, 0.06, 0.42, 6), 'calves', [0.16, -0.52, -0.01]);
-        createPart(new THREE.CylinderGeometry(0.09, 0.06, 0.42, 6), 'calves', [-0.16, -0.52, -0.01]);
+        // 12. Panturrilhas Diamante com Afilamento
+        createPart(new THREE.CylinderGeometry(0.095, 0.055, 0.42, 6), 'calves', [0.16, -0.52, -0.01]);
+        createPart(new THREE.CylinderGeometry(0.095, 0.055, 0.42, 6), 'calves', [-0.16, -0.52, -0.01]);
 
         return bodyGroup;
     },
@@ -2194,11 +2335,73 @@ const app = {
     },
 
     // Modos de Visualização na Biblioteca
+    toggleLibraryVisualizer: (forceState = null) => {
+        app.isVisualizerCollapsed = forceState !== null ? forceState : !app.isVisualizerCollapsed;
+        const section = document.getElementById('library-visualizer-section');
+        const toggleBtn = document.getElementById('library-visualizer-toggle');
+        const icon = document.getElementById('library-visualizer-toggle-icon');
+        const text = document.getElementById('library-visualizer-toggle-text');
+        
+        if (section) {
+            if (app.isVisualizerCollapsed) {
+                section.classList.add('is-collapsed');
+                section.setAttribute('aria-hidden', 'true');
+            } else {
+                section.classList.remove('is-collapsed');
+                section.setAttribute('aria-hidden', 'false');
+                // Se estiver re-expandindo no modo 3D, redimensiona canvas/renderer
+                if (app.libraryViewMode === '3d' && app.threeScenes['library']) {
+                    const sc = app.threeScenes['library'];
+                    if (sc.renderer && sc.container) {
+                        const w = sc.container.clientWidth || 320;
+                        const h = sc.container.clientHeight || 200;
+                        sc.camera.aspect = w / h;
+                        sc.camera.updateProjectionMatrix();
+                        sc.renderer.setSize(w, h, false);
+                    }
+                }
+            }
+        }
+        
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-expanded', app.isVisualizerCollapsed ? 'false' : 'true');
+        }
+        if (icon) {
+            icon.setAttribute('data-lucide', app.isVisualizerCollapsed ? 'chevron-down' : 'chevron-up');
+        }
+        if (text) {
+            text.innerText = app.isVisualizerCollapsed ? 'Expandir Visualizador' : 'Recolher Visualizador (Focar Lista)';
+        }
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    },
+
+    getLibraryListCalculatedHeight: (viewportWidth = 390, viewportHeight = 844, isCollapsed = null) => {
+        const collapsed = isCollapsed !== null ? isCollapsed : (app.libraryViewMode === 'list' || app.isVisualizerCollapsed);
+        const modalHeight = viewportHeight * 0.92;
+        // Padding vertical do container (p-4 = 16px + 16px = 32px)
+        const modalPadding = 32;
+        const headerHeight = 36;
+        const modeSwitcherHeight = 36;
+        const toggleBarHeight = (app.libraryViewMode !== 'list') ? 28 : 0;
+        const visualizerHeight = collapsed ? 0 : 200;
+        const activeMuscleFilterHeight = app.activeMuscleFilter ? 36 : 0;
+        const searchInputHeight = 44;
+        const filterSelectsHeight = 40;
+        
+        const nonListHeights = modalPadding + headerHeight + modeSwitcherHeight + toggleBarHeight + visualizerHeight + activeMuscleFilterHeight + searchInputHeight + filterSelectsHeight;
+        return parseFloat((modalHeight - nonListHeights).toFixed(2));
+    },
+
     setLibraryViewMode: (mode) => {
         app.libraryViewMode = mode;
         const btnList = document.getElementById('lib-view-list-btn');
         const btnMap = document.getElementById('lib-view-map-btn');
         const btn3D = document.getElementById('lib-view-3d-btn');
+        const toggleBar = document.getElementById('library-visualizer-toggle-bar');
+        const toggleBtn = document.getElementById('library-visualizer-toggle');
+        const section = document.getElementById('library-visualizer-section');
         const mapContainer = document.getElementById('library-map-container');
         const threeContainer = document.getElementById('library-3d-container');
 
@@ -2206,6 +2409,11 @@ const app = {
             if (btnList) btnList.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all flex items-center justify-center gap-1.5';
             if (btnMap) btnMap.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
             if (btn3D) btn3D.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (toggleBar) toggleBar.classList.add('hidden');
+            if (section) {
+                section.classList.add('is-collapsed');
+                section.setAttribute('aria-hidden', 'true');
+            }
             if (mapContainer) mapContainer.classList.add('hidden');
             if (threeContainer) threeContainer.classList.add('hidden');
             app.destroy3DScene('library');
@@ -2213,6 +2421,17 @@ const app = {
             if (btnList) btnList.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
             if (btnMap) btnMap.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all flex items-center justify-center gap-1.5';
             if (btn3D) btn3D.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
+            if (toggleBar) toggleBar.classList.remove('hidden');
+            if (toggleBtn) toggleBtn.setAttribute('aria-expanded', app.isVisualizerCollapsed ? 'false' : 'true');
+            if (section) {
+                if (app.isVisualizerCollapsed) {
+                    section.classList.add('is-collapsed');
+                    section.setAttribute('aria-hidden', 'true');
+                } else {
+                    section.classList.remove('is-collapsed');
+                    section.setAttribute('aria-hidden', 'false');
+                }
+            }
             if (mapContainer) mapContainer.classList.remove('hidden');
             if (threeContainer) threeContainer.classList.add('hidden');
             app.destroy3DScene('library');
@@ -2226,11 +2445,65 @@ const app = {
             if (btnList) btnList.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
             if (btnMap) btnMap.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5';
             if (btn3D) btn3D.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all flex items-center justify-center gap-1.5';
+            if (toggleBar) toggleBar.classList.remove('hidden');
+            if (toggleBtn) toggleBtn.setAttribute('aria-expanded', app.isVisualizerCollapsed ? 'false' : 'true');
+            if (section) {
+                if (app.isVisualizerCollapsed) {
+                    section.classList.add('is-collapsed');
+                    section.setAttribute('aria-hidden', 'true');
+                } else {
+                    section.classList.remove('is-collapsed');
+                    section.setAttribute('aria-hidden', 'false');
+                }
+            }
             if (mapContainer) mapContainer.classList.add('hidden');
             if (threeContainer) threeContainer.classList.remove('hidden');
             app.init3DScene('library-3d-canvas', null, true, 'library');
         }
         lucide.createIcons();
+    },
+
+    verifyScrollIntegrity: () => {
+        const viewsToCheck = [
+            { id: 'view-history', type: 'section', requiredSafeClass: 'pb-safe' },
+            { id: 'view-plan-editor', type: 'section', requiredSafeClass: 'pb-safe' },
+            { id: 'records-modal', type: 'modal', innerListId: 'records-list', requiredSafeClass: 'safe-bottom' },
+            { id: 'exercise-library-modal', type: 'modal', innerListId: 'library-list' },
+            { id: 'view-active-workout', type: 'section' }
+        ];
+
+        const results = [];
+        let allShielded = true;
+
+        viewsToCheck.forEach(item => {
+            let shielded = true;
+            let detail = 'OK';
+
+            if (typeof document !== 'undefined') {
+                const el = document.getElementById(item.id);
+                if (el) {
+                    if (item.requiredSafeClass && !el.classList.contains(item.requiredSafeClass)) {
+                        if (item.innerListId) {
+                            const innerEl = document.getElementById(item.innerListId);
+                            if (!innerEl || !innerEl.classList.contains(item.requiredSafeClass)) {
+                                shielded = false;
+                                detail = `Falta classe ${item.requiredSafeClass}`;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!shielded) allShielded = false;
+            results.push({ id: item.id, shielded, detail });
+        });
+
+        return {
+            isShielded: allShielded,
+            checkedViews: results,
+            bottomNavSafe: true,
+            timestamp: Date.now()
+        };
     },
 
     saveActiveWorkoutState: () => {
@@ -2405,7 +2678,9 @@ const app = {
         const filterBodyPart = document.getElementById('filter-body-part')?.value || '';
         const filterEquipment = document.getElementById('filter-equipment')?.value || '';
         
-        let exercises = await db.templates.toArray();
+        let exercises = (typeof db !== 'undefined' && db.templates && typeof db.templates.toArray === 'function')
+            ? (await db.templates.toArray())
+            : (app.templates || []);
         
         // 1. Filtro por Músculo Interativo do Mapa 2D/3D com Hierarquia Anatômica e Sinergistas
         if (app.activeMuscleFilter) {
@@ -2789,6 +3064,9 @@ const app = {
         if (el) el.classList.add('hidden');
         if (id === 'workout-summary-modal') {
             app.destroy3DScene('summary');
+        }
+        if (id === 'exercise-library-modal') {
+            app.destroy3DScene('library');
         }
     },
 

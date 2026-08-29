@@ -141,7 +141,49 @@ input::placeholder {
 }
 
 .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 24px);
+    padding-bottom: max(env(safe-area-inset-bottom, 24px), 24px) !important;
+}
+
+.pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 7rem) !important;
+}
+
+.bottom-nav-safe {
+    bottom: max(calc(1.5rem + env(safe-area-inset-bottom, 0px)), 1.5rem) !important;
+}
+
+/* Touch overscroll & smooth hardware accelerated momentum scrolling */
+.custom-scrollbar,
+#library-list,
+#records-list,
+#history-list,
+#exercise-list,
+#selected-exercises-list,
+#help-modal-tab-content,
+#detail-tab-steps,
+#detail-tab-history {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* ==========================================================================
+   📚 COLLAPSIBLE LIBRARY VISUALIZER (RF03)
+   ========================================================================== */
+
+.library-visualizer-wrapper {
+    max-height: 280px;
+    opacity: 1;
+    transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    overflow: hidden;
+    will-change: max-height, opacity;
+}
+
+.library-visualizer-wrapper.is-collapsed {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none;
+    visibility: hidden;
+    transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0.35s step-end;
 }
 
 /* Pulse for active elements */
@@ -432,6 +474,31 @@ select:focus {
     filter: drop-shadow(0 0 12px rgba(0, 255, 157, 0.9)) !important;
     stroke: #ffffff !important;
     stroke-width: 2 !important;
+}
+
+.muscle-group-target {
+    cursor: pointer;
+    touch-action: manipulation;
+    outline: none;
+}
+
+.muscle-group-target:hover .muscle-node,
+.muscle-group-target:focus .muscle-node {
+    fill: #00FF9D;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 157, 0.85));
+    stroke: #ffffff;
+    stroke-width: 1.8;
+}
+
+.muscle-group-target:active .muscle-node {
+    transform: scale(0.98);
+    filter: drop-shadow(0 0 14px rgba(0, 255, 157, 1));
+}
+
+.muscle-hitbox {
+    cursor: pointer;
+    pointer-events: all;
+    touch-action: manipulation;
 }
 
 /* Heatmap Levels */

@@ -15,3 +15,4 @@ Thumbs.db
 # Environments
 .env
 *.json.backup
+.maestri/
