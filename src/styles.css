@@ -14,8 +14,11 @@
 .tabular-nums,
 .font-mono,
 #timer-display,
-#rest-timer-display,
+#overlay-timer,
 #rest-timer-seconds,
+#library-bottom-counter,
+#weekly-total,
+#summary-volume,
 .workout-timer,
 input[type="number"],
 .counter-display {
@@ -496,9 +499,33 @@ select:focus {
 
 .muscle-node.active-selected {
     fill: #00FF9D !important;
-    filter: drop-shadow(0 0 12px rgba(0, 255, 157, 0.9)) !important;
+    filter: drop-shadow(0 0 10px #00FF9D) drop-shadow(0 0 20px rgba(0, 255, 157, 0.6)) !important;
     stroke: #ffffff !important;
     stroke-width: 2 !important;
+    opacity: 1 !important;
+    animation: neonPulse 2s infinite ease-in-out;
+}
+
+.muscle-node.dimmed-node {
+    opacity: 0.28 !important;
+    filter: none !important;
+    stroke: rgba(255, 255, 255, 0.05) !important;
+    transition: opacity 0.3s ease, fill 0.3s ease;
+}
+
+@keyframes neonPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 8px #00FF9D) drop-shadow(0 0 16px rgba(0, 255, 157, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 14px #00FF9D) drop-shadow(0 0 28px rgba(0, 255, 157, 0.8));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .muscle-node.active-selected {
+        animation: none !important;
+    }
 }
 
 .muscle-group-target {
@@ -552,8 +579,27 @@ select:focus {
     pointer-events: none;
 }
 
-/* Smart Stepper Tactile Buttons (touch targets >= 36px) */
+/* Tactile Touch Target Expansion (WCAG 2.2 SC 2.5.8 >= 44x44px) */
+.touch-target-44 {
+    position: relative;
+}
+
+.touch-target-44::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Smart Stepper Tactile Buttons (touch targets >= 36px / 44px pseudo) */
 .stepper-btn {
+    position: relative;
     min-height: 36px;
     min-width: 32px;
     flex: 1 1 0;

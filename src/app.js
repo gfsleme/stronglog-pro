@@ -1068,7 +1068,7 @@ const app = {
         return `
         <div class="space-y-2 p-2.5 rounded-2xl bg-black/40 border border-white/5 ${s.completed ? 'opacity-40 grayscale' : ''} transition-all" id="set-row-${exI}-${sI}">
             <div class="flex items-center gap-2">
-                <button onclick="app.openSetTypePicker(${exI},${sI})" class="w-8 h-9 flex items-center justify-center rounded-xl ${typeBadgeClass} text-[10px] font-black uppercase italic shrink-0 active:scale-90" title="Tipo: ${s.type} (Toque para alterar)">${typeLetter}</button>
+                <button onclick="app.openSetTypePicker(${exI},${sI})" class="w-8 h-9 flex items-center justify-center rounded-xl ${typeBadgeClass} text-[10px] font-black uppercase italic shrink-0 active:scale-90 touch-target-44" title="Tipo: ${s.type} (Toque para alterar)">${typeLetter}</button>
                 <div class="flex-1 grid grid-cols-3 gap-1.5 h-9">
                     <div class="flex items-center glass px-1">
                         <input id="set-weight-input-${exI}-${sI}" onfocus="this.select()" oninput="app.updateSet(${exI},${sI},'weight',this.value)" onchange="app.updateSet(${exI},${sI},'weight',this.value)" type="number" inputmode="decimal" value="${s.weight}" class="w-full text-center text-xs font-black focus:outline-none text-white bg-transparent" placeholder="KG">
@@ -1080,35 +1080,35 @@ const app = {
                         <input id="set-rpe-input-${exI}-${sI}" onfocus="this.select()" oninput="app.updateSet(${exI},${sI},'rpe',this.value)" onchange="app.updateSet(${exI},${sI},'rpe',this.value)" type="number" inputmode="decimal" step="0.5" min="1" max="10" value="${s.rpe !== undefined ? s.rpe : ''}" class="w-full text-center text-[10px] font-black text-gray-300 focus:text-[#00FF9D] focus:outline-none bg-transparent cursor-pointer" placeholder="RPE">
                     </div>
                 </div>
-                <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}" title="Concluir Série">
+                <button onclick="app.toggleSet(${exI},${sI})" class="p-2.5 glass shrink-0 touch-target-44 ${s.completed ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'active:scale-90'}" title="Concluir Série">
                     <i data-lucide="check" class="w-4 h-4 ${s.completed ? 'text-[#00FF9D]' : 'text-gray-800'}"></i>
                 </button>
-                <button onclick="app.removeSetFromWorkout(${exI},${sI})" class="p-2 text-gray-700 hover:text-red-400 active:text-red-500 transition-colors shrink-0" title="Remover Série">
+                <button onclick="app.removeSetFromWorkout(${exI},${sI})" class="p-2 text-gray-400 hover:text-red-400 active:text-red-500 transition-colors shrink-0 touch-target-44" title="Remover Série">
                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
                 </button>
             </div>
-            <!-- Tactile Smart Stepper Controls (1-Hand Workout Use, touch targets >= 36px) -->
+            <!-- Tactile Smart Stepper Controls (1-Hand Workout Use, touch targets >= 36px / 44px) -->
             <div class="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
                 <div class="flex items-center justify-between bg-white/[0.02] p-1 rounded-xl border border-white/5">
                     <div class="flex items-center gap-1">
-                        <button onclick="app.stepWeight(${exI},${sI},-5)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-5 kg">-5</button>
-                        <button onclick="app.stepWeight(${exI},${sI},-2.5)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-2.5 kg">-2.5</button>
+                        <button onclick="app.stepWeight(${exI},${sI},-5)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-5 kg">-5</button>
+                        <button onclick="app.stepWeight(${exI},${sI},-2.5)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-2.5 kg">-2.5</button>
                     </div>
                     <span class="text-[7px] uppercase font-mono text-gray-500 font-black px-1">KG</span>
                     <div class="flex items-center gap-1">
-                        <button onclick="app.stepWeight(${exI},${sI},2.5)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+2.5 kg">+2.5</button>
-                        <button onclick="app.stepWeight(${exI},${sI},5)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+5 kg">+5</button>
+                        <button onclick="app.stepWeight(${exI},${sI},2.5)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-[#00FF9D]" title="+2.5 kg">+2.5</button>
+                        <button onclick="app.stepWeight(${exI},${sI},5)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-[#00FF9D]" title="+5 kg">+5</button>
                     </div>
                 </div>
                 <div class="flex items-center justify-between bg-white/[0.02] p-1 rounded-xl border border-white/5">
                     <div class="flex items-center gap-1">
-                        <button onclick="app.stepReps(${exI},${sI},-5)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-5 reps">-5</button>
-                        <button onclick="app.stepReps(${exI},${sI},-1)" class="stepper-btn text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-1 rep">-1</button>
+                        <button onclick="app.stepReps(${exI},${sI},-5)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-5 reps">-5</button>
+                        <button onclick="app.stepReps(${exI},${sI},-1)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-gray-400 active:text-white" title="-1 rep">-1</button>
                     </div>
                     <span class="text-[7px] uppercase font-mono text-gray-500 font-black px-1">REPS</span>
                     <div class="flex items-center gap-1">
-                        <button onclick="app.stepReps(${exI},${sI},1)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+1 rep">+1</button>
-                        <button onclick="app.stepReps(${exI},${sI},5)" class="stepper-btn text-[9px] font-mono font-bold text-[#00FF9D]" title="+5 reps">+5</button>
+                        <button onclick="app.stepReps(${exI},${sI},1)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-[#00FF9D]" title="+1 rep">+1</button>
+                        <button onclick="app.stepReps(${exI},${sI},5)" class="stepper-btn touch-target-44 text-[9px] font-mono font-bold text-[#00FF9D]" title="+5 reps">+5</button>
                     </div>
                 </div>
             </div>
@@ -1649,6 +1649,13 @@ const app = {
             `;
         } else {
             container.innerHTML = app.getSvgAnatomicalPaths(view, heatLevels, activeFilter);
+            if (app.svgZoomScale && app.svgZoomScale !== 1.0 && typeof container.querySelector === 'function') {
+                const svgEl = container.querySelector('svg');
+                if (svgEl) {
+                    svgEl.style.transform = `scale(${app.svgZoomScale})`;
+                    svgEl.style.transformOrigin = 'center center';
+                }
+            }
         }
     },
 
@@ -1658,8 +1665,12 @@ const app = {
             if (heatLevels && heatLevels[groupId]) {
                 cls += ` heat-${heatLevels[groupId]}`;
             }
-            if (activeFilter === groupId) {
-                cls += ' active-selected';
+            if (activeFilter) {
+                if (activeFilter === groupId || (app.ANATOMICAL_HIERARCHY && app.ANATOMICAL_HIERARCHY[activeFilter]?.keys?.includes(groupId))) {
+                    cls += ' active-selected';
+                } else {
+                    cls += ' dimmed-node';
+                }
             }
             return cls;
         };
@@ -1862,6 +1873,33 @@ const app = {
         app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
     },
 
+    svgZoomScale: 1.0,
+
+    zoomSvg: (delta) => {
+        app.svgZoomScale = Math.max(1.0, Math.min(2.5, Number((app.svgZoomScale + delta).toFixed(2))));
+        const stage = document.getElementById('library-svg-stage');
+        if (stage && typeof stage.querySelector === 'function') {
+            const svgEl = stage.querySelector('svg');
+            if (svgEl) {
+                svgEl.style.transform = `scale(${app.svgZoomScale})`;
+                svgEl.style.transformOrigin = 'center center';
+                svgEl.style.transition = 'transform 0.2s ease-out';
+            }
+        }
+    },
+
+    resetSvgZoom: () => {
+        app.svgZoomScale = 1.0;
+        const stage = document.getElementById('library-svg-stage');
+        if (stage && typeof stage.querySelector === 'function') {
+            const svgEl = stage.querySelector('svg');
+            if (svgEl) {
+                svgEl.style.transform = 'scale(1.0)';
+                svgEl.style.transition = 'transform 0.2s ease-out';
+            }
+        }
+    },
+
     handleMuscleNodeClick: (groupId) => {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try { navigator.vibrate(20); } catch(e) {}
@@ -2015,16 +2053,18 @@ const app = {
         app.activeMuscleFilter = groupId;
         const grpInfo = app.muscleOntology?.groups?.[groupId] || { name: groupId };
 
-        // Auto-sincroniza a visão do SVG se o músculo pertencer predominantemente às costas ou à frente
+        // Auto-sincroniza a visão do SVG e do 3D se o músculo pertencer predominantemente às costas ou à frente
         const POSTERIOR_GROUPS = ['glutes', 'hamstrings', 'lats', 'lower_back', 'shoulders_rear', 'calves', 'traps'];
         if (POSTERIOR_GROUPS.includes(groupId)) {
             app.activeSvgView = 'posterior';
             app.svgActiveView = 'posterior';
+            app.rotate3DToView('posterior', 'library');
         } else {
             const ANTERIOR_GROUPS = ['chest', 'abs', 'quads', 'biceps', 'shoulders_front', 'adductors', 'cardio'];
             if (ANTERIOR_GROUPS.includes(groupId)) {
                 app.activeSvgView = 'anterior';
                 app.svgActiveView = 'anterior';
+                app.rotate3DToView('anterior', 'library');
             }
         }
         
@@ -2113,7 +2153,7 @@ const app = {
                 <button id="muscle-chip-${g.key}" 
                         data-muscle-group="${g.key}"
                         onclick="app.selectMuscleFilter('${g.key}')" 
-                        class="muscle-filter-chip px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap shrink-0 ${
+                        class="muscle-filter-chip px-3.5 py-2.5 min-h-[44px] rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap shrink-0 flex items-center justify-center ${
                             isActive 
                                 ? 'bg-[#00FF9D] text-black shadow-[0_0_12px_rgba(0,255,157,0.4)] scale-102' 
                                 : 'glass text-gray-400 hover:text-white border-white/5'
@@ -2188,7 +2228,9 @@ const app = {
             controls = new THREE.OrbitControls(camera, canvas);
             controls.enableDamping = true;
             controls.dampingFactor = 0.08;
-            controls.enableZoom = false;
+            controls.enableZoom = true;
+            controls.minDistance = 1.5;
+            controls.maxDistance = 6.0;
             controls.autoRotate = (isInteractive && app.graphicMode === 'tier_0');
             controls.autoRotateSpeed = 2.5;
             controls.target.set(0, 0.2, 0);
@@ -2209,6 +2251,47 @@ const app = {
 
             pointerListeners = { onDown, onMove, onUp };
         }
+
+        // Wheel e Pinch Zoom Listeners (suporte completo desktop + mobile touch)
+        const onCanvasWheel = (e) => {
+            e.preventDefault();
+            app.zoom3D(e.deltaY * 0.003, sceneKey);
+        };
+        canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+
+        let pinchStartDist = 0;
+        const onTouchStartPinch = (e) => {
+            if (e.touches && e.touches.length === 2) {
+                pinchStartDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        };
+        const onTouchMovePinch = (e) => {
+            if (e.touches && e.touches.length === 2 && pinchStartDist > 0) {
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const deltaDist = currentDist - pinchStartDist;
+                if (Math.abs(deltaDist) > 3) {
+                    app.zoom3D(-deltaDist * 0.008, sceneKey);
+                    pinchStartDist = currentDist;
+                }
+            }
+        };
+        const onTouchEndPinch = () => { pinchStartDist = 0; };
+        canvas.addEventListener('touchstart', onTouchStartPinch, { passive: true });
+        canvas.addEventListener('touchmove', onTouchMovePinch, { passive: true });
+        canvas.addEventListener('touchend', onTouchEndPinch, { passive: true });
+
+        pointerListeners = Object.assign(pointerListeners || {}, {
+            onCanvasWheel,
+            onTouchStartPinch,
+            onTouchMovePinch,
+            onTouchEndPinch
+        });
 
         // Raycaster Interativo para Seleção de Músculos no 3D
         let tapListeners = null;
@@ -2287,6 +2370,10 @@ const app = {
         };
         animate();
 
+        const materialsPool = (bodyGroup && bodyGroup.userData && bodyGroup.userData.materialsPool)
+            ? bodyGroup.userData.materialsPool
+            : app.hologramMaterialsPool;
+
         app.threeScenes[sceneKey] = {
             scene,
             camera,
@@ -2299,8 +2386,10 @@ const app = {
             tapListeners,
             canvas,
             container,
+            materialsPool,
             initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
         };
+        app.threeScenes[sceneKey].materialsPool = materialsPool;
     },
 
     measure3DPerformance: (targetTier = 'tier_1') => {
@@ -2342,11 +2431,21 @@ const app = {
         const activeHighlightMat = new THREE.MeshStandardMaterial({
             color: 0x00FF9D,
             emissive: 0x00FF9D,
-            emissiveIntensity: 1.35,
+            emissiveIntensity: 1.8,
             roughness: 0.25,
             metalness: 0.55,
             transparent: true,
             opacity: 0.95
+        });
+
+        const dimmedMat = new THREE.MeshStandardMaterial({
+            color: 0x08101a,
+            emissive: 0x000000,
+            emissiveIntensity: 0.05,
+            roughness: 0.25,
+            metalness: 0.55,
+            transparent: true,
+            opacity: 0.35
         });
 
         const heatMatPool = heatLevels ? {
@@ -2363,9 +2462,12 @@ const app = {
         app.hologramMaterialsPool = {
             defaultNeutralMat,
             activeHighlightMat,
+            dimmedMat,
             heatMatPool,
             proxyMat
         };
+        if (!bodyGroup.userData) bodyGroup.userData = {};
+        bodyGroup.userData.materialsPool = app.hologramMaterialsPool;
 
         const getMaterial = (groupKey) => {
             const isMatch = app.isMuscleGroupSelectedOrChild(groupKey, app.activeMuscleFilter);
@@ -2380,63 +2482,72 @@ const app = {
             return defaultNeutralMat;
         };
 
-        const createPart = (geom, grpKey, pos, rot = [0,0,0], scale = [1,1,1]) => {
-            const mat = getMaterial(grpKey);
+        const createPart = (geom, groupKey, pos, rot = [0, 0, 0], scale = [1, 1, 1]) => {
+            const mat = getMaterial(groupKey);
             const mesh = new THREE.Mesh(geom, mat);
-            mesh.position.set(...pos);
-            mesh.rotation.set(...rot);
-            mesh.scale.set(...scale);
-            mesh.userData = { groupKey: grpKey, isSculptedLowPoly: true };
+            mesh.position.set(pos[0], pos[1], pos[2]);
+            mesh.rotation.set(rot[0], rot[1], rot[2]);
+            mesh.scale.set(scale[0], scale[1], scale[2]);
+            mesh.userData = {
+                groupKey,
+                isProxyCollider: false,
+                initialOpacity: mat.opacity,
+                initialEmissive: (mat.emissive && typeof mat.emissive.getHex === 'function') ? mat.emissive.getHex() : (mat.emissive || 0),
+                initialEmissiveIntensity: mat.emissiveIntensity || 0.15
+            };
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
             bodyGroup.add(mesh);
 
-            // Adiciona Proxy Collider ampliado (+35%) para máxima acurácia tátil
-            if (grpKey !== 'head') {
-                const proxyMesh = new THREE.Mesh(geom, proxyMat);
-                proxyMesh.position.set(...pos);
-                proxyMesh.rotation.set(...rot);
-                proxyMesh.scale.set(scale[0] * 1.35, scale[1] * 1.35, scale[2] * 1.35);
-                proxyMesh.userData = { groupKey: grpKey, isProxyCollider: true };
-                proxyMesh.visible = true;
-                bodyGroup.add(proxyMesh);
-            }
+            // Proxy collider transparente ampliado (+35%) para precisão tátil no mobile (WCAG 2.2 touch target)
+            const proxyGeom = (typeof THREE.SphereGeometry !== 'undefined')
+                ? new THREE.SphereGeometry(0.18, 6, 6)
+                : geom;
+            const proxyMesh = new THREE.Mesh(proxyGeom, proxyMat);
+            proxyMesh.position.set(pos[0], pos[1], pos[2]);
+            proxyMesh.scale.set(scale[0] * 1.35, scale[1] * 1.35, scale[2] * 1.35);
+            proxyMesh.userData = { groupKey, isProxyCollider: true };
+            proxyMesh.visible = true;
+            bodyGroup.add(proxyMesh);
 
             return mesh;
         };
 
-        // 1. Cabeça Estilizada Low-Poly
-        createPart(new THREE.IcosahedronGeometry(0.18, 1), 'head', [0, 1.25, 0]);
+        // 2. Cabeça / Pescoço / Trapézio Superior
+        const head = createPart(new THREE.CylinderGeometry(0.09, 0.08, 0.20, 6), 'traps', [0, 1.48, 0]);
+        head.userData.isSculptedLowPoly = true;
+        const neck = createPart(new THREE.CylinderGeometry(0.06, 0.08, 0.10, 6), 'traps', [0, 1.34, 0]);
 
-        // 2. Trapézio / Pescoço Facetado
-        createPart(new THREE.CylinderGeometry(0.11, 0.20, 0.18, 6), 'traps', [0, 1.05, -0.02]);
+        // 3. Ombros (Deltóides Anterior, Lateral e Posterior)
+        createPart(new THREE.IcosahedronGeometry(0.11, 1), 'shoulders_front', [0.30, 1.20, 0.04]);
+        createPart(new THREE.IcosahedronGeometry(0.11, 1), 'shoulders_front', [-0.30, 1.20, 0.04]);
+        createPart(new THREE.IcosahedronGeometry(0.11, 1), 'shoulders_side', [0.34, 1.18, 0]);
+        createPart(new THREE.IcosahedronGeometry(0.11, 1), 'shoulders_side', [-0.34, 1.18, 0]);
+        createPart(new THREE.IcosahedronGeometry(0.11, 1), 'shoulders_rear', [0.30, 1.18, -0.05]);
+        createPart(new THREE.IcosahedronGeometry(0.11, 1), 'shoulders_rear', [-0.30, 1.18, -0.05]);
 
-        // 3. Peitoral Estilizado Low-Poly (Placas Angulares Pectoralis Major)
-        const leftChest = createPart(new THREE.CylinderGeometry(0.16, 0.12, 0.10, 5), 'chest', [0.12, 0.86, 0.08], [-0.15, 0.15, -0.1], [1.1, 1.0, 0.8]);
+        // 4. Peitoral Maior (Silhueta Anatômica Estilizada Low-Poly)
+        const leftChest = createPart(new THREE.CylinderGeometry(0.13, 0.11, 0.16, 5), 'chest', [0.12, 1.10, 0.06], [0, 0, -0.15], [1.1, 0.9, 0.7]);
         leftChest.userData.isSculptedLowPoly = true;
-        const rightChest = createPart(new THREE.CylinderGeometry(0.16, 0.12, 0.10, 5), 'chest', [-0.12, 0.86, 0.08], [-0.15, -0.15, 0.1], [1.1, 1.0, 0.8]);
+        const rightChest = createPart(new THREE.CylinderGeometry(0.13, 0.11, 0.16, 5), 'chest', [-0.12, 1.10, 0.06], [0, 0, 0.15], [1.1, 0.9, 0.7]);
         rightChest.userData.isSculptedLowPoly = true;
 
-        // 4. Cardio / Núcleo Cardiovascular Sci-Fi (centro do esterno)
-        createPart(new THREE.OctahedronGeometry ? new THREE.OctahedronGeometry(0.08, 0) : new THREE.IcosahedronGeometry(0.08, 1), 'cardio', [0, 0.84, 0.09], [0, 0, 0], [1.1, 1.1, 0.8]);
-
-        // 5. Abdômen / Core Facetado Segmentado
-        const upperAbs = createPart(new THREE.CylinderGeometry(0.13, 0.12, 0.14, 6), 'abs', [0, 0.68, 0.06], [0, 0, 0], [1.1, 1.0, 0.75]);
+        // 5. Abdômen (Core / Oblíquos)
+        const upperAbs = createPart(new THREE.CylinderGeometry(0.16, 0.14, 0.14, 6), 'abs', [0, 0.90, 0.03], [0, 0, 0], [1.1, 1.0, 0.75]);
         upperAbs.userData.isSculptedLowPoly = true;
-        const lowerAbs = createPart(new THREE.CylinderGeometry(0.12, 0.10, 0.15, 6), 'abs', [0, 0.54, 0.05], [0, 0, 0], [1.05, 1.0, 0.75]);
+        const lowerAbs = createPart(new THREE.CylinderGeometry(0.14, 0.13, 0.14, 6), 'abs', [0, 0.74, 0.02], [0, 0, 0], [1.05, 1.0, 0.75]);
         lowerAbs.userData.isSculptedLowPoly = true;
 
-        // 6. Deltoides (Anterior, Lateral, Posterior) Facetados Low-Poly
-        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_front', [0.29, 0.91, 0.05]);
-        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_front', [-0.29, 0.91, 0.05]);
-        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_side', [0.34, 0.91, 0.0]);
-        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_side', [-0.34, 0.91, 0.0]);
-        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_rear', [0.29, 0.91, -0.05]);
-        createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_rear', [-0.29, 0.91, -0.05]);
+        // 6. Trapézio Médio/Inferior e Cardio/Tronco Central
+        createPart(new THREE.CylinderGeometry(0.12, 0.10, 0.16, 5), 'traps', [0, 1.12, -0.05], [0, 0, 0], [1.1, 1.0, 0.7]);
+        const cardioCore = createPart(new THREE.IcosahedronGeometry(0.08, 1), 'cardio', [0, 1.02, 0.01]);
+        cardioCore.userData.isCardioEmitter = true;
 
-        // 7. Braços Anatômicos (Bíceps e Tríceps com curvatura low-poly)
-        createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.24, 6), 'biceps', [0.34, 0.70, 0.04]);
-        createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.24, 6), 'biceps', [-0.34, 0.70, 0.04]);
-        createPart(new THREE.CylinderGeometry(0.085, 0.065, 0.24, 6), 'triceps', [0.34, 0.70, -0.04]);
-        createPart(new THREE.CylinderGeometry(0.085, 0.065, 0.24, 6), 'triceps', [-0.34, 0.70, -0.04]);
+        // 7. Braços: Bíceps e Tríceps Esculpidos
+        createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.28, 6), 'biceps', [0.32, 0.88, 0.03], [0, 0, -0.10]);
+        createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.28, 6), 'biceps', [-0.32, 0.88, 0.03], [0, 0, 0.10]);
+        createPart(new THREE.CylinderGeometry(0.085, 0.07, 0.28, 6), 'triceps', [0.33, 0.88, -0.04], [0, 0, -0.10]);
+        createPart(new THREE.CylinderGeometry(0.085, 0.07, 0.28, 6), 'triceps', [-0.33, 0.88, -0.04], [0, 0, 0.10]);
 
         // 8. Antebraços Anatômicos Afilados
         createPart(new THREE.CylinderGeometry(0.07, 0.045, 0.26, 6), 'forearms', [0.36, 0.42, 0.03]);
@@ -2482,48 +2593,116 @@ const app = {
     update3DMuscleHighlights: (sceneKey = 'library') => {
         const entry = app.threeScenes[sceneKey];
         if (!entry || !entry.bodyGroup) return;
+        const pool = (app.threeScenes[sceneKey] && app.threeScenes[sceneKey].materialsPool) || entry.materialsPool || entry.bodyGroup.userData?.materialsPool || app.hologramMaterialsPool;
         entry.bodyGroup.traverse(child => {
             if (child.isMesh && child.userData && child.userData.groupKey && !child.userData.isProxyCollider) {
                 const grp = child.userData.groupKey;
                 const isMatch = app.isMuscleGroupSelectedOrChild(grp, app.activeMuscleFilter);
-                if (isMatch) {
-                    child.material.color.setHex(0x00FF9D);
-                    child.material.emissive.setHex(0x00FF9D);
-                    child.material.emissiveIntensity = 1.6;
-                    child.material.opacity = 0.95;
+                if (app.activeMuscleFilter) {
+                    if (isMatch) {
+                        if (pool && pool.activeHighlightMat) {
+                            child.material = pool.activeHighlightMat;
+                        } else {
+                            if (child.material.color && typeof child.material.color.setHex === 'function') child.material.color.setHex(0x00FF9D);
+                            else child.material.color = 0x00FF9D;
+                            if (child.material.emissive && typeof child.material.emissive.setHex === 'function') child.material.emissive.setHex(0x00FF9D);
+                            else child.material.emissive = 0x00FF9D;
+                            child.material.emissiveIntensity = 1.8;
+                            child.material.opacity = 0.95;
+                        }
+                    } else {
+                        if (pool && pool.dimmedMat) {
+                            child.material = pool.dimmedMat;
+                        } else {
+                            if (child.material.color && typeof child.material.color.setHex === 'function') child.material.color.setHex(0x08101a);
+                            else child.material.color = 0x08101a;
+                            if (child.material.emissive && typeof child.material.emissive.setHex === 'function') child.material.emissive.setHex(0x000000);
+                            else child.material.emissive = 0x000000;
+                            child.material.emissiveIntensity = 0.05;
+                            child.material.opacity = 0.35;
+                        }
+                    }
                 } else {
-                    child.material.color.setHex(0x141c28);
-                    child.material.emissive.setHex(0x000000);
-                    child.material.emissiveIntensity = 0.1;
-                    child.material.opacity = 0.55;
+                    if (pool && pool.defaultNeutralMat) {
+                        child.material = pool.defaultNeutralMat;
+                    } else {
+                        if (child.material.color && typeof child.material.color.setHex === 'function') child.material.color.setHex(0x0c1524);
+                        else child.material.color = 0x0c1524;
+                        if (child.material.emissive && typeof child.material.emissive.setHex === 'function') child.material.emissive.setHex(0x02070f);
+                        else child.material.emissive = 0x02070f;
+                        child.material.emissiveIntensity = 0.15;
+                        child.material.opacity = 0.65;
+                    }
                 }
             }
         });
     },
 
+    rotate3DToView: (view = 'anterior', sceneKey = 'library') => {
+        const sc = app.threeScenes[sceneKey];
+        if (!sc) return;
+        if (sc.bodyGroup && sc.bodyGroup.rotation) {
+            sc.bodyGroup.rotation.y = 0; // Mantém rotação neutra sem dupla inversão (Sentinel Blocker #1)
+        }
+        if (sc.camera && sc.camera.position) {
+            const r = Math.sqrt((sc.camera.position.x || 0) ** 2 + (sc.camera.position.z || 3.8) ** 2) || 3.8;
+            sc.camera.position.z = (view === 'posterior' || view === 'back') ? -r : r;
+            sc.camera.position.x = 0;
+        }
+        if (sc.controls && typeof sc.controls.update === 'function') {
+            sc.controls.update();
+        }
+        const frontBtn = document.getElementById('3d-view-front-btn');
+        const backBtn = document.getElementById('3d-view-back-btn');
+        if (frontBtn && backBtn) {
+            if (view === 'anterior') {
+                frontBtn.className = 'px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[10px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D] flex items-center justify-center';
+                backBtn.className = 'px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[10px] font-black uppercase text-gray-400 hover:text-white flex items-center justify-center';
+            } else {
+                frontBtn.className = 'px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[10px] font-black uppercase text-gray-400 hover:text-white flex items-center justify-center';
+                backBtn.className = 'px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[10px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D] flex items-center justify-center';
+            }
+        }
+    },
+
+    zoom3D: (delta, sceneKey = 'library') => {
+        const sc = app.threeScenes[sceneKey];
+        if (!sc || !sc.camera) return;
+        const currentZ = sc.camera.position.z;
+        const minZ = sc.controls?.minDistance || 1.5;
+        const maxZ = sc.controls?.maxDistance || 6.0;
+        const sign = currentZ >= 0 ? 1 : -1;
+        const absZ = Math.abs(currentZ);
+        const targetAbsZ = Math.max(minZ, Math.min(maxZ, absZ + delta));
+        sc.camera.position.z = parseFloat((sign * targetAbsZ).toFixed(2));
+        if (sc.controls && typeof sc.controls.update === 'function') {
+            sc.controls.update();
+        }
+    },
+
     pulse3DMeshFeedback: (mesh) => {
         if (!mesh || !mesh.material) return;
         try {
-            const origColor = mesh.material.color ? mesh.material.color.getHex() : 0x141c28;
-            const origEmissive = mesh.material.emissive ? mesh.material.emissive.getHex() : 0x000000;
+            const origColor = mesh.material.color ? (typeof mesh.material.color.getHex === 'function' ? mesh.material.color.getHex() : mesh.material.color) : 0x141c28;
+            const origEmissive = mesh.material.emissive ? (typeof mesh.material.emissive.getHex === 'function' ? mesh.material.emissive.getHex() : mesh.material.emissive) : 0x000000;
             const origIntensity = mesh.material.emissiveIntensity || 0.1;
             const origOpacity = mesh.material.opacity || 0.55;
 
-            mesh.material.color.setHex(0x00FF9D);
-            mesh.material.emissive.setHex(0x00FF9D);
+            if (mesh.material.color && typeof mesh.material.color.setHex === 'function') mesh.material.color.setHex(0x00FF9D);
+            if (mesh.material.emissive && typeof mesh.material.emissive.setHex === 'function') mesh.material.emissive.setHex(0x00FF9D);
             mesh.material.emissiveIntensity = 2.8;
             mesh.material.opacity = 1.0;
 
             setTimeout(() => {
                 if (mesh && mesh.material) {
                     if (app.activeMuscleFilter && app.isMuscleGroupSelectedOrChild(mesh.userData?.groupKey, app.activeMuscleFilter)) {
-                        mesh.material.color.setHex(0x00FF9D);
-                        mesh.material.emissive.setHex(0x00FF9D);
-                        mesh.material.emissiveIntensity = 1.6;
+                        if (mesh.material.color && typeof mesh.material.color.setHex === 'function') mesh.material.color.setHex(0x00FF9D);
+                        if (mesh.material.emissive && typeof mesh.material.emissive.setHex === 'function') mesh.material.emissive.setHex(0x00FF9D);
+                        mesh.material.emissiveIntensity = 1.8;
                         mesh.material.opacity = 0.95;
                     } else {
-                        mesh.material.color.setHex(origColor);
-                        mesh.material.emissive.setHex(origEmissive);
+                        if (mesh.material.color && typeof mesh.material.color.setHex === 'function') mesh.material.color.setHex(origColor);
+                        if (mesh.material.emissive && typeof mesh.material.emissive.setHex === 'function') mesh.material.emissive.setHex(origEmissive);
                         mesh.material.emissiveIntensity = origIntensity;
                         mesh.material.opacity = origOpacity;
                     }
@@ -2552,10 +2731,16 @@ const app = {
             if (entry.animationFrameId) cancelAnimationFrame(entry.animationFrameId);
             if (entry.resizeObserver) entry.resizeObserver.disconnect();
             if (entry.pointerListeners) {
-                if (entry.canvas && typeof entry.canvas.removeEventListener === 'function') entry.canvas.removeEventListener('pointerdown', entry.pointerListeners.onDown);
+                if (entry.canvas && typeof entry.canvas.removeEventListener === 'function') {
+                    if (entry.pointerListeners.onDown) entry.canvas.removeEventListener('pointerdown', entry.pointerListeners.onDown);
+                    if (entry.pointerListeners.onCanvasWheel) entry.canvas.removeEventListener('wheel', entry.pointerListeners.onCanvasWheel);
+                    if (entry.pointerListeners.onTouchStartPinch) entry.canvas.removeEventListener('touchstart', entry.pointerListeners.onTouchStartPinch);
+                    if (entry.pointerListeners.onTouchMovePinch) entry.canvas.removeEventListener('touchmove', entry.pointerListeners.onTouchMovePinch);
+                    if (entry.pointerListeners.onTouchEndPinch) entry.canvas.removeEventListener('touchend', entry.pointerListeners.onTouchEndPinch);
+                }
                 if (typeof window.removeEventListener === 'function') {
-                    window.removeEventListener('pointermove', entry.pointerListeners.onMove);
-                    window.removeEventListener('pointerup', entry.pointerListeners.onUp);
+                    if (entry.pointerListeners.onMove) window.removeEventListener('pointermove', entry.pointerListeners.onMove);
+                    if (entry.pointerListeners.onUp) window.removeEventListener('pointerup', entry.pointerListeners.onUp);
                 }
             }
             if (entry.tapListeners && entry.canvas && typeof entry.canvas.removeEventListener === 'function') {
@@ -2884,14 +3069,14 @@ const app = {
             <div class="glass p-5 flex justify-between items-center bg-white/[0.01]">
                 <div>
                     <h4 class="font-black text-sm text-[#00FF9D] uppercase italic tracking-tighter">${app.sanitize(r.name)}</h4>
-                    <p class="text-[9px] text-gray-700 font-black uppercase tracking-widest">${new Date(r.date).toLocaleDateString('pt-BR')}</p>
+                    <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest">${new Date(r.date).toLocaleDateString('pt-BR')}</p>
                 </div>
                 <div class="text-right">
-                    <div class="text-xl font-black text-white italic tracking-tighter">${r.weight}<span class="text-[10px] text-gray-700 not-italic ml-1">KG</span></div>
-                    <div class="text-[9px] text-gray-700 font-black uppercase">${r.reps} REPS · 1RM: ${app.calculate1RM(r.weight, r.reps)}KG</div>
+                    <div class="text-xl font-black text-white italic tracking-tighter">${r.weight}<span class="text-[10px] text-gray-400 not-italic ml-1">KG</span></div>
+                    <div class="text-[9px] text-gray-400 font-black uppercase">${r.reps} REPS · 1RM: ${app.calculate1RM(r.weight, r.reps)}KG</div>
                 </div>
             </div>
-        `).join('') : `<div class="p-10 text-center text-gray-700 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum recorde ainda. Treine</div>`;
+        `).join('') : `<div class="p-10 text-center text-gray-400 font-black uppercase text-[10px] tracking-[0.3em]">Nenhum recorde ainda. Treine</div>`;
     },
 
     showExerciseLibrary: (ctx) => { 

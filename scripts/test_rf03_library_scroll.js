@@ -46,8 +46,8 @@ it('HTML deve conter estrutura de visualizador colapsável com transição suave
 // TESTE DE FULLSCREEN SHEET NO MOBILE (<640px)
 it('HTML deve configurar a Biblioteca como Fullscreen Sheet no mobile (100dvh / h-full, <640px)', () => {
     assert(
-        html.includes('h-full') && html.includes('sm:h-[92vh]') && html.includes('sm:rounded-t-[45px]'),
-        'Biblioteca modal não configurada como fullscreen sheet no mobile (esperado h-full sm:h-[92vh])'
+        html.includes('h-full') && (html.includes('sm:h-[92dvh]') || html.includes('sm:h-[92vh]')) && html.includes('sm:rounded-t-[45px]'),
+        'Biblioteca modal não configurada como fullscreen sheet no mobile (esperado h-full sm:h-[92dvh])'
     );
 });
 
@@ -156,6 +156,33 @@ it('Em viewport 390x844, lista de exercícios deve ter >= 85% da altura da tela 
     assert(
         heightSearchFocus >= MIN_REQUIRED_FOCUS_LIST_HEIGHT,
         `Altura da lista no foco de busca (${heightSearchFocus}px) é inferior a 85% da tela (${MIN_REQUIRED_FOCUS_LIST_HEIGHT}px)`
+    );
+});
+
+// TESTE DE VISUALIZADOR COLAPSADO LIBERANDO >= 70% DA ALTURA EM MOBILE (<640px)
+it('Visualizador colapsado deve liberar >= 70% da altura da tela para a lista de exercícios em <640px (WCAG 2.2)', () => {
+    const VIEWPORT_WIDTH = 390;
+    const VIEWPORT_HEIGHT = 844;
+    const MIN_REQUIRED_COLLAPSED_HEIGHT = 0.70 * VIEWPORT_HEIGHT; // 590.8px
+
+    let loadedApp = null;
+    try {
+        const scriptCode = `
+            function Dexie() { this.version = () => ({ stores: () => ({}) }); this.templates = { toArray: async () => [] }; }
+            const lucide = { createIcons: () => {} };
+            ${appJs}
+            return app;
+        `;
+        loadedApp = new Function(scriptCode)();
+    } catch (e) {
+        throw new Error('Falha ao instanciar app: ' + e.message);
+    }
+
+    const heightCollapsed = loadedApp.getLibraryListCalculatedHeight(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, true, false);
+    console.log(`   Altura da lista (Colapsado sem busca / Mobile): ${heightCollapsed}px (>= ${MIN_REQUIRED_COLLAPSED_HEIGHT}px necessários)`);
+    assert(
+        heightCollapsed >= MIN_REQUIRED_COLLAPSED_HEIGHT,
+        `Altura da lista colapsada (${heightCollapsed}px) é inferior a 70% da tela (${MIN_REQUIRED_COLLAPSED_HEIGHT}px)`
     );
 });
 

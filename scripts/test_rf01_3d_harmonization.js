@@ -50,11 +50,19 @@ class MockObject3D {
         this.visible = true;
     }
     add(child) { this.children.push(child); }
+    traverse(cb) {
+        cb(this);
+        this.children.forEach(c => {
+            if (c.traverse) c.traverse(cb);
+            else cb(c);
+        });
+    }
 }
 class MockGroup extends MockObject3D {}
 class MockMesh extends MockObject3D {
     constructor(geometry, material) {
         super();
+        this.isMesh = true;
         this.geometry = geometry;
         this.material = material;
     }
@@ -204,6 +212,117 @@ it('buildHologramBodyMesh deve utilizar material pooling para evitar re-instanci
     const uniqueMaterials = new Set(visualMeshes.map(m => m.material));
     // Sem pooling, cada mesh teria um material novo (>20 materiais). Com pooling, materiais não selecionados compartilham a mesma instância
     assert(uniqueMaterials.size <= 5, `Material pooling falhou: ${uniqueMaterials.size} materiais únicos encontrados em estado neutro (máximo esperado <= 5)`);
+});
+
+// 9. [RF01-Refatoração] Toggle Visão Anterior / Posterior no 3D (órbita de câmera única sem dupla inversão)
+it('app.rotate3DToView deve alternar visão 3D orbitando câmera para anterior (z > 0) e posterior (z < 0) sem dupla inversão', () => {
+    assert(typeof loadedApp.rotate3DToView === 'function', 'app.rotate3DToView deve existir');
+    const bodyGroup = loadedApp.buildHologramBodyMesh(mockTHREE, null);
+    const cam = { position: new MockVector3(0, 0.8, 3.8), aspect: 1.5, updateProjectionMatrix: () => {} };
+    loadedApp.threeScenes['library'] = {
+        bodyGroup,
+        camera: cam,
+        controls: null,
+        materialsPool: bodyGroup.userData?.materialsPool,
+        initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
+    };
+    loadedApp.threeScenes['library'].materialsPool = bodyGroup.userData?.materialsPool;
+
+    loadedApp.rotate3DToView('posterior', 'library');
+    assert(cam.position.z < 0, `Esperado câmera em z negativo para visão posterior, obtido: ${cam.position.z}`);
+    assert(Math.abs(bodyGroup.rotation.y) < 0.05, `Modelo deve manter rotação neutra (sem dupla inversão), obtido: ${bodyGroup.rotation.y}`);
+
+    loadedApp.rotate3DToView('anterior', 'library');
+    assert(cam.position.z > 0, `Esperado câmera em z positivo para visão anterior, obtido: ${cam.position.z}`);
+    assert(Math.abs(bodyGroup.rotation.y) < 0.05, `Modelo deve manter rotação neutra, obtido: ${bodyGroup.rotation.y}`);
+});
+
+// 10. [RF01-Refatoração] Zoom no 3D (wheel / pinch / zoom controls)
+it('app.zoom3D deve permitir zoom in/out suave delimitando entre distâncias seguras (1.5 a 6.0)', () => {
+    assert(typeof loadedApp.zoom3D === 'function', 'app.zoom3D deve existir');
+    const cam = { position: new MockVector3(0, 0.8, 3.8) };
+    loadedApp.threeScenes['library'] = {
+        camera: cam,
+        controls: { minDistance: 1.5, maxDistance: 6.0 },
+        initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
+    };
+
+    // Zoom in (aproximar -> diminui z)
+    loadedApp.zoom3D(-0.5, 'library');
+    assert(cam.position.z < 3.8, `Esperado position.z < 3.8 após zoom in, obtido: ${cam.position.z}`);
+
+    // Zoom out (afastar -> aumenta z)
+    loadedApp.zoom3D(1.0, 'library');
+    assert(cam.position.z > 3.3, `Esperado position.z aumentar após zoom out, obtido: ${cam.position.z}`);
+
+    // Delimitação máxima
+    loadedApp.zoom3D(10.0, 'library');
+    assert(cam.position.z <= 6.0, `Camera position.z excedeu limite máximo 6.0, obtido: ${cam.position.z}`);
+
+    // Delimitação mínima
+    loadedApp.zoom3D(-20.0, 'library');
+    assert(cam.position.z >= 1.5, `Camera position.z caiu abaixo do limite mínimo 1.5, obtido: ${cam.position.z}`);
+});
+
+// 11. [RF01-Refatoração] Isolamento Visual e Highlight do Músculo Selecionado
+it('update3DMuscleHighlights deve isolar o músculo selecionado com Neon Mint #00FF9D e atenuar músculos neutros', () => {
+    const bodyGroup = loadedApp.buildHologramBodyMesh(mockTHREE, null);
+    loadedApp.threeScenes['library'] = {
+        bodyGroup,
+        camera: { position: new MockVector3(0, 0.8, 3.8) },
+        materialsPool: bodyGroup.userData?.materialsPool,
+        initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
+    };
+    loadedApp.threeScenes['library'].materialsPool = bodyGroup.userData?.materialsPool;
+
+    loadedApp.activeMuscleFilter = 'chest';
+    loadedApp.update3DMuscleHighlights('library');
+
+    const chestMesh = bodyGroup.children.find(m => m.userData && m.userData.groupKey === 'chest' && !m.userData.isProxyCollider);
+    const quadsMesh = bodyGroup.children.find(m => m.userData && m.userData.groupKey === 'quads' && !m.userData.isProxyCollider);
+
+    assert(chestMesh, 'Peitoral deve existir no bodyGroup');
+    assert(quadsMesh, 'Quadríceps deve existir no bodyGroup');
+
+    // Músculo ativo isolado
+    const emHex = Number(chestMesh.material.emissive?.hex !== undefined ? chestMesh.material.emissive.hex : chestMesh.material.emissive);
+    assert.strictEqual(emHex, 0x00FF9D, 'Músculo ativo deve ter emissive 0x00FF9D');
+    assert(chestMesh.material.emissiveIntensity >= 1.5, 'Intensidade emissiva do selecionado deve ser >= 1.5');
+    assert(chestMesh.material.opacity >= 0.9, 'Opacidade do músculo ativo deve ser >= 0.9');
+
+    // Músculo não selecionado atenuado (isolamento visual anti-slop)
+    assert(quadsMesh.material.opacity <= 0.45, `Músculo neutro deve ser atenuado (opacity <= 0.45), obtido: ${quadsMesh.material.opacity}`);
+    assert(quadsMesh.material.emissiveIntensity <= 0.15, 'Músculo neutro deve ter emissiveIntensity <= 0.15');
+
+    loadedApp.activeMuscleFilter = null;
+});
+
+// 12. [RF01-Refatoração] Sincronização e Auto-rotação Frontal/Dorsal
+it('app.selectMuscleFilter deve sincronizar visão 3D auto-rotacionando câmera para visão dorsal em grupos posteriores e frontal em anteriores', () => {
+    const bodyGroup = loadedApp.buildHologramBodyMesh(mockTHREE, null);
+    const cam = { position: new MockVector3(0, 0.8, 3.8), aspect: 1.5, updateProjectionMatrix: () => {} };
+    loadedApp.threeScenes['library'] = {
+        bodyGroup,
+        camera: cam,
+        materialsPool: bodyGroup.userData?.materialsPool,
+        initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
+    };
+    loadedApp.threeScenes['library'].materialsPool = bodyGroup.userData?.materialsPool;
+
+    // Grupo posterior (lats)
+    loadedApp.selectMuscleFilter('lats');
+    assert(cam.position.z < 0, `Seleção de lats deveria posicionar câmera na visão posterior (z < 0), obtido: ${cam.position.z}`);
+    assert(Math.abs(bodyGroup.rotation.y) < 0.05, `Modelo deve manter rotação neutra, obtido: ${bodyGroup.rotation.y}`);
+
+    // Grupo anterior (chest)
+    loadedApp.selectMuscleFilter('chest');
+    assert(cam.position.z > 0, `Seleção de chest deveria posicionar câmera na visão anterior (z > 0), obtido: ${cam.position.z}`);
+    assert(Math.abs(bodyGroup.rotation.y) < 0.05, `Modelo deve manter rotação neutra, obtido: ${bodyGroup.rotation.y}`);
+
+    // Sentinel MAJOR #4: Isolamento de materialsPool por cena
+    assert(loadedApp.threeScenes['library'].materialsPool, 'threeScenes deve possuir materialsPool isolado por cena');
+
+    loadedApp.clearMuscleFilter();
 });
 
 console.log('\n----------------------------------------------------------------');

@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="min-h-screen pb-32">
+<body class="min-h-[100dvh] pb-32">
 
     <!-- Toast Notifications Container -->
     <div id="toast-container"></div>
@@ -134,7 +134,7 @@
                         <h2 id="active-workout-name" class="text-2xl font-black tracking-tighter italic text-white leading-tight">--</h2>
                         <div class="flex items-center gap-2 mt-0.5">
                             <span class="w-2 h-2 bg-[#00FF9D] rounded-full animate-pulse"></span>
-                            <span id="timer-display" class="text-xs font-mono text-gray-400 font-bold tracking-widest uppercase">00:00:00</span>
+                            <span id="timer-display" role="timer" aria-live="polite" class="text-xs font-mono text-gray-400 font-bold tracking-widest uppercase">00:00:00</span>
                             <span id="wakelock-indicator" class="hidden text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#00FF9D]/10 text-[#00FF9D] border border-[#00FF9D]/30 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-ping"></span> Tela Ativa</span>
                         </div>
                     </div>
@@ -214,7 +214,7 @@
     </div>
 
     <div id="exercise-library-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden">
-        <div onclick="event.stopPropagation()" class="absolute bottom-0 left-0 right-0 glass h-full sm:h-[92vh] rounded-none sm:rounded-t-[45px] p-4 sm:p-8 space-y-3 sm:space-y-5 flex flex-col shadow-2xl border-white/10">
+        <div onclick="event.stopPropagation()" class="absolute bottom-0 left-0 right-0 glass h-full sm:h-[92vh] sm:h-[92dvh] rounded-none sm:rounded-t-[45px] p-4 sm:p-8 space-y-3 sm:space-y-5 flex flex-col shadow-2xl border-white/10">
             <div class="flex justify-between items-center text-white shrink-0">
                 <div>
                     <h2 class="text-3xl font-black italic tracking-tighter uppercase leading-none">Biblioteca</h2>
@@ -244,23 +244,39 @@
                 <div id="library-map-container" class="hidden flex-col items-center justify-center space-y-2 py-1" onclick="event.stopPropagation()">
                     <div class="flex justify-between items-center w-full px-2">
                         <span class="text-[9px] font-black uppercase tracking-widest text-gray-400">Toque em um músculo para filtrar:</span>
-                        <div class="flex gap-1">
-                            <button id="svg-view-front-btn" onclick="app.switchSvgView('anterior')" class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D]">Frente</button>
-                            <button id="svg-view-back-btn" onclick="app.switchSvgView('posterior')" class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-gray-400">Costas</button>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Toggle Frontal ↔ Dorsal 2D -->
+                            <button id="svg-view-front-btn" onclick="app.switchSvgView('anterior')" class="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D] flex items-center justify-center transition-all">Frente</button>
+                            <button id="svg-view-back-btn" onclick="app.switchSvgView('posterior')" class="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[9px] font-black uppercase text-gray-400 hover:text-white flex items-center justify-center transition-all">Costas</button>
+                            <!-- Controles de Zoom 2D -->
+                            <button onclick="app.zoomSvg(0.25)" class="p-2.5 min-h-[44px] min-w-[44px] glass rounded-xl text-gray-400 hover:text-[#00FF9D] active:scale-95 flex items-center justify-center transition-all" aria-label="Aumentar zoom" title="Aumentar Zoom"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+                            <button onclick="app.zoomSvg(-0.25)" class="p-2.5 min-h-[44px] min-w-[44px] glass rounded-xl text-gray-400 hover:text-[#00FF9D] active:scale-95 flex items-center justify-center transition-all" aria-label="Diminuir zoom" title="Diminuir Zoom"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+                            <button onclick="app.resetSvgZoom()" class="p-2.5 min-h-[44px] min-w-[44px] glass rounded-xl text-gray-400 hover:text-white active:scale-95 flex items-center justify-center transition-all" aria-label="Resetar visão" title="Resetar Zoom"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
                         </div>
                     </div>
-                    <div id="library-svg-stage" class="w-full h-44 sm:h-48 flex items-center justify-center relative"></div>
+                    <div id="library-svg-stage" class="w-full h-44 sm:h-48 flex items-center justify-center relative overflow-hidden"></div>
                     <!-- Chips Anatômicos Rápidos (Acessibilidade Dual RF02-v5.4) -->
                     <div id="library-muscle-chips-bar" class="w-full flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-1.5 px-1 shrink-0 border-t border-white/5" role="toolbar" aria-label="Atalhos rápidos para grupos musculares"></div>
                 </div>
 
                 <!-- 3D Hologram Interactive Stage Container -->
                 <div id="library-3d-container" class="hidden flex-col items-center justify-center space-y-2 py-1" onclick="event.stopPropagation()">
+                    <div class="flex justify-between items-center w-full px-2">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-gray-400">Holograma 3D Interativo:</span>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Toggle Frontal ↔ Dorsal 3D -->
+                            <button id="3d-view-front-btn" onclick="app.rotate3DToView('anterior')" class="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D] flex items-center justify-center transition-all">Frente</button>
+                            <button id="3d-view-back-btn" onclick="app.rotate3DToView('posterior')" class="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl text-[9px] font-black uppercase text-gray-400 hover:text-white flex items-center justify-center transition-all">Costas</button>
+                            <!-- Controles de Zoom 3D -->
+                            <button onclick="app.zoom3D(-0.4)" class="p-2.5 min-h-[44px] min-w-[44px] glass rounded-xl text-gray-400 hover:text-[#00FF9D] active:scale-95 flex items-center justify-center transition-all" aria-label="Aumentar zoom" title="Aumentar Zoom"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+                            <button onclick="app.zoom3D(0.4)" class="p-2.5 min-h-[44px] min-w-[44px] glass rounded-xl text-gray-400 hover:text-[#00FF9D] active:scale-95 flex items-center justify-center transition-all" aria-label="Diminuir zoom" title="Diminuir Zoom"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+                            <button onclick="app.reset3DCamera()" class="p-2.5 min-h-[44px] min-w-[44px] glass rounded-xl text-[9px] font-mono uppercase text-gray-400 hover:text-white active:scale-95 flex items-center justify-center transition-all" aria-label="Resetar visão" title="Resetar Câmera"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
                     <div class="hologram-stage h-48 sm:h-56 w-full flex items-center justify-center relative">
                         <div class="hologram-grid"></div>
                         <canvas id="library-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
-                        <div class="absolute bottom-2 left-3 text-[8px] font-mono text-[#00FF9D]/70 uppercase tracking-widest">● Gire 360° com o dedo</div>
-                        <button onclick="app.reset3DCamera()" class="absolute top-2 right-3 p-1.5 glass text-[8px] font-mono uppercase text-gray-400 hover:text-white">Resetar Câmera</button>
+                        <div class="absolute bottom-2 left-3 text-[8px] font-mono text-[#00FF9D]/70 uppercase tracking-widest pointer-events-none">● Gire 360° com o dedo · Zoom por pinça/scroll</div>
                     </div>
                 </div>
             </div>
@@ -332,7 +348,7 @@
     
     <!-- Exercise Detail Modal -->
     <div id="exercise-detail-modal" class="fixed inset-0 z-[400] bg-black/95 backdrop-blur-xl hidden text-white">
-        <div class="absolute bottom-0 left-0 right-0 glass h-[92vh] rounded-t-[45px] p-8 space-y-5 flex flex-col shadow-2xl border-white/10">
+        <div class="absolute bottom-0 left-0 right-0 glass h-[92dvh] rounded-t-[45px] p-8 space-y-5 flex flex-col shadow-2xl border-white/10">
             <div class="flex justify-between items-center">
                 <span class="text-[9px] text-[#00FF9D] font-black uppercase tracking-[0.2em]" id="detail-exercise-category">CATEGORIA</span>
                 <button onclick="app.closeModal('exercise-detail-modal')" class="p-3 glass"><i data-lucide="x"></i></button>
@@ -459,7 +475,7 @@
 
     <!-- Custom Exercise Creation Modal -->
     <div id="custom-exercise-modal" class="fixed inset-0 z-[400] bg-black/95 backdrop-blur-xl hidden text-white">
-        <div class="flex items-center justify-center min-h-screen p-6">
+        <div class="flex items-center justify-center min-h-[100dvh] p-6">
             <div class="glass w-full max-w-sm p-8 space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black italic tracking-tighter uppercase">Novo Exercício</h2>
@@ -491,7 +507,7 @@
     </div>
 
     <div id="settings-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden text-white">
-        <div class="flex items-center justify-center min-h-screen p-6">
+        <div class="flex items-center justify-center min-h-[100dvh] p-6">
             <div class="glass w-full max-w-sm p-8 space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-black italic tracking-tighter uppercase">Ajustes & Sistema</h2>
@@ -592,7 +608,7 @@
 
     <!-- Help & Knowledge Base Modal -->
     <div id="help-modal" class="fixed inset-0 z-[480] bg-black/95 backdrop-blur-2xl hidden text-white">
-        <div class="absolute bottom-0 left-0 right-0 glass h-[92vh] rounded-t-[45px] p-6 pb-8 space-y-5 flex flex-col shadow-2xl border-white/10">
+        <div class="absolute bottom-0 left-0 right-0 glass h-[92dvh] rounded-t-[45px] p-6 pb-8 space-y-5 flex flex-col shadow-2xl border-white/10">
             <div class="flex justify-between items-center px-1">
                 <div>
                     <h2 class="text-2xl font-black italic tracking-tighter uppercase text-white">Central de Ajuda</h2>
@@ -653,7 +669,7 @@
 
     <!-- Confirm Dialog Custom Modal -->
     <div id="confirm-dialog-modal" class="fixed inset-0 z-[550] bg-black/90 backdrop-blur-xl hidden text-white">
-        <div class="flex items-center justify-center min-h-screen p-6">
+        <div class="flex items-center justify-center min-h-[100dvh] p-6">
             <div class="glass w-full max-w-sm p-7 space-y-5 border-white/10 shadow-2xl animate-fade">
                 <div class="flex items-center gap-3">
                     <div id="confirm-dialog-icon" class="p-3 rounded-xl bg-red-500/10 text-red-400">
@@ -679,7 +695,7 @@
         
         <div class="flex flex-col items-center justify-center relative min-w-[100px]">
             <span class="text-[8px] text-[#00FF9D] font-bold uppercase tracking-[0.22em] mb-0.5">Descanso ativo</span>
-            <div class="text-2xl font-mono font-black text-white leading-none tracking-tight" id="overlay-timer">00:00</div>
+            <div class="text-2xl font-mono font-black text-white leading-none tracking-tight" id="overlay-timer" role="timer" aria-live="polite">00:00</div>
         </div>
         
         <div class="flex items-center gap-1.5">

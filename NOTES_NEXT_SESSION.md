@@ -1,43 +1,50 @@
 # 🔁 Handover — StrongLog Pro
 
-> Atualizado em: 2026-08-30 12:30 | Por: Chronicler (Memory Archivist) & Equipe Maestri (Maestro, Forge, Sentinel, Specter, Compass)
+> Atualizado em: 2026-08-30 14:50 | Por: Chronicler (Memory Archivist) & Equipe Maestri (Maestro, Forge, Sentinel, Specter, Compass, Searcher)
 
 ## Estado atual do projeto
-O **StrongLog Pro v5.6 (Hotfix Crítico de Overlays, Resiliência do Service Worker & Homologação de Percurso Completo)** está 100% concluído, testado e publicado em produção no GitHub Pages (`https://gfsleme.github.io/stronglog-pro/`).
+O **StrongLog Pro v5.7 (Remap Anatômico 2D/3D Refeito, Animações por Músculo, Acessibilidade WCAG 2.2 & Agente Searcher)** está 100% implementado, testado e validado.
 
-O sistema passou por três ciclos intensivos de evolução e correção técnica após a v5.3:
-- **v5.4 (Commit `cef0206`)**: Three.js com 34 proxy colliders invisíveis (`scale: 1.35`) e pooling de materiais; barra de chips anatômicos rápidos (`#library-muscle-chips-bar`) para os 19 grupos; biblioteca fullscreen sheet `100dvh` com auto-colapso ao buscar; eliminação de strings `UNDEFINED` no treino ativo (60/60 testes PASS).
-- **v5.5 (Commit `333c5db`)**: Diagnóstico e resolução da falha silenciosa do Service Worker. O `cache.addAll` atômico derrubava a instalação por CDNs externas, prendendo celulares no cache velho da v5.2 ("botões e layouts desconfigurados"). Corrigido com cache unitário de assets locais, CDNs em best-effort paralelo e navegação `network-first` com fallback offline.
-- **v5.6 (Commit `7046fd4`)**: Resolução definitiva dos modais fantasmas que bloqueavam o app. `#onboarding-modal` (z-500) com `.hidden` explícito no HTML + flag multi-key no `localStorage` + bloqueio de reabertura com outros modais ativos; `#rest-timer-overlay` (z-200) com `.hidden` real quando inativo (eliminando toques bloqueados pelo translate); todos os 11 modais padronizados com `.hidden { display: none !important; }`; `savePlan` fecha editor e volta ao dashboard; busca da biblioteca restaurada (61 default / 46 'supino').
-- **Status dos Testes**: **78/78 testes automatizados aprovados (100% GREEN)**, com zero regressões.
-- **Validação E2E Empírica**: Percurso humano-simulado completo validado pelo Maestro via Chrome DevTools Protocol (CDP 390x844): *boot limpo $\rightarrow$ nova rotina $\rightarrow$ biblioteca $\rightarrow$ busca textual $\rightarrow$ seleção múltipla $\rightarrow$ salvar rotina $\rightarrow$ ajustes*, confirmando zero overlays residuais e zero erros no console.
+O sistema consolidou uma importante evolução em relação às versões anteriores:
+- **v5.4**: Three.js com proxy colliders invisíveis, chips de grupos musculares, fullscreen sheet 100dvh com auto-colapso e fallbacks defensivos.
+- **v5.5**: Service Worker resiliente com desacoplamento de CDNs e navegação `network-first`.
+- **v5.6**: Blindagem global de overlays com `.hidden` explícito, onboarding com flag multi-key e fechamento correto de rotinas.
+- **v5.7 (Entrega Atual)**:
+  - Remap 2D/3D refeito do zero com animações de pulso/glow por músculo (`.active-selected`).
+  - Visão anterior/posterior 3D orbital sem dupla inversão de rotação (`app.rotate3DToView`).
+  - Controles táteis de zoom dedicados para o Mapa SVG (1.0x–2.5x) e visualizador Three.js (1.5–6.0).
+  - Acessibilidade WCAG 2.2 com hitboxes de 44px (`.touch-target-44`), `min-h-[100dvh]`, correção rigorosa de contraste (remoção de `text-gray-700`), `role="timer"` e `aria-live="polite"`.
+  - Conexão do novo agente consultivo **Searcher** ao canvas Maestri com benchmarking competitivo e relatório P1/P2/P3 consolidado em [[RESEARCH_BENCHMARK_SEARCHER]].
+- **Status dos Testes**: **68/68 assertions automatizadas verdes via Node.js** (RF01 a RF05 + Picker Flow + Overlays v5.6 + Testes Residuais) e **9/9 itens críticos auditados com sucesso** via `scripts/verify_9_items.js`. Zero regressões.
 
 ---
 
-## O que foi feito recentemente (v5.4 a v5.6)
-* **v5.4 (UX & Biomecânica)**:
-  - 34 proxy colliders invisíveis no Three.js garantindo toques precisos no modelo 3D sem desvios de Raycasting.
-  - Barra de chips anatômicos com rolagem horizontal e sincronização tripla (Chip $\leftrightarrow$ 2D SVG $\leftrightarrow$ 3D Three.js $\leftrightarrow$ Lista).
-  - Modal da biblioteca em `100dvh` (< 640px) com auto-colapso do visualizador ao focar no campo de busca ($\ge 85\%$ de área útil).
-  - Fallbacks defensivos para `baseWeight` (`Livre`) e `restSeconds` (`90s`), eliminando `UNDEFINED`.
-* **v5.5 (Infraestrutura PWA & Resiliência de Deploy)**:
-  - Desacoplamento da instalação do Service Worker: CDNs externas não mais bloqueiam ou derrubam a ativação do cache local.
-  - Estratégia de navegação alterada para `network-first` garantindo que novas versões cheguem de imediato aos dispositivos móveis.
-* **v5.6 (Blindagem de Overlays & Fluxo Gabriel)**:
-  - Eliminação de z-index bleed e overlays invisíveis no DOM (`onboarding-modal` e `rest-timer-overlay`).
-  - Auditoria estrita em todos os 11 modais e overlays do app com classe `.hidden` nativa e CSS reforçado.
-  - Correção do fluxo de criação e persistência de rotinas no Dashboard via `savePlan`.
-  - Homologação via suíte TDD dedicada `scripts/test_rf_overlays_v56.js` (8/8 PASS).
+## O que foi feito recentemente (v5.7)
+* **Visualizador Anatômico & Biomecânica**:
+  - Remap do zero dos alvos anatômicos com feedback pulsante Neon Mint (`#00FF9D`) e atenuação visual precisa dos grupos inativos.
+  - Câmera 3D orbital corrigida alternando entre vista anterior e posterior sem inversão dupla de eixos.
+  - Ferramentas de zoom tátil integradas ao Mapa 2D SVG e ao modelo tridimensional Three.js.
+  - Identidade visual Tactical Sci-Fi preservada com fundo grafite profundo (`#070B11`) e bordas hairline de 1px.
+* **Acessibilidade Móvel & Padrões WCAG 2.2**:
+  - Hitboxes de no mínimo 44x44px (`.touch-target-44`) aplicadas a botões e nós SVG, compensando fadiga motora e suor nas mãos.
+  - Altura dinâmica em `100dvh` para evitar sobreposição de controles pelas barras de navegação de navegadores móveis.
+  - Eliminação de classes de baixo contraste (`text-gray-700`), garantindo contraste AAA no dark mode.
+  - Atributos `role="timer"` e `aria-live="polite"` nos cronômetros de descanso.
+* **Inteligência de Mercado & Canvas Maestri**:
+  - Integração do agente consultivo **Searcher** no canvas, gerando análise comparativa (Hevy, Strong, RP) e matriz de recomendações P1/P2/P3.
 
 ---
 
 ## ⏳ Pendências & Roadmap Futuro (Prioridade Decrescente)
 
-### 🟢 P1 — Próximo Ciclo (Refinamentos de Polish)
-1. **Histórico de Treinos com Gráficos Miniaturizados (Sparklines)**:
+### 🟢 P1 — Próximo Ciclo (Isolamento de Recursos & Polish)
+1. **Isolamento de `materialsPool` Three.js por Cena**:
+   - Mudar de `app.hologramMaterialsPool` global para `app.threeScenes[sceneKey].materialsPool` em `src/app.js:2462/2470`.
+   - Evitar que o `destroy3DScene` de uma cena descarte materiais de outra cena ativa.
+2. **Histórico de Treinos com Gráficos Miniaturizados (Sparklines P2-Searcher)**:
    - Exibir pequenas curvas de evolução de carga diretamente no card de cada exercício no histórico.
-2. **Visualizador de Recuperação Semanal**:
-   - Exibir mapa de calor dos últimos 7 dias na aba de Histórico baseado na atenuação metabólica ($e^{-\lambda t}$).
+3. **Visualizador de Recuperação Semanal (Heatmap de Fadiga $e^{-\lambda t}$)**:
+   - Exibir mapa de calor dos últimos 7 dias na aba de Histórico baseado na atenuação metabólica.
 
 ### 🟡 P2 — Médio Prazo (Recursos Avançados)
 1. **Exportação Tabular em CSV / Excel**:
@@ -48,16 +55,15 @@ O sistema passou por três ciclos intensivos de evolução e correção técnica
 ---
 
 ## 🔴 Armadilhas e Alertas Técnicos
-* **Cache do Service Worker (`stronglog-pro-v5.6`)**: Se o usuário relatar comportamento antigo após deploys futuros, instruí-lo a fechar a aba do PWA e reabrir. O Service Worker v5.5/v5.6 agora força `skipWaiting` e `clients.claim`, mas navegadores mobile exigem um ciclo de restart para limpar instâncias background.
-* **Overlays e Modais**: NUNCA ocultar overlays usando apenas transformações CSS (`translate-y-[-100%]`, `opacity: 0`). Eles continuam ocupando a árvore de acessibilidade e interceptam eventos de ponteiro/toque se o `pointer-events: none` falhar. Sempre aplicar a classe `.hidden` com `display: none !important`.
+* **⚠️ Risco Residual — `materialsPool` Global (app.js:2462/2470 e 2596)**:
+  O repositório de materiais Three.js ainda é armazenado globalmente em `app.hologramMaterialsPool`. Ao invocar `app.destroy3DScene(sceneKey)` (`app.js:2751-2763`), os materiais dos meshes filhos são descartados via `.dispose()`. Nas próximas iterações, instanciar pools independentes por chave de cena (`app.threeScenes[sceneKey].materialsPool`) para garantir encapsulamento completo de recursos GPU.
+* **Overlays e Modais**: NUNCA ocultar overlays usando apenas transformações CSS (`translate-y-[-100%]`, `opacity: 0`). Eles continuam ocupando a árvore de acessibilidade e interceptam eventos de ponteiro/toque. Sempre aplicar a classe `.hidden` com `display: none !important`.
 * **Onboarding Multi-Flag**: O teste de onboarding checa múltiplas chaves no `localStorage` (`onboarding_done`, `stronglog_onboarded_v5`, `stronglog_onboarded`). Nunca confiar em uma única chave sem fallback.
 * **Ciclo de Vida Three.js**: Sempre garantir que `app.destroy3DScene('library')` seja executado no fechamento do modal da biblioteca para cancelar o `requestAnimationFrame` e liberar a GPU.
-* **Line-Endings (CRLF vs LF)**: Verificar `git diff` antes de commitar para evitar ruídos de quebra de linha.
 
 ---
 
 ## 🧩 Contexto Técnico & Deploy
 * **Deploy Host**: `https://gfsleme.github.io/stronglog-pro/`
 * **Repositório Git**: `C:\Users\Gabriel\OneDrive\Desktop\Projetos Python\StrongLog`
-* **Versão Ativa**: v5.6 • Cache Service Worker: `stronglog-pro-v5.6`
-* **Bateria de Testes**: 78/78 Aprovados (Suíte Integrada + RF01 a RF05 + Hotfix v5.6)
+* **Versão Ativa**: v5.7 • Suíte TDD: 68/68 Aprovados (100% GREEN) + 9/9 Auditoria Sentinel/Specter

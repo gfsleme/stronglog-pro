@@ -1,0 +1,26 @@
+# Normaliza quebras de linha para LF em todos os arquivos de texto
+# (evita churn de CRLF entre editores Windows/WSL)
+* text=auto eol=lf
+
+# Arquivos de texto explícitos
+*.js   text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.md   text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.sh   text eol=lf
+*.txt  text eol=lf
+
+# Binários
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.glb  binary
+*.gltf binary
+*.woff  binary
+*.woff2 binary
+*.ico   binary

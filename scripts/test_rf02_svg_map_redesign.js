@@ -261,7 +261,67 @@ it('Seleção de qualquer um dos 19 grupos via chip deve acionar vibração, atu
     loadedApp.clearMuscleFilter();
 });
 
+// TESTE 9: [RF02-Refatoração] Isolamento visual anatômico no SVG (active-selected no selecionado e dimmed-node nos neutros)
+it('getSvgAnatomicalPaths deve isolar visualmente o grupo ativo com active-selected e aplicar dimmed-node nos demais grupos', () => {
+    const svgFiltered = loadedApp.getSvgAnatomicalPaths('anterior', null, 'chest');
+    
+    // O peitoral deve ter classe active-selected
+    assert(
+        svgFiltered.includes('active-selected') && svgFiltered.includes('data-group="chest"'),
+        'Grupo selecionado deve receber classe active-selected'
+    );
+
+    // Grupos não selecionados no mesmo SVG devem receber dimmed-node
+    assert(
+        svgFiltered.includes('dimmed-node') && svgFiltered.includes('data-group="quads"'),
+        'Grupos não selecionados devem receber classe dimmed-node para isolamento visual'
+    );
+});
+
+// TESTE 10: [RF02-Refatoração] Zoom no Mapa 2D SVG (wheel / pinch / zoom controls)
+it('app.zoomSvg e app.resetSvgZoom devem permitir zoom 2D delimitando escala entre 1.0x e 2.5x', () => {
+    assert(typeof loadedApp.zoomSvg === 'function', 'app.zoomSvg deve existir');
+    assert(typeof loadedApp.resetSvgZoom === 'function', 'app.resetSvgZoom deve existir');
+
+    loadedApp.svgZoomScale = 1.0;
+    
+    // Zoom in (+0.25)
+    loadedApp.zoomSvg(0.25);
+    assert(loadedApp.svgZoomScale > 1.0, `svgZoomScale deveria aumentar após zoom in, obtido: ${loadedApp.svgZoomScale}`);
+
+    // Limite máximo 2.5x
+    loadedApp.zoomSvg(5.0);
+    assert(loadedApp.svgZoomScale <= 2.5, `svgZoomScale excedeu limite máximo 2.5, obtido: ${loadedApp.svgZoomScale}`);
+
+    // Limite mínimo 1.0x
+    loadedApp.zoomSvg(-10.0);
+    assert(loadedApp.svgZoomScale >= 1.0, `svgZoomScale caiu abaixo do limite mínimo 1.0, obtido: ${loadedApp.svgZoomScale}`);
+
+    // Reset de zoom
+    loadedApp.zoomSvg(0.5);
+    loadedApp.resetSvgZoom();
+    assert.strictEqual(loadedApp.svgZoomScale, 1.0, 'resetSvgZoom deve restaurar escala para 1.0');
+});
+
+// TESTE 11: [RF02-Refatoração] Animação Sci-Fi Neon Mint no styles.css
+it('styles.css deve conter animação de pulso/glow neon mint para nós musculares selecionados (.active-selected)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../src/styles.css'), 'utf-8');
+    assert(
+        css.includes('.muscle-node.active-selected') || css.includes('.active-selected'),
+        'Regra .active-selected não encontrada em styles.css'
+    );
+    assert(
+        css.includes('#00FF9D') || css.includes('rgba(0, 255, 157'),
+        'Neon mint (#00FF9D) não encontrado para realce de nós musculares no styles.css'
+    );
+    assert(
+        css.includes('dimmed-node') || css.includes('.muscle-node.dimmed'),
+        'Regra de atenuação/isolamento (.dimmed-node) não encontrada em styles.css'
+    );
+});
+
 console.log('\n----------------------------------------------------------------');
 console.log(`RESULTADO RF02: ${passed} PASS / ${failed} FAIL`);
 console.log('----------------------------------------------------------------\n');
 process.exit(failed > 0 ? 1 : 0);
+
