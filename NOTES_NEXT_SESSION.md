@@ -1,92 +1,63 @@
 # 🔁 Handover — StrongLog Pro
 
-> Atualizado em: 2026-08-29 18:20 | Por: Chronicler (Memory Archivist) & Equipe Maestri (Maestro, Forge, Sentinel, Specter, Compass)
+> Atualizado em: 2026-08-30 12:30 | Por: Chronicler (Memory Archivist) & Equipe Maestri (Maestro, Forge, Sentinel, Specter, Compass)
 
 ## Estado atual do projeto
-O **StrongLog Pro v5.3 (Overhaul Visual 2D/3D, Arquitetura de Rolagem Suave, Blindagem Global de Scroll & Homologação Ergonômica Mobile RF01–RF05)** foi concluído com sucesso absoluto. O sistema foi auditado e homologado com **49/49 testes automatizados aprovados (100% GREEN)**, recebendo aprovação unânime de todos os especialistas do loop fechado:
-- **Sentinel (CodeReviewer)**: Código revisado no diff real sem lints, zero colisões euclidianas no mapa SVG, zero memory leaks no WebGL Three.js e transição CSS com cubic-bezier.
-- **Specter (UI/UX Tester)**: Auditoria ergonômica visual com Chrome DevTools nos viewports iPhone 14 (390x844) e Pixel 7 (412x915) 100% aprovada, thumb zone monomanual validada e snapshots capturados.
-- **Compass (Scope Guardian)**: 100% de conformidade com os requisitos e dores expressas pelo Gabriel no bloco `StrongLog-Requisitos` (zero desvios ou regressões).
+O **StrongLog Pro v5.6 (Hotfix Crítico de Overlays, Resiliência do Service Worker & Homologação de Percurso Completo)** está 100% concluído, testado e publicado em produção no GitHub Pages (`https://gfsleme.github.io/stronglog-pro/`).
 
-A versão v5.3 traz:
-1. **Harmonização do Modelo 3D Low-Poly (RF01)**:
-   - Silhueta anatômica procedural estilizada (`isSculptedLowPoly: true`) substituindo primitivas cúbicas ("Minecraft").
-   - Iluminação Sci-Fi Neon Mint `#00FF9D` + Ciano `#00E5FF` (`DirectionalLight` dupla) e `GridHelper` volumétrico.
-   - 30 peças anatômicas, 1.212 triângulos, 31 draw calls, 0 KB de downloads extras (.glb/.obj) e 60 FPS cravados em Tier 1.
-   - Ciclo de vida estrito com `destroy3DScene('library')` eliminando 100% de memory leaks.
-2. **Redesenho do Mapa 2D SVG & Alvos Circulares (RF02)**:
-   - Hitboxes anatômicas circulares dedicadas (`circle.muscle-hitbox`, $r=14$, equivalentes a $\ge 44 \times 44\text{px}$).
-   - Zero colisões euclidianas ($d \ge 28.86$ unidades entre centros de grupos distintos).
-   - Cobertura dos 19 grupos canônicos com feedback tátil háptico (`navigator.vibrate(20)`).
-3. **Arquitetura de Rolagem da Biblioteca (RF03)**:
-   - Visualizador colapsável com botão sanfona (`#library-visualizer-toggle`), acessibilidade ARIA e transição suave via `.is-collapsed`.
-   - Ganho de área visível para navegação nos 1.324 exercícios: de 136px para **588.48px** no iPhone 14 (**69.7% da tela**).
-4. **Blindagem Global de Scroll & Safe-Area (RF04)**:
-   - Folga garantida contra cortes pela bottom navigation em todas as abas (`view-history`, `view-plan-editor`, `records-modal`, `view-active-workout`).
-   - Aceleração por hardware móvel e `overscroll-behavior-y: contain`.
-5. **Ergonomia Monomanual (RF05)**:
-   - 100% das ações de treino e navegação situadas nos 450px inferiores da tela ("One-Hand Thumb Zone").
+O sistema passou por três ciclos intensivos de evolução e correção técnica após a v5.3:
+- **v5.4 (Commit `cef0206`)**: Three.js com 34 proxy colliders invisíveis (`scale: 1.35`) e pooling de materiais; barra de chips anatômicos rápidos (`#library-muscle-chips-bar`) para os 19 grupos; biblioteca fullscreen sheet `100dvh` com auto-colapso ao buscar; eliminação de strings `UNDEFINED` no treino ativo (60/60 testes PASS).
+- **v5.5 (Commit `333c5db`)**: Diagnóstico e resolução da falha silenciosa do Service Worker. O `cache.addAll` atômico derrubava a instalação por CDNs externas, prendendo celulares no cache velho da v5.2 ("botões e layouts desconfigurados"). Corrigido com cache unitário de assets locais, CDNs em best-effort paralelo e navegação `network-first` com fallback offline.
+- **v5.6 (Commit `7046fd4`)**: Resolução definitiva dos modais fantasmas que bloqueavam o app. `#onboarding-modal` (z-500) com `.hidden` explícito no HTML + flag multi-key no `localStorage` + bloqueio de reabertura com outros modais ativos; `#rest-timer-overlay` (z-200) com `.hidden` real quando inativo (eliminando toques bloqueados pelo translate); todos os 11 modais padronizados com `.hidden { display: none !important; }`; `savePlan` fecha editor e volta ao dashboard; busca da biblioteca restaurada (61 default / 46 'supino').
+- **Status dos Testes**: **78/78 testes automatizados aprovados (100% GREEN)**, com zero regressões.
+- **Validação E2E Empírica**: Percurso humano-simulado completo validado pelo Maestro via Chrome DevTools Protocol (CDP 390x844): *boot limpo $\rightarrow$ nova rotina $\rightarrow$ biblioteca $\rightarrow$ busca textual $\rightarrow$ seleção múltipla $\rightarrow$ salvar rotina $\rightarrow$ ajustes*, confirmando zero overlays residuais e zero erros no console.
 
 ---
 
-## O que foi feito nesta sessão (2026-08-29)
-* **RF01 (Forge & Sentinel)**: Modelo 3D procedural low-poly anatômico Three.js com peitoral esculpido, cintura e dorsais em V-Taper, pernas diamante, realce emissivo, 60fps e suíte TDD (`scripts/test_rf01_3d_harmonization.js` — 4/4 PASS).
-* **RF02 (Forge & Sentinel)**: Mapa 2D SVG orgânico com alvos circulares táteis dedicados, zero sobreposição matemática e teste de toque (`scripts/test_rf02_svg_map_redesign.js` — 5/5 PASS).
-* **RF03 (Forge & Sentinel)**: Colapsador do visualizador da biblioteca com classes CSS dedicadas, liberação de 69.7% da tela para a lista e suíte de rolagem (`scripts/test_rf03_library_scroll.js` — 5/5 PASS).
-* **RF04 (Forge & Sentinel)**: Blindagem de scroll e injeção de safe-area padding em todas as abas e modais com validador de integridade (`scripts/test_rf04_scroll_shielding.js` — 6/6 PASS).
-* **RF05 (Specter)**: Auditoria ergonômica autônoma mobile via Chrome DevTools MCP, inspeção iPhone 14 / Pixel 7, captura de 3 snapshots comprobatórios e relatório de escalabilidade.
-* **Frente B (Compass & Searcher)**: Agente pesquisador `searcher` registrado no Antigravity (AGY) para benchmarks com concorrentes de mercado.
-* **Governança & Porteira (Sentinel, Compass & Chronicler)**: Código re-auditado sem resíduos, escopo 100% validado contra o plano do Product Owner e memória persistente registrada em 3 camadas.
+## O que foi feito recentemente (v5.4 a v5.6)
+* **v5.4 (UX & Biomecânica)**:
+  - 34 proxy colliders invisíveis no Three.js garantindo toques precisos no modelo 3D sem desvios de Raycasting.
+  - Barra de chips anatômicos com rolagem horizontal e sincronização tripla (Chip $\leftrightarrow$ 2D SVG $\leftrightarrow$ 3D Three.js $\leftrightarrow$ Lista).
+  - Modal da biblioteca em `100dvh` (< 640px) com auto-colapso do visualizador ao focar no campo de busca ($\ge 85\%$ de área útil).
+  - Fallbacks defensivos para `baseWeight` (`Livre`) e `restSeconds` (`90s`), eliminando `UNDEFINED`.
+* **v5.5 (Infraestrutura PWA & Resiliência de Deploy)**:
+  - Desacoplamento da instalação do Service Worker: CDNs externas não mais bloqueiam ou derrubam a ativação do cache local.
+  - Estratégia de navegação alterada para `network-first` garantindo que novas versões cheguem de imediato aos dispositivos móveis.
+* **v5.6 (Blindagem de Overlays & Fluxo Gabriel)**:
+  - Eliminação de z-index bleed e overlays invisíveis no DOM (`onboarding-modal` e `rest-timer-overlay`).
+  - Auditoria estrita em todos os 11 modais e overlays do app com classe `.hidden` nativa e CSS reforçado.
+  - Correção do fluxo de criação e persistência de rotinas no Dashboard via `savePlan`.
+  - Homologação via suíte TDD dedicada `scripts/test_rf_overlays_v56.js` (8/8 PASS).
 
 ---
 
-## ⏳ Pendências & Backlog Priorizado (Auditoria de Escalabilidade do Specter)
+## ⏳ Pendências & Roadmap Futuro (Prioridade Decrescente)
 
-### 🟢 P1 — Quick Wins (Refinamento Visual & Usabilidade Imediata)
-1. **Tratamento de Strings `undefined` no Card de Treino Ativo**:
-   - *Diagnóstico*: Quando o exercício recém-adicionado não possui peso base ou descanso configurado, o card exibe `BASE: UNDEFINED` e `DESCANSO: UNDEFINEDS`.
-   - *Solução*: Adicionar fallback amigável: `exercício.baseWeight ? `${exercício.baseWeight} kg` : 'Livre'` e `exercício.restSeconds ? `${exercício.restSeconds}s` : '90s'`.
-2. **Ampliação de Hitbox em Ícones Secundários do Topo**:
-   - *Diagnóstico*: Os botões de cabeçalho ("Ajuda" e "Ajustes") medem 41.6 × 41.6px, e o botão de Recordes na home mede 37.6 × 37.6px.
-   - *Solução*: Aplicar `min-w-[44px] min-h-[44px]` ou pseudo-elemento touch-target `::after` invisível de 48px para facilitar o toque de dedos grossos.
+### 🟢 P1 — Próximo Ciclo (Refinamentos de Polish)
+1. **Histórico de Treinos com Gráficos Miniaturizados (Sparklines)**:
+   - Exibir pequenas curvas de evolução de carga diretamente no card de cada exercício no histórico.
+2. **Visualizador de Recuperação Semanal**:
+   - Exibir mapa de calor dos últimos 7 dias na aba de Histórico baseado na atenuação metabólica ($e^{-\lambda t}$).
 
-### 🟡 P2 — Médio Prazo (Experiência & Fluidez de Navegação)
-1. **Modal de Biblioteca em Fullscreen Sheet no Mobile**:
-   - *Diagnóstico*: No iPhone 14, o modal da biblioteca usa `max-h-[92vh]` centralizado, deixando ~68px ociosos nas margens superior e inferior.
-   - *Solução*: Converter o modal em mobile (`< 640px`) para `h-[100dvh]` ou bottom sheet total, liberando a totalidade dos 844px para o catálogo e visualizador.
-2. **Auto-Colapso Inteligente do Visualizador ao Digitar Busca**:
-   - *Diagnóstico*: O usuário precisa clicar manualmente em "Recolher Visualizador" para focar na lista durante uma busca por texto.
-   - *Solução*: Ao focar no input de busca (`#library-search-input`), recolher automaticamente o visualizador 2D/3D com animação suave e reexpandir se o campo for limpo.
-3. **Visualizador de Recuperação Semanal no Histórico**:
-   - *Oportunidade*: Exibir na aba de Histórico um mapa de calor acumulado dos últimos 7 dias com curva de recuperação temporal ($e^{-\lambda t}$).
-
-### 🔵 P3 — Longo Prazo (Escala & Recursos Avançados)
-1. **Animação de Rotação 3D por Gyroscope / DeviceOrientation**:
-   - *Oportunidade*: Em smartphones compatíveis com permissão de giroscópio, permitir que o holograma 3D responda suavemente à inclinação física do celular na mão.
-2. **Histórico com Gráficos Miniaturizados (Sparklines)**:
-   - *Oportunidade*: Exibir pequenas curvas de tendência de carga ao lado de cada exercício diretamente no card do histórico.
-3. **Exportação de Treinos em Formato CSV / Excel**:
-   - *Oportunidade*: Exportação completa de histórico e volumes para análise de dados externa.
+### 🟡 P2 — Médio Prazo (Recursos Avançados)
+1. **Exportação Tabular em CSV / Excel**:
+   - Exportação completa do histórico de treinos e métricas de volume para planilhas.
+2. **Giroscópio no Modelo 3D (`DeviceOrientation`)**:
+   - Reação sutil do holograma 3D à inclinação física do smartphone na mão do usuário.
 
 ---
 
 ## 🔴 Armadilhas e Alertas Técnicos
-* **Line-Endings CRLF vs LF**: O repositório contém divergências de quebra de linha em 11 arquivos. Sempre verificar `git diff` antes de commitar para não introduzir poluição de whitespace.
-* **Ciclo de Vida WebGL no Three.js**: Nunca fechar o modal da biblioteca sem chamar `app.destroy3DScene('library')` (já encapsulado em `closeModal`). Caso contrário, o render loop `requestAnimationFrame` continuará rodando em background, drenando a bateria do dispositivo.
-* **Hitboxes Circulares no Mapa SVG ($r=14$)**: Nunca reintroduzir caixas retangulares (`<rect width="44" height="44">`) no mapa SVG, pois a proximidade anatômica (ex: peito vs cardio) provoca sobreposição euclidiana e disparos acidentais ao toque.
-* **Transição CSS `.is-collapsed`**: Nunca usar `display: none` ou `hidden` para colapsar o visualizador. A animação suave depende da classe `.is-collapsed` com `max-height: 0` e `transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1)`.
-* **Raycasting vs OrbitControls**: Deslocamentos de toque superiores a 10px são interpretados pelo listener como rotação de câmera 3D e não como clique de seleção muscular.
+* **Cache do Service Worker (`stronglog-pro-v5.6`)**: Se o usuário relatar comportamento antigo após deploys futuros, instruí-lo a fechar a aba do PWA e reabrir. O Service Worker v5.5/v5.6 agora força `skipWaiting` e `clients.claim`, mas navegadores mobile exigem um ciclo de restart para limpar instâncias background.
+* **Overlays e Modais**: NUNCA ocultar overlays usando apenas transformações CSS (`translate-y-[-100%]`, `opacity: 0`). Eles continuam ocupando a árvore de acessibilidade e interceptam eventos de ponteiro/toque se o `pointer-events: none` falhar. Sempre aplicar a classe `.hidden` com `display: none !important`.
+* **Onboarding Multi-Flag**: O teste de onboarding checa múltiplas chaves no `localStorage` (`onboarding_done`, `stronglog_onboarded_v5`, `stronglog_onboarded`). Nunca confiar em uma única chave sem fallback.
+* **Ciclo de Vida Three.js**: Sempre garantir que `app.destroy3DScene('library')` seja executado no fechamento do modal da biblioteca para cancelar o `requestAnimationFrame` e liberar a GPU.
+* **Line-Endings (CRLF vs LF)**: Verificar `git diff` antes de commitar para evitar ruídos de quebra de linha.
 
 ---
 
 ## 🧩 Contexto Técnico & Deploy
 * **Deploy Host**: `https://gfsleme.github.io/stronglog-pro/`
 * **Repositório Git**: `C:\Users\Gabriel\OneDrive\Desktop\Projetos Python\StrongLog`
-* **Versão Ativa**: v5.3 • Cache Service Worker: `stronglog-pro-v5.3`
-* **Bateria de Testes**: 49/49 Aprovados (Suíte Integrada + RF01-RF04 + Flow 3D)
-
----
-
-## 💡 Próximo Passo Recomendado
-1. Executar o commit final com Conventional Commits (`feat(ui): overhaul 2d/3d visualizer, smooth scroll architecture and mobile ergonomics v5.3`) e realizar o push para GitHub Pages.
-2. No próximo ciclo, implementar os Quick Wins de P1 (fallback de strings `undefined` e expansão de hitboxes dos botões secundários do topo).
+* **Versão Ativa**: v5.6 • Cache Service Worker: `stronglog-pro-v5.6`
+* **Bateria de Testes**: 78/78 Aprovados (Suíte Integrada + RF01 a RF05 + Hotfix v5.6)
