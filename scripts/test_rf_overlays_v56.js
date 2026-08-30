@@ -77,15 +77,15 @@ it('4. styles.css deve definir .hidden com display: none !important', () => {
     );
 });
 
-// 5. Bump de versão para v5.6 no Service Worker e app.js
-it('5. Versão e CACHE_NAME devem ser bumpados para v5.6', () => {
+// 5. Bump de versão para v5.6+ ou v6.0+ no Service Worker e app.js
+it('5. Versão e CACHE_NAME devem ser bumpados para v5.6+', () => {
     assert(
-        swJs.includes("CACHE_NAME = 'stronglog-pro-v5.6'") || swJs.includes('CACHE_NAME = "stronglog-pro-v5.6"'),
-        'sw.js deve conter CACHE_NAME = stronglog-pro-v5.6'
+        /CACHE_NAME = ['"]stronglog-pro-(?:v5\.6|v6\.\d+)['"]/.test(swJs),
+        'sw.js deve conter CACHE_NAME = stronglog-pro-v5.6+ ou v6.0+'
     );
     assert(
-        appJs.includes("APP_VERSION = 'v5.6'") || appJs.includes('APP_VERSION = "v5.6"'),
-        'app.js deve conter APP_VERSION = v5.6'
+        /APP_VERSION = ['"](?:v5\.6|v6\.\d+)['"]/.test(appJs),
+        'app.js deve conter APP_VERSION = v5.6+ ou v6.0+'
     );
 });
 

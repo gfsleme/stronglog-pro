@@ -133,6 +133,17 @@ it('O Mapa 2D SVG deve conter elementos interativos para todos os 19 grupos musc
     );
 });
 
+// TESTE 1B: Substituição de <polygon>/<rect> por <path d="..."> orgânicos (v6.0)
+it('O Mapa 2D SVG deve utilizar <path d=...> orgânicos com curvatura anatômica para os 19 grupos e banir <polygon>/<rect> na anatomia muscular', () => {
+    const anteriorSvg = loadedApp.getSvgAnatomicalPaths('anterior', null, null);
+    const posteriorSvg = loadedApp.getSvgAnatomicalPaths('posterior', null, null);
+    const combinedSvg = anteriorSvg + '\n' + posteriorSvg;
+
+    assert(!combinedSvg.includes('<polygon'), 'Mapa 2D SVG ainda contém <polygon> rudimentares');
+    assert(!combinedSvg.match(/<rect[^>]*data-group/i), 'Mapa 2D SVG ainda contém <rect> rudimentares na anatomia muscular');
+    assert(combinedSvg.includes('<path') && combinedSvg.includes('data-group="chest"'), 'Mapa 2D SVG deve usar <path> com curvatura anatômica orgânica');
+});
+
 // TESTE 2: Hitboxes táteis circulares restritos (r=14) sem colisões/sobreposições entre grupos
 it('Cada alvo muscular no SVG deve possuir hitbox circular restrito (r=14) sem colisões entre grupos', () => {
     const anteriorSvg = loadedApp.getSvgAnatomicalPaths('anterior', null, null);
@@ -144,7 +155,7 @@ it('Cada alvo muscular no SVG deve possuir hitbox circular restrito (r=14) sem c
         'Ainda existem rects cegos de 44x44 colidentes no SVG anatômico'
     );
     assert(
-        combinedSvg.includes('circle') && combinedSvg.includes('class="muscle-hitbox"') && combinedSvg.includes('r="14"'),
+        combinedSvg.includes('circle') && combinedSvg.includes('muscle-hitbox') && combinedSvg.includes('r="14"'),
         'Hitboxes circulares restritos r=14 não encontrados no SVG'
     );
 

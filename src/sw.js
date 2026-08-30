@@ -1,7 +1,7 @@
-/* StrongLog Pro - Service Worker v5.6 */
-/* Release Date: 2026-08-29 */
+/* StrongLog Pro - Service Worker v6.0 */
+/* Release Date: 2026-08-30 */
 
-const CACHE_NAME = 'stronglog-pro-v5.6';
+const CACHE_NAME = 'stronglog-pro-v6.0';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,9 @@ const CORE_ASSETS = [
   './app.js',
   './manifest.json',
   './data/exercises.min.json',
-  './data/muscle_ontology.json'
+  './data/muscle_ontology.json',
+  './vendor/three/GLTFLoader.js',
+  './assets/models/human_body_sci_fi.glb'
 ];
 const CDN_ASSETS = [
   'https://cdn.tailwindcss.com',

@@ -529,7 +529,7 @@ async function runQASuite() {
     // TESTE 24: RF05-v5.4 - Fallback amigável contra "UNDEFINED" e bump CACHE_NAME v5.4
     const emptyExFormatted = testApp.formatExerciseBaseInfo({ name: 'Ex Teste' });
     const swContent = fs.readFileSync(path.join(__dirname, '../src/sw.js'), 'utf-8');
-    const isSwBumped = /CACHE_NAME = ['"]stronglog-pro-v5\.[4-9]['"]/.test(swContent);
+    const isSwBumped = /CACHE_NAME = ['"]stronglog-pro-(?:v5\.[4-9]|v[6-9]\.\d+)['"]/.test(swContent);
     assert(
         emptyExFormatted.base === 'Livre' && emptyExFormatted.rest === 90 && isSwBumped,
         'P5-ITEM-24',

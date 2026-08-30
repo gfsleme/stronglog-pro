@@ -25,10 +25,28 @@ function it(desc, fn) {
     }
 }
 
-// 1. Verificação de Código e Restrições de Peso (<300KB)
-it('Não deve carregar arquivos 3D externos pesados (.gltf, .glb, .obj) no buildHologramBodyMesh', () => {
-    const hasExternal3DFile = /\.(glb|gltf|obj)(['"`?#]|$)/i.test(appJs);
-    assert(!hasExternal3DFile, 'Detectada referência a assets 3D externos pesados (.glb/.gltf/.obj)');
+// 1. Verificação de Arquitetura GLB Ultraleve (<250KB) & GLTFLoader Local (v6.0)
+it('Deve utilizar modelo GLB local ultraleve (<250KB) em src/assets/models/human_body_sci_fi.glb', () => {
+    const glbPath = path.join(__dirname, '../src/assets/models/human_body_sci_fi.glb');
+    assert(fs.existsSync(glbPath), 'Arquivo GLB src/assets/models/human_body_sci_fi.glb não encontrado');
+    const stats = fs.statSync(glbPath);
+    assert(stats.size > 0 && stats.size < 250 * 1024, `Tamanho do GLB deve ser < 250KB, obtido: ${(stats.size / 1024).toFixed(1)}KB`);
+});
+
+it('GLTFLoader.js deve ser vendored localmente em src/vendor/three/ e cacheado no sw.js e index.html', () => {
+    const loaderPath = path.join(__dirname, '../src/vendor/three/GLTFLoader.js');
+    assert(fs.existsSync(loaderPath), 'src/vendor/three/GLTFLoader.js não encontrado');
+    const indexHtml = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf-8');
+    const swJs = fs.readFileSync(path.join(__dirname, '../src/sw.js'), 'utf-8');
+    assert(indexHtml.includes('vendor/three/GLTFLoader.js'), 'index.html deve incluir vendor/three/GLTFLoader.js');
+    assert(swJs.includes('GLTFLoader.js'), 'sw.js deve cachear GLTFLoader.js para suporte 100% offline');
+    assert(swJs.includes('human_body_sci_fi.glb'), 'sw.js deve cachear human_body_sci_fi.glb');
+});
+
+it('buildHologramBodyMesh / loadHologramGLB deve implementar fallback defensivo (timeout 2.5s) e flag isSceneAlive', () => {
+    assert(appJs.includes('GLTFLoader') || appJs.includes('loadHologramGLB'), 'app.js deve suportar carregamento via GLTFLoader');
+    assert(appJs.includes('isSceneAlive'), 'app.js deve verificar isSceneAlive para evitar memory leaks/FOUC se modal fechar antes do load');
+    assert(appJs.includes('2500') || appJs.includes('timeout'), 'app.js deve implementar timeout defensivo (2.5s) com fallback');
 });
 
 // 2. Mock do Three.js para execução no Node.js
@@ -95,7 +113,25 @@ const mockTHREE = {
     BufferGeometry: class extends MockGeometry { constructor(...args) { super('BufferGeometry', args); } },
     Vector2: class { constructor(x,y){this.x=x;this.y=y;} },
     Vector3: MockVector3,
-    Color: class { constructor(c){this.hex=c;} }
+    Color: class { constructor(c){this.hex=c;} },
+    GLTFLoader: class {
+        constructor() {}
+        load(url, onLoad, onProgress, onError) {
+            const group = new MockGroup();
+            const REQUIRED_19 = [
+                'chest', 'traps', 'shoulders_front', 'shoulders_side', 'shoulders_rear',
+                'biceps', 'triceps', 'forearms', 'abs', 'quads', 'hamstrings', 'calves',
+                'upper_back', 'lats', 'lower_back', 'glutes', 'adductors', 'abductors', 'cardio'
+            ];
+            REQUIRED_19.forEach(name => {
+                const m = new MockMesh(new MockGeometry('BufferGeometry'), new MockMaterial({ emissive: 0x00FF9D }));
+                m.name = name;
+                m.userData = { groupKey: name };
+                group.add(m);
+            });
+            if (onLoad) setTimeout(() => onLoad({ scene: group }), 10);
+        }
+    }
 };
 
 // Execução no contexto do app

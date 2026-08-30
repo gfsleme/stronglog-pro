@@ -30,16 +30,16 @@ function it(desc, fn) {
 // 1. Verificação de Bump de Cache no Service Worker (sw.js)
 it('src/sw.js deve declarar CACHE_NAME com versão v5.4+', () => {
     assert(
-        /CACHE_NAME = ['"]stronglog-pro-v5\.[4-9]['"]/.test(swJs),
-        'CACHE_NAME em src/sw.js não foi atualizado para stronglog-pro-v5.4+'
+        /CACHE_NAME = ['"]stronglog-pro-(?:v5\.[4-9]|v[6-9]\.\d+)['"]/.test(swJs),
+        'CACHE_NAME em src/sw.js não foi atualizado para stronglog-pro-v5.4+ ou v6.0+'
     );
 });
 
 // 2. Verificação de Versão em app.js
 it('src/app.js deve declarar APP_VERSION como v5.4+', () => {
     assert(
-        /APP_VERSION = ['"]v5\.[4-9]['"]/.test(appJs),
-        'APP_VERSION em src/app.js não foi atualizado para v5.4+'
+        /APP_VERSION = ['"](?:v5\.[4-9]|v[6-9]\.\d+)['"]/.test(appJs),
+        'APP_VERSION em src/app.js não foi atualizado para v5.4+ ou v6.0+'
     );
 });
 

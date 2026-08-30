@@ -1,5 +1,5 @@
 // StrongLog Pro v5.6 - UX Ergonomics, Interactive Guidance & 3D Sci-Fi Engine
-const APP_VERSION = 'v5.6';
+const APP_VERSION = 'v6.0';
 let swRegistration = null;
 let waitingWorker = null;
 
@@ -1683,95 +1683,95 @@ const app = {
                     
                     <!-- 1. Traps Anterior -->
                     <g class="muscle-group-target" data-group="traps" onclick="app.handleMuscleNodeClick('traps')" tabindex="0" role="button" aria-label="Trapézio">
-                        <polygon points="84,33 116,33 126,47 74,47" class="${getNodeClass('traps')}" data-group="traps" />
-                        <circle cx="100" cy="30" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <path d="M 84,33 C 94,31 106,31 116,33 C 122,37 125,42 126,47 C 109,45 91,45 74,47 C 75,42 78,37 84,33 Z" class="${getNodeClass('traps')}" data-group="traps" />
+                        <circle cx="100" cy="30" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 2. Chest (Peitoral) -->
                     <g class="muscle-group-target" data-group="chest" onclick="app.handleMuscleNodeClick('chest')" tabindex="0" role="button" aria-label="Peitoral">
                         <path d="M 100,50 L 128,50 C 136,54 135,74 100,78 Z" class="${getNodeClass('chest')}" data-group="chest" />
                         <path d="M 100,50 L 72,50 C 64,54 65,74 100,78 Z" class="${getNodeClass('chest')}" data-group="chest" />
-                        <circle cx="128" cy="68" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="72" cy="68" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="128" cy="68" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="72" cy="68" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
 
                     <!-- 3. Cardio (Zona Cardíaca Central) -->
                     <g class="muscle-group-target" data-group="cardio" onclick="app.handleMuscleNodeClick('cardio')" tabindex="0" role="button" aria-label="Cardio">
                         <circle cx="100" cy="61" r="5.5" class="${getNodeClass('cardio')}" data-group="cardio" />
-                        <circle cx="100" cy="61" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="100" cy="61" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 4. Shoulders Front (Deltoide Anterior) -->
                     <g class="muscle-group-target" data-group="shoulders_front" onclick="app.handleMuscleNodeClick('shoulders_front')" tabindex="0" role="button" aria-label="Deltoide Anterior">
                         <path d="M 127,49 L 145,55 L 142,73 L 128,66 Z" class="${getNodeClass('shoulders_front')}" data-group="shoulders_front" />
                         <path d="M 73,49 L 55,55 L 58,73 L 72,66 Z" class="${getNodeClass('shoulders_front')}" data-group="shoulders_front" />
-                        <circle cx="136" cy="40" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="64" cy="40" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="136" cy="40" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="64" cy="40" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
 
                     <!-- 5. Shoulders Side (Deltoide Lateral) -->
                     <g class="muscle-group-target" data-group="shoulders_side" onclick="app.handleMuscleNodeClick('shoulders_side')" tabindex="0" role="button" aria-label="Deltoide Lateral">
                         <path d="M 144,53 C 156,60 152,74 141,74 L 138,66 Z" class="${getNodeClass('shoulders_side')}" data-group="shoulders_side" />
                         <path d="M 56,53 C 44,60 48,74 59,74 L 62,66 Z" class="${getNodeClass('shoulders_side')}" data-group="shoulders_side" />
-                        <circle cx="162" cy="56" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="38" cy="56" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="162" cy="56" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="38" cy="56" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 6. Biceps -->
                     <g class="muscle-group-target" data-group="biceps" onclick="app.handleMuscleNodeClick('biceps')" tabindex="0" role="button" aria-label="Bíceps">
                         <path d="M 132,73 C 145,80 142,108 130,104 Z" class="${getNodeClass('biceps')}" data-group="biceps" />
                         <path d="M 68,73 C 55,80 58,108 70,104 Z" class="${getNodeClass('biceps')}" data-group="biceps" />
-                        <circle cx="142" cy="96" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="58" cy="96" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="142" cy="96" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="58" cy="96" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 7. Forearms (Antebraços) -->
                     <g class="muscle-group-target" data-group="forearms" onclick="app.handleMuscleNodeClick('forearms')" tabindex="0" role="button" aria-label="Antebraços">
                         <path d="M 137,114 C 148,122 143,156 134,150 Z" class="${getNodeClass('forearms')}" data-group="forearms" />
                         <path d="M 63,114 C 52,122 57,156 66,150 Z" class="${getNodeClass('forearms')}" data-group="forearms" />
-                        <circle cx="154" cy="134" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="46" cy="134" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="154" cy="134" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="46" cy="134" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 8. Abs (Abdômen & Oblíquos) -->
                     <g class="muscle-group-target" data-group="abs" onclick="app.handleMuscleNodeClick('abs')" tabindex="0" role="button" aria-label="Abdômen">
-                        <rect x="88" y="80" width="24" height="24" rx="4" class="${getNodeClass('abs')}" data-group="abs" />
-                        <rect x="89" y="108" width="22" height="26" rx="4" class="${getNodeClass('abs')}" data-group="abs" />
+                        <path d="M 88,82 C 88,80 112,80 112,82 C 113,92 113,96 112,104 C 112,106 88,106 88,104 C 87,96 87,92 88,82 Z" class="${getNodeClass('abs')}" data-group="abs" />
+                        <path d="M 89,109 C 89,107 111,107 111,109 C 112,120 111,126 109,134 C 109,135 91,135 91,134 C 89,126 88,120 89,109 Z" class="${getNodeClass('abs')}" data-group="abs" />
                         <path d="M 115,82 C 126,90 122,128 114,134 Z" class="${getNodeClass('abs')}" data-group="abs" />
                         <path d="M 85,82 C 74,90 78,128 86,134 Z" class="${getNodeClass('abs')}" data-group="abs" />
-                        <circle cx="100" cy="92" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="100" cy="122" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="100" cy="92" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="100" cy="122" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
 
                     <!-- 9. Abductors Anterior (Quadril Lateral / Tensor Fasciae Latae) -->
                     <g class="muscle-group-target" data-group="abductors" onclick="app.handleMuscleNodeClick('abductors')" tabindex="0" role="button" aria-label="Abdutores">
                         <path d="M 122,136 C 134,144 128,166 118,156 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
                         <path d="M 78,136 C 66,144 72,166 82,156 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
-                        <circle cx="126" cy="144" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="74" cy="144" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="126" cy="144" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="74" cy="144" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 10. Quadriceps -->
                     <g class="muscle-group-target" data-group="quads" onclick="app.handleMuscleNodeClick('quads')" tabindex="0" role="button" aria-label="Quadríceps">
                         <path d="M 103,148 C 125,148 122,208 106,208 Z" class="${getNodeClass('quads')}" data-group="quads" />
                         <path d="M 97,148 C 75,148 78,208 94,208 Z" class="${getNodeClass('quads')}" data-group="quads" />
-                        <circle cx="122" cy="190" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="78" cy="190" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="122" cy="190" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="78" cy="190" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 11. Adductors -->
                     <g class="muscle-group-target" data-group="adductors" onclick="app.handleMuscleNodeClick('adductors')" tabindex="0" role="button" aria-label="Adutores">
-                        <polygon points="101,150 107,150 105,194 101,194" class="${getNodeClass('adductors')}" data-group="adductors" />
-                        <polygon points="99,150 93,150 95,194 99,194" class="${getNodeClass('adductors')}" data-group="adductors" />
-                        <circle cx="100" cy="162" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <path d="M 101,150 C 104,150 107,152 107,162 C 107,175 105,188 105,194 C 103,194 101,194 101,194 Z" class="${getNodeClass('adductors')}" data-group="adductors" />
+                        <path d="M 99,150 C 96,150 93,152 93,162 C 93,175 95,188 95,194 C 97,194 99,194 99,194 Z" class="${getNodeClass('adductors')}" data-group="adductors" />
+                        <circle cx="100" cy="162" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 12. Calves Anterior -->
                     <g class="muscle-group-target" data-group="calves" onclick="app.handleMuscleNodeClick('calves')" tabindex="0" role="button" aria-label="Panturrilhas">
                         <path d="M 106,220 C 119,220 116,278 108,278 Z" class="${getNodeClass('calves')}" data-group="calves" />
                         <path d="M 94,220 C 81,220 84,278 92,278 Z" class="${getNodeClass('calves')}" data-group="calves" />
-                        <circle cx="116" cy="248" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="84" cy="248" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="116" cy="248" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="84" cy="248" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                 </svg>
             `;
@@ -1783,76 +1783,76 @@ const app = {
                     
                     <!-- 13. Trapezius Posterior -->
                     <g class="muscle-group-target" data-group="traps" onclick="app.handleMuscleNodeClick('traps')" tabindex="0" role="button" aria-label="Trapézio">
-                        <polygon points="100,30 122,42 115,68 100,76 85,68 78,42" class="${getNodeClass('traps')}" data-group="traps" />
-                        <circle cx="100" cy="48" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <path d="M 100,30 C 110,34 121,38 122,42 C 123,54 117,64 115,68 C 108,72 102,75 100,76 C 98,75 92,72 85,68 C 83,64 77,54 78,42 C 79,38 90,34 100,30 Z" class="${getNodeClass('traps')}" data-group="traps" />
+                        <circle cx="100" cy="48" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 14. Upper Back & Rhomboids -->
                     <g class="muscle-group-target" data-group="upper_back" onclick="app.handleMuscleNodeClick('upper_back')" tabindex="0" role="button" aria-label="Costas Superior">
-                        <polygon points="100,76 126,70 120,95 100,102 80,95 74,70" class="${getNodeClass('upper_back')}" data-group="upper_back" />
-                        <circle cx="100" cy="86" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <path d="M 100,76 C 112,73 124,71 126,70 C 124,82 122,90 120,95 C 112,98 104,101 100,102 C 96,101 88,98 80,95 C 78,90 76,82 74,70 C 76,71 88,73 100,76 Z" class="${getNodeClass('upper_back')}" data-group="upper_back" />
+                        <circle cx="100" cy="86" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 15. Lats (Dorsais V-Taper) -->
                     <g class="muscle-group-target" data-group="lats" onclick="app.handleMuscleNodeClick('lats')" tabindex="0" role="button" aria-label="Dorsais">
                         <path d="M 121,78 C 135,88 128,132 115,134 L 118,100 Z" class="${getNodeClass('lats')}" data-group="lats" />
                         <path d="M 79,78 C 65,88 72,132 85,134 L 82,100 Z" class="${getNodeClass('lats')}" data-group="lats" />
-                        <circle cx="126" cy="112" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="74" cy="112" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="126" cy="112" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="74" cy="112" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 16. Shoulders Rear (Deltoide Posterior) -->
                     <g class="muscle-group-target" data-group="shoulders_rear" onclick="app.handleMuscleNodeClick('shoulders_rear')" tabindex="0" role="button" aria-label="Deltoide Posterior">
                         <path d="M 126,46 L 144,54 L 140,72 L 126,66 Z" class="${getNodeClass('shoulders_rear')}" data-group="shoulders_rear" />
                         <path d="M 74,46 L 56,54 L 60,72 L 74,66 Z" class="${getNodeClass('shoulders_rear')}" data-group="shoulders_rear" />
-                        <circle cx="140" cy="52" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="60" cy="52" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="140" cy="52" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="60" cy="52" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 17. Triceps -->
                     <g class="muscle-group-target" data-group="triceps" onclick="app.handleMuscleNodeClick('triceps')" tabindex="0" role="button" aria-label="Tríceps">
                         <path d="M 133,73 C 145,80 141,110 131,103 Z" class="${getNodeClass('triceps')}" data-group="triceps" />
                         <path d="M 67,73 C 55,80 59,110 69,103 Z" class="${getNodeClass('triceps')}" data-group="triceps" />
-                        <circle cx="150" cy="90" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="50" cy="90" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="150" cy="90" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="50" cy="90" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 18. Lower Back (Lombar) -->
                     <g class="muscle-group-target" data-group="lower_back" onclick="app.handleMuscleNodeClick('lower_back')" tabindex="0" role="button" aria-label="Lombar">
-                        <polygon points="89,103 111,103 113,138 87,138" class="${getNodeClass('lower_back')}" data-group="lower_back" />
-                        <circle cx="100" cy="124" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <path d="M 89,104 C 95,103 105,103 111,104 C 112,115 113,126 113,138 C 105,137 95,137 87,138 C 87,126 88,115 89,104 Z" class="${getNodeClass('lower_back')}" data-group="lower_back" />
+                        <circle cx="100" cy="124" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- 19. Glutes -->
                     <g class="muscle-group-target" data-group="glutes" onclick="app.handleMuscleNodeClick('glutes')" tabindex="0" role="button" aria-label="Glúteos">
                         <path d="M 101,140 C 127,140 126,176 101,176 Z" class="${getNodeClass('glutes')}" data-group="glutes" />
                         <path d="M 99,140 C 73,140 74,176 99,176 Z" class="${getNodeClass('glutes')}" data-group="glutes" />
-                        <circle cx="114" cy="158" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="86" cy="158" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="114" cy="158" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="86" cy="158" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
 
                     <!-- Abductors Posterior (Glúteo Médio / Lateral) -->
                     <g class="muscle-group-target" data-group="abductors" onclick="app.handleMuscleNodeClick('abductors')" tabindex="0" role="button" aria-label="Abdutores">
                         <path d="M 125,142 C 137,148 131,170 123,166 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
                         <path d="M 75,142 C 63,148 69,170 77,166 Z" class="${getNodeClass('abductors')}" data-group="abductors" />
-                        <circle cx="142" cy="152" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="58" cy="152" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="142" cy="152" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="58" cy="152" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- Hamstrings (Posterior de Coxa) -->
                     <g class="muscle-group-target" data-group="hamstrings" onclick="app.handleMuscleNodeClick('hamstrings')" tabindex="0" role="button" aria-label="Isquiotibiais">
                         <path d="M 102,180 C 124,180 120,226 103,226 Z" class="${getNodeClass('hamstrings')}" data-group="hamstrings" />
                         <path d="M 98,180 C 76,180 80,226 97,226 Z" class="${getNodeClass('hamstrings')}" data-group="hamstrings" />
-                        <circle cx="116" cy="204" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="84" cy="204" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="116" cy="204" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="84" cy="204" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                     
                     <!-- Calves Posterior -->
                     <g class="muscle-group-target" data-group="calves" onclick="app.handleMuscleNodeClick('calves')" tabindex="0" role="button" aria-label="Panturrilhas">
                         <path d="M 104,232 C 123,232 117,284 106,284 Z" class="${getNodeClass('calves')}" data-group="calves" />
                         <path d="M 96,232 C 77,232 83,284 94,284 Z" class="${getNodeClass('calves')}" data-group="calves" />
-                        <circle cx="116" cy="256" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
-                        <circle cx="84" cy="256" r="14" fill="transparent" class="muscle-hitbox" pointer-events="all" />
+                        <circle cx="116" cy="256" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
+                        <circle cx="84" cy="256" r="14" fill="transparent" class="muscle-hitbox touch-target-44" pointer-events="all" />
                     </g>
                 </svg>
             `;
@@ -2387,9 +2387,92 @@ const app = {
             canvas,
             container,
             materialsPool,
+            isSceneAlive: true,
             initialCameraPos: { x: 0, y: 0.8, z: 3.8 }
         };
         app.threeScenes[sceneKey].materialsPool = materialsPool;
+        app.threeScenes[sceneKey].isSceneAlive = true;
+    },
+
+    loadHologramGLB: (bodyGroup, sceneKey = 'library', threeInstance = null, heatLevels = null) => {
+        const THREE = threeInstance || (typeof window !== 'undefined' && window.THREE ? window.THREE : (typeof globalThis !== 'undefined' && globalThis.THREE ? globalThis.THREE : null));
+        if (!THREE || !bodyGroup) return;
+
+        const GLB_URL = './assets/models/human_body_sci_fi.glb';
+        const FALLBACK_TIMEOUT_MS = 2500;
+        let isTimedOut = false;
+
+        const timer = setTimeout(() => {
+            isTimedOut = true;
+            console.warn(`[3D Engine] Timeout defensivo de 2.5s excedido para ${GLB_URL} em ${sceneKey}. Mantendo silhueta de fallback.`);
+        }, FALLBACK_TIMEOUT_MS);
+
+        if (typeof THREE.GLTFLoader === 'function') {
+            try {
+                const loader = new THREE.GLTFLoader();
+                loader.load(
+                    GLB_URL,
+                    (gltf) => {
+                        clearTimeout(timer);
+                        if (isTimedOut) return;
+
+                        // Validação isSceneAlive: evita vazamento de GPU/FOUC se o modal/cena foi destruído antes do load
+                        const sc = app.threeScenes[sceneKey];
+                        if (sc && sc.isSceneAlive === false) {
+                            console.log(`[3D Engine] Cena ${sceneKey} foi encerrada antes do load do GLB (isSceneAlive: false). Descartando.`);
+                            return;
+                        }
+
+                        const glbScene = gltf.scene || (gltf.scenes && gltf.scenes[0]);
+                        if (!glbScene) return;
+
+                        const pool = (sc && sc.materialsPool) || bodyGroup.userData?.materialsPool || app.hologramMaterialsPool;
+
+                        // Configura materiais Sci-Fi e ontologia nos sub-meshes do GLB
+                        glbScene.traverse((child) => {
+                            if (child.isMesh) {
+                                const groupKey = child.name || child.userData?.groupKey;
+                                child.userData = {
+                                    groupKey,
+                                    isProxyCollider: false,
+                                    isGLBMesh: true
+                                };
+                                const isMatch = app.isMuscleGroupSelectedOrChild(groupKey, app.activeMuscleFilter);
+                                if (heatLevels && pool?.heatMatPool) {
+                                    const lvl = Math.min(Math.max(heatLevels[groupKey] || 0, 0), 4);
+                                    child.material = (lvl > 0 && pool.heatMatPool[lvl]) ? pool.heatMatPool[lvl] : pool.defaultNeutralMat;
+                                } else if (isMatch && pool?.activeHighlightMat) {
+                                    child.material = pool.activeHighlightMat;
+                                } else if (pool?.defaultNeutralMat) {
+                                    child.material = pool.defaultNeutralMat;
+                                }
+                            }
+                        });
+
+                        // Posiciona no palco
+                        glbScene.position.set(0, -0.2, 0);
+
+                        // Oculta a silhueta paramétrica e exibe o modelo anatômico GLB
+                        if (bodyGroup.userData?.visualMeshes) {
+                            bodyGroup.userData.visualMeshes.forEach(m => { m.visible = false; });
+                        }
+                        bodyGroup.add(glbScene);
+                        bodyGroup.userData.glbScene = glbScene;
+                        bodyGroup.userData.hasLoadedGLB = true;
+
+                        app.update3DMuscleHighlights(sceneKey);
+                    },
+                    undefined,
+                    (err) => {
+                        clearTimeout(timer);
+                        console.warn(`[3D Engine] Fallback defensivo ativado para ${GLB_URL}:`, err?.message || err);
+                    }
+                );
+            } catch (err) {
+                clearTimeout(timer);
+                console.warn('[3D Engine] Falha ao instanciar GLTFLoader:', err?.message || err);
+            }
+        }
     },
 
     measure3DPerformance: (targetTier = 'tier_1') => {
@@ -2412,7 +2495,7 @@ const app = {
         };
     },
 
-    buildHologramBodyMesh: (threeInstance = null, heatLevels = null) => {
+    buildHologramBodyMesh: (threeInstance = null, heatLevels = null, sceneKey = 'library') => {
         const THREE = threeInstance || (typeof window !== 'undefined' && window.THREE ? window.THREE : (typeof globalThis !== 'undefined' && globalThis.THREE ? globalThis.THREE : null));
         if (!THREE) return null;
         const bodyGroup = new THREE.Group();
@@ -2482,6 +2565,7 @@ const app = {
             return defaultNeutralMat;
         };
 
+        const visualMeshes = [];
         const createPart = (geom, groupKey, pos, rot = [0, 0, 0], scale = [1, 1, 1]) => {
             const mat = getMaterial(groupKey);
             const mesh = new THREE.Mesh(geom, mat);
@@ -2498,6 +2582,7 @@ const app = {
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             bodyGroup.add(mesh);
+            visualMeshes.push(mesh);
 
             // Proxy collider transparente ampliado (+35%) para precisão tátil no mobile (WCAG 2.2 touch target)
             const proxyGeom = (typeof THREE.SphereGeometry !== 'undefined')
@@ -2586,6 +2671,9 @@ const app = {
         // 15. Panturrilhas Diamante com Afilamento
         createPart(new THREE.CylinderGeometry(0.095, 0.055, 0.42, 6), 'calves', [0.16, -0.52, -0.01]);
         createPart(new THREE.CylinderGeometry(0.095, 0.055, 0.42, 6), 'calves', [-0.16, -0.52, -0.01]);
+
+        bodyGroup.userData.visualMeshes = visualMeshes;
+        app.loadHologramGLB(bodyGroup, sceneKey, THREE, heatLevels);
 
         return bodyGroup;
     },
@@ -2728,6 +2816,7 @@ const app = {
     destroy3DScene: (sceneKey) => {
         const entry = app.threeScenes[sceneKey];
         if (entry) {
+            entry.isSceneAlive = false; // Flag para abortar inserção assíncrona de GLB caso o modal feche
             if (entry.animationFrameId) cancelAnimationFrame(entry.animationFrameId);
             if (entry.resizeObserver) entry.resizeObserver.disconnect();
             if (entry.pointerListeners) {
@@ -2759,6 +2848,17 @@ const app = {
                                 child.material.dispose();
                             }
                         }
+                    }
+                });
+            }
+            // Limpeza isolada do materialsPool da cena
+            if (entry.materialsPool) {
+                Object.values(entry.materialsPool).forEach(mat => {
+                    if (mat && typeof mat.dispose === 'function') mat.dispose();
+                    else if (mat && typeof mat === 'object') {
+                        Object.values(mat).forEach(m => {
+                            if (m && typeof m.dispose === 'function') m.dispose();
+                        });
                     }
                 });
             }

@@ -11,7 +11,9 @@ const endpoints = [
     '/manifest.json',
     '/sw.js',
     '/data/muscle_ontology.json',
-    '/data/exercises.min.json'
+    '/data/exercises.min.json',
+    '/vendor/three/GLTFLoader.js',
+    '/assets/models/human_body_sci_fi.glb'
 ];
 
 async function checkEndpoint(urlPath) {
