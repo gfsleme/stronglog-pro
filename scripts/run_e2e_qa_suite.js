@@ -155,13 +155,45 @@ async function runQASuite() {
             AmbientLight: class {},
             DirectionalLight: class { position = { set: ()=>{} }; },
             GridHelper: class { position = { y: 0 }; },
-            Group: class { add() {} rotation = { y: 0, set: ()=>{} }; traverse(fn) {} },
+            Group: class {
+                constructor() { this.children = []; this.rotation = { y: 0, set: ()=>{} }; }
+                add(c) { this.children.push(c); }
+                traverse(fn) {
+                    fn(this);
+                    this.children.forEach(c => {
+                        fn(c);
+                        if (c.traverse) c.traverse(fn);
+                    });
+                }
+            },
             BoxGeometry: class {},
             CylinderGeometry: class {},
             SphereGeometry: class {},
             IcosahedronGeometry: class {},
+            OctahedronGeometry: class {},
+            DodecahedronGeometry: class {},
             MeshStandardMaterial: class {},
-            Mesh: class { position = { set: ()=>{} }; rotation = { set: ()=>{} }; scale = { set: ()=>{} }; userData = {}; },
+            MeshBasicMaterial: class {},
+            Color: class { set() {} setHex() {} },
+            Vector2: class { set() {} },
+            Raycaster: class { setFromCamera() {} intersectObjects() { return []; } },
+            Mesh: class {
+                constructor() {
+                    this.position = { set: ()=>{} };
+                    this.rotation = { set: ()=>{} };
+                    this.scale = { set: ()=>{} };
+                    this.userData = {};
+                    this.children = [];
+                }
+                add(c) { this.children.push(c); }
+                traverse(fn) {
+                    fn(this);
+                    this.children.forEach(c => {
+                        fn(c);
+                        if (c.traverse) c.traverse(fn);
+                    });
+                }
+            },
             OrbitControls: class { enableDamping=true; dampingFactor=0.08; enableZoom=false; autoRotate=true; autoRotateSpeed=2.5; target={set:()=>{}}; update() {}; dispose() {} }
         },
         ResizeObserver: class { observe() {} disconnect() {} }
@@ -444,6 +476,67 @@ async function runQASuite() {
         '4 slides configurados com ícones, destaques e persistência em localStorage'
     );
 
+    console.log('\n--- TESTES P5: MISSÃO v5.4 (19 GRUPOS 3D, DUAL ACCESSIBILITY, FULLSCREEN & ROBUSTNESS) ---');
+
+    // TESTE 20: RF01-v5.4 - 19 grupos musculares no 3D com proxy colliders e material pooling
+    const bodyMesh = testApp.buildHologramBodyMesh();
+    const proxyColliders = [];
+    bodyMesh.traverse(child => {
+        if (child.userData && child.userData.isProxyCollider) proxyColliders.push(child.userData.groupKey);
+    });
+    const has19ProxyColliders = proxyColliders.length >= 19;
+    assert(
+        has19ProxyColliders && testApp.hologramMaterialsPool,
+        'P5-ITEM-20',
+        '[RF01-v5.4] Modelo 3D Hologram possui os 19 grupos com proxy colliders ampliados (+35%) e material pooling',
+        `Proxy colliders encontrados: ${proxyColliders.length} grupos mapeados`
+    );
+
+    // TESTE 21: RF02-v5.4 - Acessibilidade Dual 2D & Chips Rápidos
+    const chipsBarPresent = htmlContent.includes('id="library-muscle-chips-bar"');
+    testApp.selectMuscleFilter('calves', 'library');
+    const autoViewSwitched = testApp.activeSvgView === 'posterior';
+    assert(
+        chipsBarPresent && typeof testApp.renderMuscleChipsBar === 'function' && autoViewSwitched,
+        'P5-ITEM-21',
+        '[RF02-v5.4] Acessibilidade Dual 2D implementada com bar de chips dos 19 grupos e auto-comutação da vista SVG',
+        'Chips rápidos sincronizados com vista posterior para panturrilhas'
+    );
+
+    // TESTE 22: RF03-v5.4 - Fullscreen Sheet & Auto-colapso na busca
+    const isFullscreenSheet = htmlContent.includes('h-full') && htmlContent.includes('sm:h-[92vh]');
+    const calculatedListHeight = testApp.getLibraryListCalculatedHeight(390, 844, true, true);
+    const has85PercentHeight = calculatedListHeight >= (0.85 * 844);
+    assert(
+        isFullscreenSheet && typeof testApp.onSearchExerciseFocus === 'function' && has85PercentHeight,
+        'P5-ITEM-22',
+        '[RF03-v5.4] Biblioteca Fullscreen Sheet no mobile com auto-colapso na busca garantindo >=85% da área útil',
+        `Altura calculada no foco de busca: ${calculatedListHeight}px (>= ${0.85 * 844}px)`
+    );
+
+    // TESTE 23: RF04-v5.4 - tabular-nums, hairline borders e hitboxes de topo >= 44px
+    const hasTabularNums = cssContent.includes('tabular-nums') && cssContent.includes('font-variant-numeric: tabular-nums');
+    const hasHairlineBorder = cssContent.includes('rgba(255, 255, 255, 0.08)');
+    const helpBtnMatch = htmlContent.match(/<button[^>]*onclick="app\.showHelpModal\(\)"[^>]*class="([^"]+)"/);
+    const has44pxHitbox = helpBtnMatch && (helpBtnMatch[1].includes('min-w-[44px]') || helpBtnMatch[1].includes('w-11'));
+    assert(
+        hasTabularNums && hasHairlineBorder && has44pxHitbox,
+        'P5-ITEM-23',
+        '[RF04-v5.4] Estilos computados com tabular-nums, hairline borders glassmorphism e hitboxes de topo >=44px',
+        'Tabular-nums, hairline 0.08 e hitboxes auditados com sucesso'
+    );
+
+    // TESTE 24: RF05-v5.4 - Fallback amigável contra "UNDEFINED" e bump CACHE_NAME v5.4
+    const emptyExFormatted = testApp.formatExerciseBaseInfo({ name: 'Ex Teste' });
+    const swContent = fs.readFileSync(path.join(__dirname, '../src/sw.js'), 'utf-8');
+    const isSwBumped = swContent.includes("CACHE_NAME = 'stronglog-pro-v5.4'");
+    assert(
+        emptyExFormatted.base === 'Livre' && emptyExFormatted.rest === 90 && isSwBumped,
+        'P5-ITEM-24',
+        '[RF05-v5.4] Fallback amigável contra UNDEFINED (BASE: Livre, DESCANSO: 90s) e bump de CACHE_NAME para v5.4',
+        'Fallback validado: BASE: Livre, DESCANSO: 90s, SW cache v5.4'
+    );
+
     console.log('\n================================================================');
     console.log(`📊 RESULTADO FINAL DA AUDITORIA E2E: ${passedTests} PASS / ${failedTests} FAIL`);
     console.log('================================================================\n');
@@ -451,7 +544,9 @@ async function runQASuite() {
     return { passedTests, failedTests, testResults };
 }
 
-runQASuite().catch(err => {
+runQASuite().then(({ failedTests }) => {
+    process.exit(failedTests > 0 ? 1 : 0);
+}).catch(err => {
     console.error('Erro na execução dos testes E2E:', err);
     process.exit(1);
 });

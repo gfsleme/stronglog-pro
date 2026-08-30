@@ -1,14 +1,15 @@
 // scripts/test_rf02_svg_map_redesign.js
-// Teste TDD Estrito para RF02: Redesenho do Mapa 2D SVG, Hitboxes Circulares r=14 sem Sobreposição e 19 Grupos
+// Teste TDD Estrito para RF02-v5.4: Redesenho do Mapa 2D SVG e Acessibilidade Dual (Chips + SVG)
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
 console.log('================================================================');
-console.log('🧪 TDD GREEN-TEST: RF02 - Redesenho do Mapa 2D SVG & 19 Grupos');
+console.log('🧪 TDD TEST: RF02-v5.4 - Acessibilidade Dual 2D & Chips Rápidos');
 console.log('================================================================\n');
 
 const appJs = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf-8');
+const html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf-8');
 
 let passed = 0;
 let failed = 0;
@@ -46,22 +47,34 @@ Object.defineProperty(global, 'navigator', {
 });
 
 global.window = { devicePixelRatio: 1, addEventListener: () => {}, removeEventListener: () => {} };
-const mockElement = () => ({
-    id: '',
-    value: '',
-    innerHTML: '',
-    innerText: '',
-    classList: { add: () => {}, remove: () => {}, toggle: () => {}, contains: () => false },
-    style: {},
-    appendChild: () => {},
-    setAttribute: () => {}
-});
+const domElements = {};
+const mockElement = (id = '') => {
+    const el = {
+        id: id,
+        value: '',
+        innerHTML: '',
+        innerText: '',
+        classList: {
+            classes: new Set(),
+            add: function(...c) { c.forEach(item => this.classes.add(item)); },
+            remove: function(...c) { c.forEach(item => this.classes.delete(item)); },
+            toggle: function(c) { if (this.classes.has(c)) this.classes.delete(c); else this.classes.add(c); },
+            contains: function(c) { return this.classes.has(c); }
+        },
+        style: {},
+        appendChild: () => {},
+        setAttribute: () => {},
+        scrollIntoView: () => {}
+    };
+    if (id) domElements[id] = el;
+    return el;
+};
 
 global.document = {
-    createElement: () => mockElement(),
-    getElementById: () => mockElement(),
-    querySelector: () => null,
-    querySelectorAll: () => []
+    createElement: (tag) => mockElement(),
+    getElementById: (id) => domElements[id] || mockElement(id),
+    querySelector: (sel) => null,
+    querySelectorAll: (sel) => []
 };
 
 let loadedApp = null;
@@ -155,7 +168,7 @@ it('Cada alvo muscular no SVG deve possuir hitbox circular restrito (r=14) sem c
                 const dist = Math.hypot(circles[i].cx - circles[j].cx, circles[i].cy - circles[j].cy);
                 assert(
                     dist >= 27.9,
-                    `Sobreposição detectada em ${view} entre ${circles[i].group} (${circles[i].cx},${circles[i].cy}) e ${circles[j].group} (${circles[j].cx},${circles[j].cy}) - d=${dist.toFixed(1)} < 28`
+                    `Sobreposição detectada em ${view} entre ${circles[i].group} e ${circles[j].group} - dist=${dist.toFixed(1)} < 28`
                 );
             }
         }
@@ -181,7 +194,6 @@ it('Tap simulado deve selecionar com sucesso cada um dos 19 grupos musculares', 
             `Falha ao selecionar grupo muscular '${grp}' via tap simulado`
         );
         
-        // Verifica se getSvgAnatomicalPaths marca o nó como active-selected
         const svgWithFilter = loadedApp.getSvgAnatomicalPaths('anterior', null, grp) + 
                              loadedApp.getSvgAnatomicalPaths('posterior', null, grp);
         assert(
@@ -204,6 +216,49 @@ it('Estado activeSvgView deve ser consistente e closeModal deve destruir cena 3D
     assert(destroyedScene === 'library', 'closeModal deve chamar destroy3DScene("library") ao fechar exercise-library-modal');
     
     loadedApp.destroy3DScene = origDestroy;
+});
+
+// TESTE 6: [RF02-v5.4] HTML deve conter container para a barra de chips anatômicos rápidos
+it('HTML deve conter elemento #library-muscle-chips-bar para acesso rápido aos 19 grupos', () => {
+    assert(
+        html.includes('id="library-muscle-chips-bar"'),
+        'Elemento #library-muscle-chips-bar não encontrado em index.html'
+    );
+});
+
+// TESTE 7: [RF02-v5.4] app.js deve renderizar chips para todos os 19 grupos anatômicos
+it('app.renderMuscleChipsBar deve renderizar botões/chips para todos os 19 grupos', () => {
+    assert(
+        typeof loadedApp.renderMuscleChipsBar === 'function',
+        'Método app.renderMuscleChipsBar não encontrado'
+    );
+    const container = mockElement('library-muscle-chips-bar');
+    domElements['library-muscle-chips-bar'] = container;
+    loadedApp.renderMuscleChipsBar('library-muscle-chips-bar');
+    
+    REQUIRED_19_GROUPS.forEach(grp => {
+        assert(
+            container.innerHTML.includes(`data-muscle-group="${grp}"`) || container.innerHTML.includes(`app.selectMuscleFilter('${grp}')`),
+            `Chip para o grupo '${grp}' não foi renderizado em #library-muscle-chips-bar`
+        );
+    });
+});
+
+// TESTE 8: [RF02-v5.4] Seleção via chip deve selecionar todos os 19 grupos, acionar vibração e sincronizar SVG
+it('Seleção de qualquer um dos 19 grupos via chip deve acionar vibração, atualizar filtro e visão SVG', () => {
+    REQUIRED_19_GROUPS.forEach(grp => {
+        vibrationCount = 0;
+        loadedApp.selectMuscleFilter(grp);
+        assert(loadedApp.activeMuscleFilter === grp, `activeMuscleFilter não foi atualizado para ${grp}`);
+        assert(vibrationCount > 0, `Vibração não foi acionada ao selecionar o chip ${grp}`);
+
+        // Grupos posteriores devem automaticamente comutar activeSvgView para 'posterior'
+        const POSTERIOR_GROUPS = ['glutes', 'hamstrings', 'lats', 'lower_back', 'shoulders_rear'];
+        if (POSTERIOR_GROUPS.includes(grp)) {
+            assert(loadedApp.activeSvgView === 'posterior', `Grupo posterior ${grp} deveria comutar activeSvgView para posterior`);
+        }
+    });
+    loadedApp.clearMuscleFilter();
 });
 
 console.log('\n----------------------------------------------------------------');

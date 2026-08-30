@@ -1,11 +1,11 @@
 // scripts/test_rf01_3d_harmonization.js
-// Teste TDD Estrito para RF01: Harmonização do Modelo 3D Low-Poly
+// Teste TDD Estrito para RF01-v5.4: Three.js de ponta com 19 grupos, proxy colliders e material pooling
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
 console.log('================================================================');
-console.log('🧪 TDD RED-TEST: RF01 - Harmonização do Modelo 3D Low-Poly');
+console.log('🧪 TDD TEST: RF01-v5.4 - Three.js de Ponta, Colliders & Pooling');
 console.log('================================================================\n');
 
 const appJs = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf-8');
@@ -47,6 +47,7 @@ class MockObject3D {
         this.scale = new MockVector3(1, 1, 1);
         this.children = [];
         this.userData = {};
+        this.visible = true;
     }
     add(child) { this.children.push(child); }
 }
@@ -75,12 +76,14 @@ const mockTHREE = {
     Mesh: MockMesh,
     MeshStandardMaterial: class extends MockMaterial {},
     MeshPhysicalMaterial: class extends MockMaterial {},
+    MeshBasicMaterial: class extends MockMaterial {},
     BoxGeometry: class extends MockGeometry { constructor(...args) { super('BoxGeometry', args); } },
     CylinderGeometry: class extends MockGeometry { constructor(...args) { super('CylinderGeometry', args); } },
     ConeGeometry: class extends MockGeometry { constructor(...args) { super('ConeGeometry', args); } },
     SphereGeometry: class extends MockGeometry { constructor(...args) { super('SphereGeometry', args); } },
     IcosahedronGeometry: class extends MockGeometry { constructor(...args) { super('IcosahedronGeometry', args); } },
     DodecahedronGeometry: class extends MockGeometry { constructor(...args) { super('DodecahedronGeometry', args); } },
+    OctahedronGeometry: class extends MockGeometry { constructor(...args) { super('OctahedronGeometry', args); } },
     BufferGeometry: class extends MockGeometry { constructor(...args) { super('BufferGeometry', args); } },
     Vector2: class { constructor(x,y){this.x=x;this.y=y;} },
     Vector3: MockVector3,
@@ -95,7 +98,9 @@ global.localStorage = {
     removeItem: (k) => { delete mockStorage[k]; }
 };
 global.window = { devicePixelRatio: 1, addEventListener: () => {}, removeEventListener: () => {} };
-global.navigator = { serviceWorker: { register: () => Promise.resolve({ addEventListener: () => {} }) } };
+global.navigator = { 
+    serviceWorker: { register: () => Promise.resolve({ addEventListener: () => {} }), addEventListener: () => {} } 
+};
 global.document = {
     getElementById: () => null,
     querySelector: () => null,
@@ -105,7 +110,7 @@ global.document = {
 let loadedApp = null;
 try {
     const scriptCode = `
-        const Dexie = function() { return { version: () => ({ stores: () => {} }) }; };
+        function Dexie() { this.version = () => ({ stores: () => ({}) }); this.templates = { toArray: async () => [] }; }
         const lucide = { createIcons: () => {} };
         ${appJs}
         return app;
@@ -121,10 +126,9 @@ it('buildHologramBodyMesh deve gerar silhueta anatômica estilizada sem BoxGeome
     assert(bodyMesh && bodyMesh.children.length >= 16, 'Modelo 3D deve conter pelo menos 16 partes anatômicas');
     
     // Procura partes do peitoral
-    const chestParts = bodyMesh.children.filter(m => m.userData && m.userData.groupKey === 'chest');
-    assert(chestParts.length >= 2, 'Peitoral deve ter no mínimo 2 partes (esquerda e direita)');
+    const chestParts = bodyMesh.children.filter(m => m.userData && m.userData.groupKey === 'chest' && !m.userData.isProxyCollider);
+    assert(chestParts.length >= 2, 'Peitoral deve ter no mínimo 2 partes visuais (esquerda e direita)');
     
-    // O peitoral não deve ser um simples BoxGeometry sem tratamento anatômico
     chestParts.forEach(p => {
         assert(
             p.geometry.type !== 'BoxGeometry' || p.userData.isSculptedLowPoly === true,
@@ -137,11 +141,10 @@ it('buildHologramBodyMesh deve gerar silhueta anatômica estilizada sem BoxGeome
 it('Materiais do 3D devem aplicar realce emissivo Sci-Fi Neon Mint #00FF9D para grupos selecionados', () => {
     loadedApp.activeMuscleFilter = 'chest';
     const bodyMesh = loadedApp.buildHologramBodyMesh(mockTHREE, null);
-    const chestMesh = bodyMesh.children.find(m => m.userData && m.userData.groupKey === 'chest');
+    const chestMesh = bodyMesh.children.find(m => m.userData && m.userData.groupKey === 'chest' && !m.userData.isProxyCollider);
     assert(chestMesh, 'Mesh do peitoral não encontrada');
     assert(chestMesh.material, 'Material da mesh não encontrado');
     
-    // Emissivo deve ser Neon Mint 0x00FF9D ou similar brilhante
     assert(
         chestMesh.material.emissive === 0x00FF9D,
         `Cor emissiva esperada 0x00FF9D, recebido: ${chestMesh.material.emissive}`
@@ -161,7 +164,49 @@ it('app.js deve fornecer renderização a 60 FPS em Tier 1 com função de bench
     assert(perfReport.frameTimeMs <= 16.67, `Tempo médio de frame deve ser <= 16.67ms (60 FPS), obtido: ${perfReport?.frameTimeMs}ms`);
 });
 
+// 6. [RF01-v5.4] Cobertura de todos os 19 grupos musculares no 3D
+it('buildHologramBodyMesh deve cobrir todos os 19 grupos musculares da ontologia (incluindo adutores, abdutores e cardio)', () => {
+    const bodyMesh = loadedApp.buildHologramBodyMesh(mockTHREE, null);
+    const groupsIn3D = new Set();
+    bodyMesh.children.forEach(m => {
+        if (m.userData && m.userData.groupKey) {
+            groupsIn3D.add(m.userData.groupKey);
+        }
+    });
+
+    const REQUIRED_19 = [
+        'chest', 'traps', 'shoulders_front', 'shoulders_side', 'shoulders_rear',
+        'biceps', 'triceps', 'forearms', 'abs', 'quads', 'hamstrings', 'calves',
+        'upper_back', 'lats', 'lower_back', 'glutes', 'adductors', 'abductors', 'cardio'
+    ];
+
+    const missing = REQUIRED_19.filter(g => !groupsIn3D.has(g));
+    assert(missing.length === 0, `Grupos ausentes no modelo 3D: ${missing.join(', ')}`);
+});
+
+// 7. [RF01-v5.4] Proxy colliders ampliados para os 19 grupos
+it('buildHologramBodyMesh deve conter proxy colliders ampliados para seleção tátil precisa no mobile', () => {
+    const bodyMesh = loadedApp.buildHologramBodyMesh(mockTHREE, null);
+    const proxyColliders = bodyMesh.children.filter(m => m.userData && m.userData.isProxyCollider === true);
+    assert(proxyColliders.length >= 19, `Esperados >= 19 proxy colliders ampliados, encontrados: ${proxyColliders.length}`);
+    
+    // Cada proxy collider deve referenciar um groupKey válido
+    proxyColliders.forEach(pc => {
+        assert(pc.userData.groupKey, 'Proxy collider deve possuir userData.groupKey');
+        assert(pc.scale.x >= 1.05 && pc.scale.y >= 1.05, 'Proxy collider deve possuir escala ampliada em relação à malha base');
+    });
+});
+
+// 8. [RF01-v5.4] Otimização de draw calls e material pooling
+it('buildHologramBodyMesh deve utilizar material pooling para evitar re-instanciação de materiais', () => {
+    const bodyMesh = loadedApp.buildHologramBodyMesh(mockTHREE, null);
+    const visualMeshes = bodyMesh.children.filter(m => m.userData && !m.userData.isProxyCollider);
+    const uniqueMaterials = new Set(visualMeshes.map(m => m.material));
+    // Sem pooling, cada mesh teria um material novo (>20 materiais). Com pooling, materiais não selecionados compartilham a mesma instância
+    assert(uniqueMaterials.size <= 5, `Material pooling falhou: ${uniqueMaterials.size} materiais únicos encontrados em estado neutro (máximo esperado <= 5)`);
+});
+
 console.log('\n----------------------------------------------------------------');
-console.log(`RESULTADO RED-STAGE: ${passed} PASS / ${failed} FAIL`);
+console.log(`RESULTADO RF01: ${passed} PASS / ${failed} FAIL`);
 console.log('----------------------------------------------------------------\n');
 process.exit(failed > 0 ? 1 : 0);

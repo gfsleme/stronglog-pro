@@ -1,5 +1,5 @@
-// StrongLog Pro v5.1 - UX Ergonomics, Interactive Guidance & 3D Sci-Fi Engine
-const APP_VERSION = 'v5.1';
+// StrongLog Pro v5.4 - UX Ergonomics, Interactive Guidance & 3D Sci-Fi Engine
+const APP_VERSION = 'v5.4';
 let swRegistration = null;
 let waitingWorker = null;
 
@@ -280,6 +280,9 @@ const app = {
         if (banner) {
             banner.classList.remove('hidden');
             lucide.createIcons();
+        }
+        if (typeof app.toast === 'function') {
+            app.toast('Nova versão v5.4 pronta para atualização!', 'info', 3500);
         }
     },
 
@@ -872,6 +875,31 @@ const app = {
         }
     },
 
+    formatExerciseBaseInfo: (ex) => {
+        if (!ex) return { base: 'Livre', rest: 90 };
+        let base = 'Livre';
+        if (ex.historyPreview && String(ex.historyPreview).toLowerCase() !== 'undefined' && String(ex.historyPreview).trim() !== '') {
+            base = ex.historyPreview;
+        } else if (ex.baseWeight !== undefined && ex.baseWeight !== null && String(ex.baseWeight).toLowerCase() !== 'undefined') {
+            base = `${ex.baseWeight}kg`;
+        } else if (ex.equipment && String(ex.equipment).toLowerCase() !== 'undefined' && String(ex.equipment).trim() !== '') {
+            base = ex.equipment;
+        }
+
+        let rest = 90;
+        if (ex.restTime !== undefined && ex.restTime !== null && !isNaN(ex.restTime)) {
+            rest = Number(ex.restTime);
+        } else if (ex.restSeconds !== undefined && ex.restSeconds !== null && !isNaN(ex.restSeconds)) {
+            rest = Number(ex.restSeconds);
+        }
+
+        return { base, rest };
+    },
+
+    renderActiveWorkout: () => {
+        return app.renderWorkout();
+    },
+
     renderWorkout: () => {
         const list = document.getElementById('exercise-list');
         if (!list || !app.activeWorkout) return;
@@ -895,6 +923,7 @@ const app = {
 
         list.innerHTML = app.activeWorkout.exercises.map((ex, exIdx) => {
             const muscleTag = ex.muscleGroup || ex.body_part || ex.target || 'Musculação';
+            const baseInfo = app.formatExerciseBaseInfo(ex);
             return `
             <div class="glass p-5 space-y-4 animate-fade" data-exercise-index="${exIdx}">
                 <div class="flex justify-between items-start">
@@ -905,8 +934,8 @@ const app = {
                         </h4>
                         <div class="flex items-center flex-wrap gap-2 pt-0.5">
                             <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-[#00FF9D]/10 text-[#00FF9D] border border-[#00FF9D]/20">${app.sanitize(muscleTag)}</span>
-                            <div class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Base: ${ex.historyPreview}</div>
-                            <div class="text-[9px] font-black text-[#00FF9D]/60 uppercase tracking-widest cursor-pointer hover:text-[#00FF9D]" onclick="app.setRest(${exIdx})">Descanso: ${ex.restTime}s</div>
+                            <div class="text-[9px] font-black text-gray-500 uppercase tracking-widest">BASE: ${baseInfo.base}</div>
+                            <div class="text-[9px] font-black text-[#00FF9D]/60 uppercase tracking-widest cursor-pointer hover:text-[#00FF9D]" onclick="app.setRest(${exIdx})">DESCANSO: ${baseInfo.rest}s</div>
                         </div>
                     </div>
                     <button onclick="app.removeExerciseFromWorkout(${exIdx})" class="p-2 text-gray-600 hover:text-red-500 active:text-red-500 transition-colors" title="Remover Exercício"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -1872,14 +1901,40 @@ const app = {
     },
 
     selectMuscleFilter: (groupId) => {
+        if (!groupId) return;
         if (app.activeMuscleFilter === groupId) {
             app.clearMuscleFilter();
             return;
         }
         app.activeMuscleFilter = groupId;
         const grpInfo = app.muscleOntology?.groups?.[groupId] || { name: groupId };
+
+        // Auto-sincroniza a visão do SVG se o músculo pertencer predominantemente às costas ou à frente
+        const POSTERIOR_GROUPS = ['glutes', 'hamstrings', 'lats', 'lower_back', 'shoulders_rear', 'calves', 'traps'];
+        if (POSTERIOR_GROUPS.includes(groupId)) {
+            app.activeSvgView = 'posterior';
+            app.svgActiveView = 'posterior';
+        } else {
+            const ANTERIOR_GROUPS = ['chest', 'abs', 'quads', 'biceps', 'shoulders_front', 'adductors', 'cardio'];
+            if (ANTERIOR_GROUPS.includes(groupId)) {
+                app.activeSvgView = 'anterior';
+                app.svgActiveView = 'anterior';
+            }
+        }
         
         try {
+            const frontBtn = document.getElementById('svg-view-front-btn');
+            const backBtn = document.getElementById('svg-view-back-btn');
+            if (frontBtn && backBtn) {
+                if (app.activeSvgView === 'anterior') {
+                    frontBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D]';
+                    backBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-gray-400';
+                } else {
+                    frontBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-gray-400';
+                    backBtn.className = 'px-2.5 py-1 rounded-lg text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D]';
+                }
+            }
+
             const bodyPartSelect = document.getElementById('filter-body-part');
             if (bodyPartSelect) bodyPartSelect.value = '';
 
@@ -1891,6 +1946,16 @@ const app = {
             }
 
             if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
+            
+            // Atualiza chips bar e faz scroll suave até o chip ativo
+            app.renderMuscleChipsBar('library-muscle-chips-bar');
+            const activeChip = document.getElementById(`muscle-chip-${groupId}`);
+            if (activeChip && typeof activeChip.scrollIntoView === 'function') {
+                try {
+                    activeChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                } catch(e) {}
+            }
+
             app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
             app.update3DMuscleHighlights('library');
             if (typeof app.filterExerciseLibrary === 'function') app.filterExerciseLibrary();
@@ -1903,9 +1968,55 @@ const app = {
         const filterChip = document.getElementById('library-active-muscle-filter');
         if (filterChip) filterChip.classList.add('hidden');
         
+        app.renderMuscleChipsBar('library-muscle-chips-bar');
         app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, null);
         app.update3DMuscleHighlights('library');
         app.filterExerciseLibrary();
+    },
+
+    renderMuscleChipsBar: (containerId = 'library-muscle-chips-bar') => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const groups = [
+            { key: 'chest', label: 'Peitoral' },
+            { key: 'traps', label: 'Trapézio' },
+            { key: 'shoulders_front', label: 'Ombros (Frente)' },
+            { key: 'shoulders_side', label: 'Ombros (Lateral)' },
+            { key: 'shoulders_rear', label: 'Ombros (Costas)' },
+            { key: 'biceps', label: 'Bíceps' },
+            { key: 'triceps', label: 'Tríceps' },
+            { key: 'forearms', label: 'Antebraços' },
+            { key: 'abs', label: 'Abdômen' },
+            { key: 'quads', label: 'Quadríceps' },
+            { key: 'hamstrings', label: 'Posterior Coxa' },
+            { key: 'calves', label: 'Panturrilhas' },
+            { key: 'upper_back', label: 'Costas Superior' },
+            { key: 'lats', label: 'Dorsais' },
+            { key: 'lower_back', label: 'Lombar' },
+            { key: 'glutes', label: 'Glúteos' },
+            { key: 'adductors', label: 'Adutores' },
+            { key: 'abductors', label: 'Abdutores' },
+            { key: 'cardio', label: 'Cardio' }
+        ];
+
+        let html = '';
+        groups.forEach(g => {
+            const isActive = app.activeMuscleFilter === g.key;
+            html += `
+                <button id="muscle-chip-${g.key}" 
+                        data-muscle-group="${g.key}"
+                        onclick="app.selectMuscleFilter('${g.key}')" 
+                        class="muscle-filter-chip px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap shrink-0 ${
+                            isActive 
+                                ? 'bg-[#00FF9D] text-black shadow-[0_0_12px_rgba(0,255,157,0.4)] scale-102' 
+                                : 'glass text-gray-400 hover:text-white border-white/5'
+                        }">
+                    ${g.label}
+                </button>
+            `;
+        });
+        container.innerHTML = html;
     },
 
     // 3D WebGL Sci-Fi Hologram Viewer Engine (Three.js)
@@ -2020,7 +2131,12 @@ const app = {
                     );
                     const raycaster = new THREE.Raycaster();
                     raycaster.setFromCamera(mouse, camera);
-                    const intersects = raycaster.intersectObjects(bodyGroup.children, true);
+                    const colliders = bodyGroup.children.filter(c => c.userData && c.userData.isProxyCollider);
+                    const visualMeshes = bodyGroup.children.filter(c => c.userData && c.userData.groupKey && !c.userData.isProxyCollider);
+                    let intersects = raycaster.intersectObjects(colliders, true);
+                    if (!intersects || intersects.length === 0) {
+                        intersects = raycaster.intersectObjects(visualMeshes, true);
+                    }
                     if (intersects && intersects.length > 0) {
                         const hit = intersects.find(i => i.object && i.object.userData && i.object.userData.groupKey);
                         if (hit) {
@@ -2101,56 +2217,61 @@ const app = {
         };
     },
 
-    buildHologramBodyMesh: (THREE, heatLevels = null) => {
+    buildHologramBodyMesh: (threeInstance = null, heatLevels = null) => {
+        const THREE = threeInstance || (typeof window !== 'undefined' && window.THREE ? window.THREE : (typeof globalThis !== 'undefined' && globalThis.THREE ? globalThis.THREE : null));
+        if (!THREE) return null;
         const bodyGroup = new THREE.Group();
+
+        // 1. Material Pooling para otimização de draw calls e redução de garbage collection
+        const defaultNeutralMat = new THREE.MeshStandardMaterial({
+            color: 0x0c1524,
+            emissive: 0x02070f,
+            emissiveIntensity: 0.15,
+            roughness: 0.25,
+            metalness: 0.55,
+            transparent: true,
+            opacity: 0.65
+        });
+
+        const activeHighlightMat = new THREE.MeshStandardMaterial({
+            color: 0x00FF9D,
+            emissive: 0x00FF9D,
+            emissiveIntensity: 1.35,
+            roughness: 0.25,
+            metalness: 0.55,
+            transparent: true,
+            opacity: 0.95
+        });
+
+        const heatMatPool = heatLevels ? {
+            1: new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 0.85, opacity: 0.88, transparent: true }),
+            2: new THREE.MeshStandardMaterial({ color: 0x00FF9D, emissive: 0x00FF9D, emissiveIntensity: 1.15, opacity: 0.92, transparent: true }),
+            3: new THREE.MeshStandardMaterial({ color: 0xffab00, emissive: 0xffab00, emissiveIntensity: 1.4, opacity: 0.95, transparent: true }),
+            4: new THREE.MeshStandardMaterial({ color: 0xff1744, emissive: 0xff1744, emissiveIntensity: 1.8, opacity: 1.0, transparent: true })
+        } : null;
+
+        const proxyMat = (typeof THREE.MeshBasicMaterial !== 'undefined')
+            ? new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+            : defaultNeutralMat;
+
+        app.hologramMaterialsPool = {
+            defaultNeutralMat,
+            activeHighlightMat,
+            heatMatPool,
+            proxyMat
+        };
 
         const getMaterial = (groupKey) => {
             const isMatch = app.isMuscleGroupSelectedOrChild(groupKey, app.activeMuscleFilter);
-            let colorHex = 0x0c1524;
-            let emissiveHex = 0x02070f;
-            let emissiveIntensity = 0.15;
-            let opacity = 0.65;
-
             if (heatLevels) {
-                const level = heatLevels[groupKey] || 0;
-                if (level === 1) { // Cyan
-                    colorHex = 0x00e5ff;
-                    emissiveHex = 0x00e5ff;
-                    emissiveIntensity = 0.85;
-                    opacity = 0.88;
-                } else if (level === 2) { // Neon Mint
-                    colorHex = 0x00FF9D;
-                    emissiveHex = 0x00FF9D;
-                    emissiveIntensity = 1.15;
-                    opacity = 0.92;
-                } else if (level === 3) { // Amber
-                    colorHex = 0xffab00;
-                    emissiveHex = 0xffab00;
-                    emissiveIntensity = 1.4;
-                    opacity = 0.95;
-                } else if (level >= 4) { // Crimson
-                    colorHex = 0xff1744;
-                    emissiveHex = 0xff1744;
-                    emissiveIntensity = 1.8;
-                    opacity = 1.0;
+                const lvl = Math.min(Math.max(heatLevels[groupKey] || 0, 0), 4);
+                if (lvl > 0 && heatMatPool && heatMatPool[lvl]) {
+                    return heatMatPool[lvl];
                 }
             } else if (isMatch) {
-                // Realce emissivo Sci-Fi Neon Mint #00FF9D
-                colorHex = 0x00FF9D;
-                emissiveHex = 0x00FF9D;
-                emissiveIntensity = 1.35;
-                opacity = 0.95;
+                return activeHighlightMat;
             }
-
-            return new THREE.MeshStandardMaterial({
-                color: colorHex,
-                emissive: emissiveHex,
-                emissiveIntensity: emissiveIntensity,
-                roughness: 0.25,
-                metalness: 0.55,
-                transparent: true,
-                opacity: opacity
-            });
+            return defaultNeutralMat;
         };
 
         const createPart = (geom, grpKey, pos, rot = [0,0,0], scale = [1,1,1]) => {
@@ -2161,6 +2282,18 @@ const app = {
             mesh.scale.set(...scale);
             mesh.userData = { groupKey: grpKey, isSculptedLowPoly: true };
             bodyGroup.add(mesh);
+
+            // Adiciona Proxy Collider ampliado (+35%) para máxima acurácia tátil
+            if (grpKey !== 'head') {
+                const proxyMesh = new THREE.Mesh(geom, proxyMat);
+                proxyMesh.position.set(...pos);
+                proxyMesh.rotation.set(...rot);
+                proxyMesh.scale.set(scale[0] * 1.35, scale[1] * 1.35, scale[2] * 1.35);
+                proxyMesh.userData = { groupKey: grpKey, isProxyCollider: true };
+                proxyMesh.visible = true;
+                bodyGroup.add(proxyMesh);
+            }
+
             return mesh;
         };
 
@@ -2176,13 +2309,16 @@ const app = {
         const rightChest = createPart(new THREE.CylinderGeometry(0.16, 0.12, 0.10, 5), 'chest', [-0.12, 0.86, 0.08], [-0.15, -0.15, 0.1], [1.1, 1.0, 0.8]);
         rightChest.userData.isSculptedLowPoly = true;
 
-        // 4. Abdômen / Core Facetado Segmentado
+        // 4. Cardio / Núcleo Cardiovascular Sci-Fi (centro do esterno)
+        createPart(new THREE.OctahedronGeometry ? new THREE.OctahedronGeometry(0.08, 0) : new THREE.IcosahedronGeometry(0.08, 1), 'cardio', [0, 0.84, 0.09], [0, 0, 0], [1.1, 1.1, 0.8]);
+
+        // 5. Abdômen / Core Facetado Segmentado
         const upperAbs = createPart(new THREE.CylinderGeometry(0.13, 0.12, 0.14, 6), 'abs', [0, 0.68, 0.06], [0, 0, 0], [1.1, 1.0, 0.75]);
         upperAbs.userData.isSculptedLowPoly = true;
         const lowerAbs = createPart(new THREE.CylinderGeometry(0.12, 0.10, 0.15, 6), 'abs', [0, 0.54, 0.05], [0, 0, 0], [1.05, 1.0, 0.75]);
         lowerAbs.userData.isSculptedLowPoly = true;
 
-        // 5. Deltoides (Anterior, Lateral, Posterior) Facetados Low-Poly
+        // 6. Deltoides (Anterior, Lateral, Posterior) Facetados Low-Poly
         createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_front', [0.29, 0.91, 0.05]);
         createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_front', [-0.29, 0.91, 0.05]);
         createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_side', [0.34, 0.91, 0.0]);
@@ -2190,17 +2326,17 @@ const app = {
         createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_rear', [0.29, 0.91, -0.05]);
         createPart(new THREE.IcosahedronGeometry(0.10, 1), 'shoulders_rear', [-0.29, 0.91, -0.05]);
 
-        // 6. Braços Anatômicos (Bíceps e Tríceps com curvatura low-poly)
+        // 7. Braços Anatômicos (Bíceps e Tríceps com curvatura low-poly)
         createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.24, 6), 'biceps', [0.34, 0.70, 0.04]);
         createPart(new THREE.CylinderGeometry(0.08, 0.065, 0.24, 6), 'biceps', [-0.34, 0.70, 0.04]);
         createPart(new THREE.CylinderGeometry(0.085, 0.065, 0.24, 6), 'triceps', [0.34, 0.70, -0.04]);
         createPart(new THREE.CylinderGeometry(0.085, 0.065, 0.24, 6), 'triceps', [-0.34, 0.70, -0.04]);
 
-        // 7. Antebraços Anatômicos Afilados
+        // 8. Antebraços Anatômicos Afilados
         createPart(new THREE.CylinderGeometry(0.07, 0.045, 0.26, 6), 'forearms', [0.36, 0.42, 0.03]);
         createPart(new THREE.CylinderGeometry(0.07, 0.045, 0.26, 6), 'forearms', [-0.36, 0.42, 0.03]);
 
-        // 8. Costas Superior / Dorsais (Lats V-Taper) / Lombar
+        // 9. Costas Superior / Dorsais (Lats V-Taper) / Lombar
         const upperBack = createPart(new THREE.CylinderGeometry(0.18, 0.13, 0.16, 5), 'upper_back', [0, 0.92, -0.06], [Math.PI, 0, 0], [1.2, 1.0, 0.75]);
         upperBack.userData.isSculptedLowPoly = true;
         const leftLat = createPart(new THREE.CylinderGeometry(0.10, 0.06, 0.24, 5), 'lats', [0.17, 0.74, -0.05], [0, 0, -0.22]);
@@ -2210,19 +2346,27 @@ const app = {
         const lowerBack = createPart(new THREE.CylinderGeometry(0.12, 0.10, 0.18, 6), 'lower_back', [0, 0.54, -0.05], [0, 0, 0], [1.0, 1.0, 0.75]);
         lowerBack.userData.isSculptedLowPoly = true;
 
-        // 9. Glúteos Facetados
+        // 10. Glúteos Facetados
         createPart(new THREE.IcosahedronGeometry(0.14, 1), 'glutes', [0.12, 0.36, -0.06]);
         createPart(new THREE.IcosahedronGeometry(0.14, 1), 'glutes', [-0.12, 0.36, -0.06]);
 
-        // 10. Quadríceps / Coxas Anatômicas Afiladas
+        // 11. Abdutores Laterais do Quadril
+        createPart(new THREE.CylinderGeometry(0.09, 0.07, 0.20, 6), 'abductors', [0.21, 0.26, -0.01], [0, 0, -0.15]);
+        createPart(new THREE.CylinderGeometry(0.09, 0.07, 0.20, 6), 'abductors', [-0.21, 0.26, -0.01], [0, 0, 0.15]);
+
+        // 12. Adutores Mediais da Coxa
+        createPart(new THREE.CylinderGeometry(0.07, 0.055, 0.28, 6), 'adductors', [0.06, 0.05, 0.01], [0, 0, 0.08]);
+        createPart(new THREE.CylinderGeometry(0.07, 0.055, 0.28, 6), 'adductors', [-0.06, 0.05, 0.01], [0, 0, -0.08]);
+
+        // 13. Quadríceps / Coxas Anatômicas Afiladas
         createPart(new THREE.CylinderGeometry(0.13, 0.08, 0.44, 7), 'quads', [0.15, -0.02, 0.04], [0, 0, -0.04]);
         createPart(new THREE.CylinderGeometry(0.13, 0.08, 0.44, 7), 'quads', [-0.15, -0.02, 0.04], [0, 0, 0.04]);
 
-        // 11. Isquiotibiais (Posterior de Coxa)
+        // 14. Isquiotibiais (Posterior de Coxa)
         createPart(new THREE.CylinderGeometry(0.11, 0.075, 0.40, 6), 'hamstrings', [0.15, -0.02, -0.04], [0, 0, -0.04]);
         createPart(new THREE.CylinderGeometry(0.11, 0.075, 0.40, 6), 'hamstrings', [-0.15, -0.02, -0.04], [0, 0, 0.04]);
 
-        // 12. Panturrilhas Diamante com Afilamento
+        // 15. Panturrilhas Diamante com Afilamento
         createPart(new THREE.CylinderGeometry(0.095, 0.055, 0.42, 6), 'calves', [0.16, -0.52, -0.01]);
         createPart(new THREE.CylinderGeometry(0.095, 0.055, 0.42, 6), 'calves', [-0.16, -0.52, -0.01]);
 
@@ -2233,7 +2377,7 @@ const app = {
         const entry = app.threeScenes[sceneKey];
         if (!entry || !entry.bodyGroup) return;
         entry.bodyGroup.traverse(child => {
-            if (child.isMesh && child.userData && child.userData.groupKey) {
+            if (child.isMesh && child.userData && child.userData.groupKey && !child.userData.isProxyCollider) {
                 const grp = child.userData.groupKey;
                 const isMatch = app.isMuscleGroupSelectedOrChild(grp, app.activeMuscleFilter);
                 if (isMatch) {
@@ -2377,18 +2521,40 @@ const app = {
         }
     },
 
-    getLibraryListCalculatedHeight: (viewportWidth = 390, viewportHeight = 844, isCollapsed = null) => {
-        const collapsed = isCollapsed !== null ? isCollapsed : (app.libraryViewMode === 'list' || app.isVisualizerCollapsed);
-        const modalHeight = viewportHeight * 0.92;
-        // Padding vertical do container (p-4 = 16px + 16px = 32px)
-        const modalPadding = 32;
-        const headerHeight = 36;
-        const modeSwitcherHeight = 36;
-        const toggleBarHeight = (app.libraryViewMode !== 'list') ? 28 : 0;
+    onSearchExerciseFocus: () => {
+        app.isSearchFocused = true;
+        // Auto-colapso instantâneo do visualizador para liberar a tela útil no mobile (Hevy/Strong standard)
+        app.toggleLibraryVisualizer(true);
+        const modeSwitcher = document.getElementById('lib-view-mode-switcher');
+        if (modeSwitcher && window.innerWidth < 640) {
+            modeSwitcher.classList.add('hidden');
+        }
+    },
+
+    onSearchExerciseBlur: () => {
+        app.isSearchFocused = false;
+        const modeSwitcher = document.getElementById('lib-view-mode-switcher');
+        if (modeSwitcher) {
+            modeSwitcher.classList.remove('hidden');
+        }
+    },
+
+    getLibraryListCalculatedHeight: (viewportWidth = 390, viewportHeight = 844, isCollapsed = null, isSearchFocused = null) => {
+        const isMobile = viewportWidth < 640;
+        const searching = isSearchFocused !== null ? isSearchFocused : (app.isSearchFocused || false);
+        const collapsed = isCollapsed !== null ? isCollapsed : (app.libraryViewMode === 'list' || app.isVisualizerCollapsed || searching);
+        
+        // Fullscreen sheet no mobile (<640px) ocupa 100dvh (100%), desktop ocupa 92vh
+        const modalHeight = isMobile ? viewportHeight : viewportHeight * 0.92;
+        
+        const modalPadding = isMobile ? (searching ? 16 : 24) : 32;
+        const headerHeight = searching && isMobile ? 28 : 36;
+        const modeSwitcherHeight = (searching && isMobile) ? 0 : 36;
+        const toggleBarHeight = (app.libraryViewMode !== 'list' && !searching) ? 28 : 0;
         const visualizerHeight = collapsed ? 0 : 200;
-        const activeMuscleFilterHeight = app.activeMuscleFilter ? 36 : 0;
+        const activeMuscleFilterHeight = (app.activeMuscleFilter && !searching) ? 36 : 0;
         const searchInputHeight = 44;
-        const filterSelectsHeight = 40;
+        const filterSelectsHeight = (searching && isMobile) ? 0 : 40;
         
         const nonListHeights = modalPadding + headerHeight + modeSwitcherHeight + toggleBarHeight + visualizerHeight + activeMuscleFilterHeight + searchInputHeight + filterSelectsHeight;
         return parseFloat((modalHeight - nonListHeights).toFixed(2));
@@ -2436,6 +2602,7 @@ const app = {
             if (threeContainer) threeContainer.classList.add('hidden');
             app.destroy3DScene('library');
             app.renderSvgAnatomicalMap('library-svg-stage', app.activeSvgView, app.activeMuscleFilter);
+            app.renderMuscleChipsBar('library-muscle-chips-bar');
         } else if (mode === '3d') {
             if (app.graphicMode === 'tier_2') {
                 app.toast('Modo 3D desativado em Tier 2 (Economia). Usando Mapa 2D.', 'info');
@@ -2747,7 +2914,7 @@ const app = {
                         </div>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="text-[8px] font-bold text-[#00FF9D] uppercase tracking-wider">${app.sanitize(x.target || x.body_part)}</span>
-                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider">• ${app.sanitize(x.equipment)}</span>
+                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider">• ${app.sanitize((x.equipment && String(x.equipment).toLowerCase() !== 'undefined') ? x.equipment : 'Livre')}</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -2849,7 +3016,7 @@ const app = {
         const tagsContainer = document.getElementById('detail-exercise-tags');
         tagsContainer.innerHTML = `
             <span class="tag-accent">${app.sanitize(ex.target || ex.body_part)}</span>
-            <span class="tag-secondary">${app.sanitize(ex.equipment)}</span>
+            <span class="tag-secondary">${app.sanitize((ex.equipment && String(ex.equipment).toLowerCase() !== 'undefined') ? ex.equipment : 'Livre')}</span>
             ${ex.name_en ? `<span class="px-2 py-0.5 rounded-full text-[8px] font-mono text-gray-400 bg-white/5 uppercase border border-white/5">${app.sanitize(ex.name_en)}</span>` : ''}
         `;
         

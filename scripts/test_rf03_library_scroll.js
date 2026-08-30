@@ -1,11 +1,11 @@
 // scripts/test_rf03_library_scroll.js
-// Teste TDD Estrito para RF03: Arquitetura de rolagem da Biblioteca
+// Teste TDD Estrito para RF03-v5.4: Fullscreen Sheet (100dvh no mobile), Auto-colapso na Busca e Lista >= 85%
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
 console.log('================================================================');
-console.log('🧪 TDD GREEN-TEST: RF03 - Arquitetura de Rolagem da Biblioteca');
+console.log('🧪 TDD TEST: RF03-v5.4 - Fullscreen Sheet, Auto-Colapso & Lista >= 85%');
 console.log('================================================================\n');
 
 // 1. Carregar arquivos de produção
@@ -40,6 +40,26 @@ it('HTML deve conter estrutura de visualizador colapsável com transição suave
     assert(
         html.includes('library-visualizer-wrapper') && html.includes('id="library-visualizer-section"'),
         'Wrapper colapsável do visualizador não encontrado em index.html'
+    );
+});
+
+// TESTE DE FULLSCREEN SHEET NO MOBILE (<640px)
+it('HTML deve configurar a Biblioteca como Fullscreen Sheet no mobile (100dvh / h-full, <640px)', () => {
+    assert(
+        html.includes('h-full') && html.includes('sm:h-[92vh]') && html.includes('sm:rounded-t-[45px]'),
+        'Biblioteca modal não configurada como fullscreen sheet no mobile (esperado h-full sm:h-[92vh])'
+    );
+});
+
+// TESTE DO AUTO-COLAPSO NA BUSCA
+it('Input de busca #search-exercise deve possuir handler onfocus chamando app.onSearchExerciseFocus', () => {
+    assert(
+        html.includes('id="search-exercise"') && html.includes('onfocus="app.onSearchExerciseFocus()"'),
+        '#search-exercise deve possuir onfocus="app.onSearchExerciseFocus()"'
+    );
+    assert(
+        appJs.includes('onSearchExerciseFocus:'),
+        'app.js deve implementar o método onSearchExerciseFocus'
     );
 });
 
@@ -79,11 +99,11 @@ it('app.js deve exportar o método toggleLibraryVisualizer operando via is-colla
     );
 });
 
-// TESTES DE ERGONOMIA E ALTURA NO VIEWPORT 390x844
-it('Em viewport 390x844, lista de exercícios deve ter >= 60% da altura da tela quando colapsado ou em modo lista', () => {
+// TESTES DE ERGONOMIA E ALTURA NO VIEWPORT 390x844 COM >= 85% NO FOCO DE BUSCA
+it('Em viewport 390x844, lista de exercícios deve ter >= 85% da altura da tela quando focar a busca na fullscreen sheet', () => {
     const VIEWPORT_WIDTH = 390;
     const VIEWPORT_HEIGHT = 844;
-    const MIN_REQUIRED_LIST_HEIGHT = 0.60 * VIEWPORT_HEIGHT; // 506.4px
+    const MIN_REQUIRED_FOCUS_LIST_HEIGHT = 0.85 * VIEWPORT_HEIGHT; // 717.4px
 
     // Mock completo para carregar app.js de forma isolada
     const mockStorage = {};
@@ -128,21 +148,14 @@ it('Em viewport 390x844, lista de exercícios deve ter >= 60% da altura da tela 
 
     assert(typeof loadedApp.toggleLibraryVisualizer === 'function', 'toggleLibraryVisualizer deve ser função');
     assert(typeof loadedApp.getLibraryListCalculatedHeight === 'function', 'getLibraryListCalculatedHeight deve ser função de layout');
+    assert(typeof loadedApp.onSearchExerciseFocus === 'function', 'onSearchExerciseFocus deve ser função');
 
-    // Altura calculada em modo colapsado para 390x844
-    const heightCollapsed = loadedApp.getLibraryListCalculatedHeight(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, true);
-    console.log(`   Altura da lista (Colapsado / Modo Lista): ${heightCollapsed}px (>= ${MIN_REQUIRED_LIST_HEIGHT}px necessários)`);
+    // Altura calculada em modo fullscreen focado na busca para 390x844
+    const heightSearchFocus = loadedApp.getLibraryListCalculatedHeight(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, true, true);
+    console.log(`   Altura da lista (Foco de Busca / Fullscreen Mobile): ${heightSearchFocus}px (>= ${MIN_REQUIRED_FOCUS_LIST_HEIGHT}px necessários)`);
     assert(
-        heightCollapsed >= MIN_REQUIRED_LIST_HEIGHT,
-        `Altura da lista colapsada (${heightCollapsed}px) é inferior a 60% da tela (${MIN_REQUIRED_LIST_HEIGHT}px)`
-    );
-
-    // Altura calculada em modo expandido deve ser menor mas o toggle deve permitir recuperar os >=60%
-    const heightExpanded = loadedApp.getLibraryListCalculatedHeight(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, false);
-    console.log(`   Altura da lista (Expandido 2D/3D): ${heightExpanded}px`);
-    assert(
-        heightExpanded < heightCollapsed,
-        'Altura expandida deve ser menor que a altura colapsada'
+        heightSearchFocus >= MIN_REQUIRED_FOCUS_LIST_HEIGHT,
+        `Altura da lista no foco de busca (${heightSearchFocus}px) é inferior a 85% da tela (${MIN_REQUIRED_FOCUS_LIST_HEIGHT}px)`
     );
 });
 

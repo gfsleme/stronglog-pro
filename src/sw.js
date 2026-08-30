@@ -1,7 +1,7 @@
-/* StrongLog Pro - Service Worker v5.1 */
-/* Release Date: 2026-08-23 */
+/* StrongLog Pro - Service Worker v5.4 */
+/* Release Date: 2026-08-29 */
 
-const CACHE_NAME = 'stronglog-pro-v5.3';
+const CACHE_NAME = 'stronglog-pro-v5.4';
 const ASSETS = [
   './',
   './index.html',
