@@ -25,6 +25,16 @@ input[type="number"],
     font-feature-settings: "tnum";
 }
 
+/* Universal Hidden Rule to Guarantee Zero Overlay Interference (Hotfix v5.6) */
+.hidden {
+    display: none !important;
+}
+
+/* Prevent SVG icons and paths from capturing pointer events instead of parent buttons */
+svg, svg * {
+    pointer-events: none;
+}
+
 * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

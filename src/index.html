@@ -103,10 +103,10 @@
                     <h2 class="text-lg font-black tracking-tight uppercase italic text-white">Minhas Rotinas</h2>
                     <div class="flex gap-2">
                         <button onclick="app.showRecords()" class="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 glass text-[#00FF9D] active:scale-90 transition-all" title="Recordes Pessoais"><i data-lucide="trophy" class="w-4 h-4"></i></button>
-                        <button onclick="app.showNewPlanForm()" class="text-[10px] font-black text-black bg-[#00FF9D] px-4 py-2 rounded-full uppercase tracking-tighter shadow-md shadow-[#00FF9D]/20 active:scale-95 transition-all">+ Nova Rotina</button>
+                        <button id="btn-new-plan" data-action="new-plan" data-testid="btn-new-plan" onclick="app.showNewPlanForm()" class="text-xs font-black text-black bg-[#00FF9D] min-h-[44px] px-5 py-2.5 rounded-full uppercase tracking-tighter shadow-md shadow-[#00FF9D]/20 active:scale-95 transition-all flex items-center justify-center cursor-pointer" aria-label="Nova Rotina">+ Nova Rotina</button>
                     </div>
                 </div>
-                <div id="workout-list" class="grid grid-cols-1 gap-3"></div>
+                <div id="workout-list" class="grid grid-cols-1 gap-3"><div id="plans-list" class="contents"></div></div>
             </div>
         </section>
 
@@ -169,7 +169,7 @@
         <!-- Plan Editor -->
         <section id="view-plan-editor" class="hidden space-y-6 animate-fade pb-safe">
             <div class="flex items-center gap-4">
-                <button onclick="app.setView('dashboard')" class="p-3 glass active:scale-90 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                <button onclick="app.closePlanEditor()" class="p-3 glass active:scale-90 transition-all" title="Voltar"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                 <h2 id="plan-editor-title" class="text-2xl font-black italic text-white">Novo Plano</h2>
             </div>
             <div class="space-y-8 pb-32">
@@ -248,6 +248,7 @@
                             <button id="svg-view-front-btn" onclick="app.switchSvgView('anterior')" class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase bg-[#00FF9D]/15 text-[#00FF9D]">Frente</button>
                             <button id="svg-view-back-btn" onclick="app.switchSvgView('posterior')" class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-gray-400">Costas</button>
                         </div>
+                    </div>
                     <div id="library-svg-stage" class="w-full h-44 sm:h-48 flex items-center justify-center relative"></div>
                     <!-- Chips Anatômicos Rápidos (Acessibilidade Dual RF02-v5.4) -->
                     <div id="library-muscle-chips-bar" class="w-full flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-1.5 px-1 shrink-0 border-t border-white/5" role="toolbar" aria-label="Atalhos rápidos para grupos musculares"></div>
@@ -277,7 +278,7 @@
             <div class="flex gap-2 shrink-0">
                 <div class="relative flex-1">
                     <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600"></i>
-                    <input id="search-exercise" type="text" onfocus="app.onSearchExerciseFocus()" onblur="app.onSearchExerciseBlur()" oninput="app.debouncedFilterExerciseLibrary()" class="w-full bg-white/5 p-4 pl-14 rounded-2xl focus:outline-none font-bold text-sm text-white" placeholder="Buscar exercício ou músculo...">
+                    <input id="search-exercise" type="text" onfocus="app.onSearchExerciseFocus()" onblur="app.onSearchExerciseBlur()" oninput="app.onSearchExerciseFocus(); app.debouncedFilterExerciseLibrary()" class="w-full bg-white/5 p-4 pl-14 rounded-2xl focus:outline-none font-bold text-sm text-white" placeholder="Buscar exercício ou músculo...">
                 </div>
                 <button onclick="app.showCustomExerciseForm()" class="p-4 glass text-[#00FF9D] active:bg-[#00FF9D]/10" title="Cadastrar Exercício"><i data-lucide="plus"></i></button>
             </div>
@@ -673,7 +674,7 @@
     </div>
 
     <!-- Rest Overlay Premium -->
-    <div id="rest-timer-overlay" class="fixed left-1/2 w-[90%] max-w-sm glass px-5 py-4 flex items-center justify-between z-[200] shadow-2xl shadow-black/80 border-[#00FF9D]/10 translate-y-[-200%] transition-all duration-500">
+    <div id="rest-timer-overlay" class="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass px-5 py-4 flex items-center justify-between z-[200] shadow-2xl shadow-black/80 border-[#00FF9D]/10 translate-y-[-200%] transition-all duration-500 hidden">
         <button onclick="app.adjustRestTime(-15)" class="p-2.5 glass text-xs font-bold text-gray-400 active:scale-95 transition-all">-15s</button>
         
         <div class="flex flex-col items-center justify-center relative min-w-[100px]">

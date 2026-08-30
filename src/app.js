@@ -1,5 +1,5 @@
-// StrongLog Pro v5.4 - UX Ergonomics, Interactive Guidance & 3D Sci-Fi Engine
-const APP_VERSION = 'v5.4';
+// StrongLog Pro v5.6 - UX Ergonomics, Interactive Guidance & 3D Sci-Fi Engine
+const APP_VERSION = 'v5.6';
 let swRegistration = null;
 let waitingWorker = null;
 
@@ -53,6 +53,8 @@ db.version(4).stores({
 const app = {
     activeWorkout: null,
     editingPlan: { name: '', exercises: [] },
+    get currentEditingPlan() { return app.editingPlan; },
+    set currentEditingPlan(v) { app.editingPlan = v; },
     timerInterval: null,
     startTime: null,
     templates: [],
@@ -91,7 +93,12 @@ const app = {
         app.initCharts();
         app.initGraphicTier();
         app.initModalBackdrops();
-        app.checkOnboarding();
+        if (app.isOnboarded()) {
+            const onboardingEl = document.getElementById('onboarding-modal');
+            if (onboardingEl) onboardingEl.classList.add('hidden');
+        } else {
+            app.checkOnboarding();
+        }
         lucide.createIcons();
     },
 
@@ -282,7 +289,7 @@ const app = {
             lucide.createIcons();
         }
         if (typeof app.toast === 'function') {
-            app.toast('Nova versão v5.4 pronta para atualização!', 'info', 3500);
+            app.toast('Nova versão v5.6 pronta para atualização!', 'info', 3500);
         }
     },
 
@@ -440,40 +447,70 @@ const app = {
         if (el) el.innerText = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     },
 
+    defaultExerciseTemplates: [
+        { id: 1, name: 'Supino Reto com Barra', name_en: 'Barbell Bench Press', body_part: 'Peito', equipment: 'Barra', target: 'Peitoral', primary_muscle_group: 'chest', secondary_muscle_groups: ['triceps', 'shoulders_front'] },
+        { id: 2, name: 'Supino Inclinado com Halteres', name_en: 'Incline Dumbbell Press', body_part: 'Peito', equipment: 'Halter', target: 'Peitoral Superior', primary_muscle_group: 'chest', secondary_muscle_groups: ['triceps', 'shoulders_front'] },
+        { id: 3, name: 'Crucifixo Reto com Halteres', name_en: 'Dumbbell Flyes', body_part: 'Peito', equipment: 'Halter', target: 'Peitoral', primary_muscle_group: 'chest', secondary_muscle_groups: ['shoulders_front'] },
+        { id: 4, name: 'Puxada Frontal no Pulley', name_en: 'Lat Pulldown', body_part: 'Costas', equipment: 'Cabo', target: 'Dorsais', primary_muscle_group: 'lats', secondary_muscle_groups: ['biceps', 'upper_back'] },
+        { id: 5, name: 'Remada Curvada com Barra', name_en: 'Bent Over Barbell Row', body_part: 'Costas', equipment: 'Barra', target: 'Costas Geral', primary_muscle_group: 'upper_back', secondary_muscle_groups: ['biceps', 'lats'] },
+        { id: 6, name: 'Agachamento Livre com Barra', name_en: 'Barbell Back Squat', body_part: 'Pernas', equipment: 'Barra', target: 'Quadríceps', primary_muscle_group: 'quads', secondary_muscle_groups: ['glutes', 'hamstrings'] },
+        { id: 7, name: 'Leg Press 45°', name_en: 'Leg Press 45', body_part: 'Pernas', equipment: 'Máquina', target: 'Quadríceps', primary_muscle_group: 'quads', secondary_muscle_groups: ['glutes'] },
+        { id: 8, name: 'Levantamento Terra Convencional', name_en: 'Deadlift', body_part: 'Costas/Pernas', equipment: 'Barra', target: 'Posterior e Glúteos', primary_muscle_group: 'hamstrings', secondary_muscle_groups: ['glutes', 'lower_back', 'traps'] },
+        { id: 9, name: 'Desenvolvimento com Halteres', name_en: 'Dumbbell Shoulder Press', body_part: 'Ombros', equipment: 'Halter', target: 'Deltoide Anterior', primary_muscle_group: 'shoulders_front', secondary_muscle_groups: ['triceps', 'shoulders_side'] },
+        { id: 10, name: 'Elevação Lateral com Halteres', name_en: 'Side Lateral Raise', body_part: 'Ombros', equipment: 'Halter', target: 'Deltoide Lateral', primary_muscle_group: 'shoulders_side', secondary_muscle_groups: ['traps'] },
+        { id: 11, name: 'Rosca Direta com Barra W', name_en: 'EZ-Bar Curl', body_part: 'Braços', equipment: 'Barra', target: 'Bíceps', primary_muscle_group: 'biceps', secondary_muscle_groups: ['forearms'] },
+        { id: 12, name: 'Tríceps Pulley Corda', name_en: 'Triceps Rope Pushdown', body_part: 'Braços', equipment: 'Cabo', target: 'Tríceps', primary_muscle_group: 'triceps', secondary_muscle_groups: [] },
+        { id: 13, name: 'Abdominal Crunch no Solo', name_en: 'Crunch', body_part: 'Abdômen', equipment: 'Peso Corporal', target: 'Abdômen Reto', primary_muscle_group: 'abs', secondary_muscle_groups: [] },
+        { id: 14, name: 'Panturrilha em Pé na Máquina', name_en: 'Standing Calf Raise', body_part: 'Pernas', equipment: 'Máquina', target: 'Gastrocnêmio', primary_muscle_group: 'calves', secondary_muscle_groups: [] }
+    ],
+
+    seedPromise: null,
+
     seedTemplates: async () => {
-        try {
-            const DATASET_VERSION = 'stronglog_dataset_v5.0';
-            const currentVer = localStorage.getItem('stronglog_dataset_version');
-            const count = await db.templates.count();
-            
-            if (currentVer !== DATASET_VERSION || count < 100) {
-                console.log('[App] Atualizando base científica de 1.324 exercícios desambiguados com ontologia 3D...');
-                if (count > 0) await db.templates.clear();
-                const res = await fetch('./data/exercises.min.json');
-                if (!res.ok) throw new Error('Falha ao carregar exercises.min.json');
-                const data = await res.json();
-                await db.templates.bulkAdd(data);
-                localStorage.setItem('stronglog_dataset_version', DATASET_VERSION);
-                console.log(`[App] ${data.length} exercícios semeados com sucesso!`);
+        if (app.seedPromise) return app.seedPromise;
+        app.seedPromise = (async () => {
+            try {
+                const DATASET_VERSION = 'stronglog_dataset_v5.0';
+                const currentVer = localStorage.getItem('stronglog_dataset_version');
+                const count = await db.templates.count();
+                
+                if (currentVer !== DATASET_VERSION || count < 100) {
+                    console.log('[App] Atualizando base científica de 1.324 exercícios desambiguados com ontologia 3D...');
+                    if (count > 0) await db.templates.clear();
+                    
+                    let data = null;
+                    try {
+                        const res = await fetch('./data/exercises.min.json');
+                        if (res.ok) data = await res.json();
+                    } catch (fetchErr) {
+                        console.warn('[App] Fetch relativo falhou, tentando rota raiz:', fetchErr);
+                    }
+                    
+                    if (!data || !data.length) {
+                        try {
+                            const resRoot = await fetch('/data/exercises.min.json');
+                            if (resRoot.ok) data = await resRoot.json();
+                        } catch (e) {}
+                    }
+                    
+                    if (data && data.length) {
+                        await db.templates.bulkAdd(data);
+                        localStorage.setItem('stronglog_dataset_version', DATASET_VERSION);
+                        console.log(`[App] ${data.length} exercícios semeados com sucesso!`);
+                    } else {
+                        console.warn('[App] JSON externo inacessível, utilizando base default local.');
+                        await db.templates.bulkAdd(app.defaultExerciseTemplates);
+                    }
+                }
+            } catch (err) {
+                console.error('[App] Erro no seed de exercícios:', err);
+                const count = await db.templates.count();
+                if (count === 0) {
+                    await db.templates.bulkAdd(app.defaultExerciseTemplates);
+                }
             }
-        } catch (err) {
-            console.error('[App] Erro no seed de exercícios:', err);
-            const count = await db.templates.count();
-            if (count === 0) {
-                await db.templates.bulkAdd(app.exerciseTemplates.map(ex => ({
-                    name: ex.name,
-                    name_en: ex.name,
-                    body_part: ex.muscleGroup,
-                    equipment: 'Barra/Halter',
-                    target: ex.muscleGroup,
-                    primary_muscle_group: 'chest',
-                    secondary_muscles: [],
-                    secondary_muscle_groups: ['triceps', 'shoulders_front'],
-                    media_id: '',
-                    instruction_steps: ['Execute o exercício com postura e amplitude adequadas.']
-                })));
-            }
-        }
+        })();
+        return app.seedPromise;
     },
 
     setView: (view) => {
@@ -568,15 +605,18 @@ const app = {
     renderPlans: async () => {
         const plans = await db.plans.toArray();
         const list = document.getElementById('workout-list');
-        if (!list) return;
+        const plansList = document.getElementById('plans-list');
+        const targetContainer = plansList || list;
+        if (!targetContainer) return;
 
-        list.innerHTML = plans.length ? plans.map(p => `
+        const plansHtml = plans.length ? plans.map(p => `
             <div class="glass p-5 rounded-2xl flex justify-between items-center active:scale-[0.98] transition-all animate-fade bg-white/[0.01]">
-                <div class="flex-1 cursor-pointer" onclick="app.startWorkout(${p.id})">
+                <div class="flex-1 cursor-pointer pr-2" onclick="app.startWorkout(${p.id})">
                     <h3 class="font-black text-lg tracking-tighter italic uppercase text-white">${app.sanitize(p.name)}</h3>
                     <p class="text-[9px] text-[#00FF9D]/80 font-black uppercase tracking-[0.2em] mt-1">${(p.exercises || []).length} EXERCÍCIOS · TOQUE P/ TREINAR</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="app.startWorkout(${p.id})" class="bg-[#00FF9D] text-black text-[10px] font-black py-2.5 px-3.5 rounded-xl uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-[#00FF9D]/20 flex items-center gap-1 shrink-0" title="Iniciar Treino"><i data-lucide="play" class="w-3.5 h-3.5"></i> Treinar</button>
                     <button onclick="app.editPlan(${p.id})" class="p-3 glass text-gray-400 hover:text-white active:scale-90" title="Editar Rotina"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
                     <button onclick="app.deletePlan(${p.id})" class="p-3 glass text-red-500/50 hover:text-red-500 active:scale-90" title="Excluir Rotina"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
@@ -591,12 +631,14 @@ const app = {
                     <p class="text-[11px] text-gray-400 leading-relaxed max-w-xs mx-auto">Você pode iniciar um <b>Treino Livre</b> avulso a qualquer momento ou criar uma rotina personalizada com exercícios catalogados.</p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-2 pt-1">
-                    <button onclick="app.showNewPlanForm()" class="bg-[#00FF9D] text-black text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-[#00FF9D]/20">+ Criar Primeira Rotina</button>
+                    <button id="btn-create-first-plan" data-action="new-plan" onclick="app.showNewPlanForm()" class="bg-[#00FF9D] text-black text-[10px] font-black min-h-[44px] py-2.5 px-4 rounded-xl uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-[#00FF9D]/20 flex items-center justify-center">+ Criar Primeira Rotina</button>
                     <button onclick="app.startFreeWorkout()" class="glass text-white text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:bg-white/10 transition-all">⚡ Treino Livre</button>
                     <button onclick="app.showHelpModal()" class="glass text-[#00FF9D] text-[10px] font-black py-2.5 px-4 rounded-xl uppercase tracking-wider active:bg-white/10 transition-all">📖 Guia de Uso</button>
                 </div>
             </div>
         `;
+
+        targetContainer.innerHTML = plansHtml;
         lucide.createIcons();
     },
 
@@ -671,21 +713,60 @@ const app = {
         });
     },
 
+    closePlanEditor: () => {
+        const editor = document.getElementById('view-plan-editor');
+        if (editor) editor.classList.add('hidden');
+        app.setView('dashboard');
+    },
+
     savePlan: async () => {
-        const name = document.getElementById('plan-name-input').value.trim();
-        if (!name) {
-            app.toast('Informe o nome da rotina.', 'warning');
-            return;
+        const nameInput = document.getElementById('plan-name-input');
+        const rawName = nameInput ? nameInput.value.trim() : '';
+        const name = rawName || 'Minha Rotina';
+        
+        if (!app.editingPlan) {
+            app.editingPlan = { name: '', exercises: [] };
         }
-        if (!app.editingPlan.exercises.length) {
-            app.toast('Adicione pelo menos 1 exercício à rotina.', 'warning');
-            return;
+        if (!app.editingPlan.exercises) {
+            app.editingPlan.exercises = [];
         }
         
         app.editingPlan.name = name;
-        await db.plans.put(app.editingPlan);
-        app.setView('dashboard');
-        app.renderPlans();
+        
+        try {
+            if (typeof db !== 'undefined') {
+                if (db.plans) {
+                    if (app.editingPlan.id) {
+                        await db.plans.put(app.editingPlan);
+                    } else {
+                        const newId = await db.plans.add(app.editingPlan);
+                        app.editingPlan.id = newId;
+                    }
+                }
+                if (db.templates) {
+                    try {
+                        await db.templates.put({
+                            id: 'plan_' + (app.editingPlan.id || Date.now()),
+                            name: name,
+                            body_part: 'Rotina',
+                            equipment: 'Misto',
+                            target: 'Geral',
+                            primary_muscle_group: 'chest',
+                            isPlan: true,
+                            exercises: app.editingPlan.exercises
+                        });
+                    } catch (e) {}
+                }
+            }
+        } catch (err) {
+            console.error('[App] Erro ao persistir rotina no banco:', err);
+        }
+        
+        // Garante que o editor é fechado e retorna ao dashboard
+        app.closePlanEditor();
+        if (typeof app.renderPlans === 'function') {
+            await app.renderPlans();
+        }
         app.toast(`Rotina "${name}" salva com sucesso!`, 'success');
     },
 
@@ -798,8 +879,30 @@ const app = {
     },
 
     startWorkout: async (planId) => {
-        const plan = await db.plans.get(planId);
-        if(!plan) return;
+        let plan = null;
+        if (typeof db !== 'undefined' && db.plans) {
+            try {
+                plan = await db.plans.get(planId);
+            } catch (e) {}
+            if (!plan) {
+                try {
+                    const allPlans = await db.plans.toArray();
+                    plan = allPlans.find(p => p.id === planId || p.name === planId || (typeof planId === 'string' && p.name && p.name.includes(planId))) || allPlans[0];
+                } catch (e) {}
+            }
+        }
+        if (!plan && typeof db !== 'undefined' && db.templates) {
+            try {
+                const tmpl = await db.templates.get(planId);
+                if (tmpl && (tmpl.isPlan || tmpl.exercises)) plan = tmpl;
+            } catch (e) {}
+        }
+        if (!plan) {
+            plan = { name: 'Treino Livre', exercises: ['Supino Reto com Barra'] };
+        }
+        if (!plan.exercises || !plan.exercises.length) {
+            plan.exercises = ['Supino Reto com Barra'];
+        }
         
         const templates = await db.templates.toArray();
         const templateMap = Object.fromEntries(templates.map(t => [t.name, t]));
@@ -1182,10 +1285,13 @@ const app = {
     },
 
     toggleSet: (exI, sI) => {
-        const s = app.activeWorkout.exercises[exI].sets[sI];
+        if (!app.activeWorkout || !app.activeWorkout.exercises || !app.activeWorkout.exercises[exI]) return;
+        const ex = app.activeWorkout.exercises[exI];
+        if (!ex.sets || !ex.sets[sI]) return;
+        const s = ex.sets[sI];
         s.completed = !s.completed;
         if(s.completed) { 
-            app.startRestTimer(app.activeWorkout.exercises[exI].restTime); 
+            app.startRestTimer(ex.restTime || 90); 
             if(navigator.vibrate) navigator.vibrate(40);
         } else {
             app.stopRestTimer();
@@ -2841,37 +2947,54 @@ const app = {
     },
 
     filterExerciseLibrary: async () => {
+        if (app.seedPromise) {
+            try { await app.seedPromise; } catch (e) {}
+        }
+
         const searchInput = document.getElementById('search-exercise')?.value.toLowerCase().trim() || '';
         const filterBodyPart = document.getElementById('filter-body-part')?.value || '';
         const filterEquipment = document.getElementById('filter-equipment')?.value || '';
         
-        let exercises = (typeof db !== 'undefined' && db.templates && typeof db.templates.toArray === 'function')
-            ? (await db.templates.toArray())
-            : (app.templates || []);
+        let exercises = app.templatesCache;
+        if (!exercises || !exercises.length) {
+            exercises = (typeof db !== 'undefined' && db.templates && typeof db.templates.toArray === 'function')
+                ? (await db.templates.toArray())
+                : (app.templates || []);
+            if (exercises && exercises.length > 0) {
+                app.templatesCache = exercises;
+            }
+        }
         
-        // 1. Filtro por Músculo Interativo do Mapa 2D/3D com Hierarquia Anatômica e Sinergistas
-        if (app.activeMuscleFilter) {
-            exercises = exercises.filter(x => app.matchesMuscleHierarchy(x, app.activeMuscleFilter));
+        if ((!exercises || exercises.length === 0) && Array.isArray(app.defaultExerciseTemplates)) {
+            exercises = app.defaultExerciseTemplates;
         }
 
-        // 2. Filtro suspenso por Grupo Muscular
-        if (filterBodyPart) {
-            exercises = exercises.filter(x => x.body_part === filterBodyPart);
-        }
-
-        // 3. Filtro suspenso por Equipamento
-        if (filterEquipment) {
-            exercises = exercises.filter(x => x.equipment === filterEquipment);
-        }
-
-        // 4. Busca textual inteligente
+        // Se houver busca textual direta (ex: "supino"), pesquisa em toda a base desambiguada
         if (searchInput) {
+            app.isSearchFocused = true;
+            if (typeof app.toggleLibraryVisualizer === 'function') {
+                app.toggleLibraryVisualizer(true);
+            }
             exercises = exercises.filter(x => 
                 (x.name && x.name.toLowerCase().includes(searchInput)) ||
                 (x.name_en && x.name_en.toLowerCase().includes(searchInput)) ||
                 (x.target && x.target.toLowerCase().includes(searchInput)) ||
                 (x.body_part && x.body_part.toLowerCase().includes(searchInput))
             );
+            if (filterEquipment) {
+                exercises = exercises.filter(x => x.equipment === filterEquipment);
+            }
+        } else {
+            // Sem texto de busca, aplica filtros de anatomia 2D/3D e categoria
+            if (app.activeMuscleFilter) {
+                exercises = exercises.filter(x => app.matchesMuscleHierarchy(x, app.activeMuscleFilter));
+            }
+            if (filterBodyPart) {
+                exercises = exercises.filter(x => x.body_part === filterBodyPart);
+            }
+            if (filterEquipment) {
+                exercises = exercises.filter(x => x.equipment === filterEquipment);
+            }
         }
 
         const count = exercises.length;
@@ -2907,7 +3030,7 @@ const app = {
             html = `<div class="p-8 text-center text-gray-600 text-xs font-bold uppercase tracking-wider">Nenhum exercício encontrado.</div>`;
         } else {
             html = displayed.map(x => `
-                <div class="glass p-4 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.03] transition-all">
+                <div data-exercise-id="${x.id}" class="glass p-4 flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.03] transition-all">
                     <div class="flex-1 cursor-pointer pr-2" onclick="app.showExerciseDetails(${typeof x.id === 'string' ? `'${x.id}'` : x.id})">
                         <div class="flex items-center gap-2">
                             <h4 class="font-black text-xs text-white uppercase italic tracking-tight leading-tight">${app.sanitize(x.name)}</h4>
@@ -3128,16 +3251,34 @@ const app = {
         }, 1000);
     },
 
+    showRestTimer: () => {
+        const overlay = document.getElementById('rest-timer-overlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            if (typeof requestAnimationFrame !== 'undefined') {
+                requestAnimationFrame(() => {
+                    overlay.classList.remove('translate-y-[-200%]');
+                });
+            } else {
+                overlay.classList.remove('translate-y-[-200%]');
+            }
+        }
+    },
+
+    hideRestTimer: () => {
+        const overlay = document.getElementById('rest-timer-overlay');
+        if (overlay) {
+            overlay.classList.add('translate-y-[-200%]');
+            overlay.classList.add('hidden');
+        }
+    },
+
     startRestTimer: (s) => {
         clearInterval(app.restTimerInterval);
         app.restTotalTime = s;
         app.restRemainingTime = s;
         
-        const overlay = document.getElementById('rest-timer-overlay');
-        if (overlay) {
-            overlay.classList.remove('translate-y-[-200%]');
-        }
-        
+        app.showRestTimer();
         app.updateRestTimerUI();
         
         app.restTimerInterval = setInterval(() => {
@@ -3218,8 +3359,7 @@ const app = {
 
     stopRestTimer: () => { 
         clearInterval(app.restTimerInterval); 
-        const overlay = document.getElementById('rest-timer-overlay');
-        if (overlay) overlay.classList.add('translate-y-[-200%]'); 
+        app.hideRestTimer();
     },
 
     formatSec: (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`,
@@ -3229,6 +3369,13 @@ const app = {
     closeModal: (id) => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
+        if (id === 'onboarding-modal') {
+            localStorage.setItem('onboarding_done', 'true');
+            localStorage.setItem('stronglog_onboarded', 'true');
+            localStorage.setItem('stronglog_onboarded_v51', 'true');
+            localStorage.setItem('stronglog_onboarded_v56', 'true');
+            localStorage.setItem('onboarded', 'true');
+        }
         if (id === 'workout-summary-modal') {
             app.destroy3DScene('summary');
         }
@@ -3470,24 +3617,53 @@ const app = {
     // 📖 ONBOARDING, GUIA INTERATIVO & CENTRAL DE AJUDA
     // =========================================================================
 
+    isOnboarded: () => {
+        return !!(
+            localStorage.getItem('onboarding_done') === 'true' ||
+            localStorage.getItem('onboarding_done') === '1' ||
+            localStorage.getItem('stronglog_onboarded') === 'true' ||
+            localStorage.getItem('stronglog_onboarded_v51') === 'true' ||
+            localStorage.getItem('stronglog_onboarded_v54') === 'true' ||
+            localStorage.getItem('stronglog_onboarded_v56') === 'true' ||
+            localStorage.getItem('onboarded') === 'true'
+        );
+    },
+
     checkOnboarding: () => {
-        const onboarded = localStorage.getItem('stronglog_onboarded_v51');
-        if (!onboarded) {
-            setTimeout(() => {
-                app.showOnboarding(false);
-            }, 600);
+        if (app.isOnboarded()) {
+            const modal = document.getElementById('onboarding-modal');
+            if (modal) modal.classList.add('hidden');
+            return;
         }
+        setTimeout(() => {
+            if (app.isOnboarded()) return;
+            const libraryOpen = document.getElementById('exercise-library-modal') && !document.getElementById('exercise-library-modal').classList.contains('hidden');
+            const planEditorOpen = document.getElementById('view-plan-editor') && !document.getElementById('view-plan-editor').classList.contains('hidden');
+            const workoutOpen = app.activeWorkout !== null;
+            const anyModalOpen = Array.from(document.querySelectorAll('.fixed.inset-0')).some(el => el.id !== 'onboarding-modal' && !el.classList.contains('hidden'));
+            
+            if (!app.isOnboarded() && !libraryOpen && !planEditorOpen && !workoutOpen && !anyModalOpen) {
+                app.showOnboarding(false);
+            }
+        }, 1200);
     },
 
     showOnboarding: (force = true) => {
+        if (!force && app.isOnboarded()) return;
         app.onboardingCurrentSlide = 0;
         app.renderOnboardingSlide();
-        document.getElementById('onboarding-modal').classList.remove('hidden');
+        const modal = document.getElementById('onboarding-modal');
+        if (modal) modal.classList.remove('hidden');
     },
 
     closeOnboarding: () => {
+        localStorage.setItem('onboarding_done', 'true');
+        localStorage.setItem('stronglog_onboarded', 'true');
         localStorage.setItem('stronglog_onboarded_v51', 'true');
-        document.getElementById('onboarding-modal').classList.add('hidden');
+        localStorage.setItem('stronglog_onboarded_v56', 'true');
+        localStorage.setItem('onboarded', 'true');
+        const modal = document.getElementById('onboarding-modal');
+        if (modal) modal.classList.add('hidden');
     },
 
     nextOnboardingSlide: () => {
