@@ -1,64 +1,86 @@
-# 🔁 Handover — StrongLog Pro
+# 🔁 Handover — StrongLog Pro v7.0
 
-> Atualizado em: 2026-08-31 21:40 | Por: Antigravity IDE (Pair Programming) & Mission Control v4.2
-
-## Estado atual do projeto
-O **StrongLog Pro v7.0 (Arquitetura Integral Astro 7+, Content Layer API, BaseLayout & Modularização Total de Componentes)** está 100% implementado, testado e validado.
-
-O sistema consolidou uma importante evolução em relação às versões anteriores:
-- **v6.0**: Three.js com modelo 3D GLB ultraleve (<250KB), GLTFLoader local UMD, SVG orgânico 2D e anti-lockout TDD.
-- **v7.0 (Entrega Atual)**:
-  - **Astro Docs MCP & Configuração Global**: Integração do MCP `astro-docs` em `~/.gemini/config/mcp_config.json`.
-  - **Content Layer API (`src/content.config.ts`)**: Tipagem estrita com Zod para o catálogo de 1.324 exercícios (`exercises.min.json`) e ontologia de 19 grupos musculares (`muscle_ontology.json`).
-  - **BaseLayout Centralizado (`src/layouts/Layout.astro`)**: Eliminação de duplicações de `<head>`, metadados PWA, CSP e CSS.
-  - **Decomposição Modular de Componentes**: Decomposição do `index.astro` (de 685 para 55 linhas), distribuído em `src/components/ui/`, `src/components/layout/`, `src/components/views/` e `src/components/modals/`.
-  - **Path Aliases TypeScript**: Configuração do `tsconfig.json` com `@components/*`, `@layouts/*`, `@data/*` e `@assets/*`.
-  - **Status dos Testes**: **100% PASS, 0 FAIL** em todos os scripts da suíte (`npm run build`: OK em 1.7s, `verify_9_items`: 9/9, `run_e2e_qa_suite`: 24/24, `test_rf01`: 13/13, `test_rf02`: 12/12, `test_rf_overlays`: 8/8, `test_rf_residual`: 6/6, `test_exercise_picker_flow`: 10/10).
+> Atualizado em: 2026-09-01 14:45 | Por: Antigravity IDE (Guardião da Memória / Chronicler) & Mission Control v4.2  
+> Commit de Entrega: `de4369d` (Push realizado para `origin/main`)
 
 ---
 
-## O que foi feito recentemente (v7.0)
-* **Asset 3D GLB & Loader Local**:
-  - Script autônomo `scripts/generate_human_body_glb.py` gerando binário glTF 2.0 padrão com posições, normais e índices para os 19 grupos musculares.
-  - Integração do `THREE.GLTFLoader` local em `src/vendor/three/GLTFLoader.js` e cache Service Worker `stronglog-pro-v6.0`.
-  - Mecanismo defensivo com timeout de 2.5s e verificação de `sc.isSceneAlive` antes de anexar sub-meshes à cena.
-* **Mapa 2D SVG Orgânico**:
-  - Remoção de polígonos e retângulos toscos nos nós musculares.
-  - Curvas de Bézier cúbicas suaves mapeadas para traps, abs, adutores, dorsal e lombar.
-  - Hitboxes circulares restritas de raio $r=14$ preservadas com centros matematicamente calculados para distância $\ge 28\text{px}$.
-* **Harmonização & Estabilidade de Cena**:
-  - `rotate3DToView` orbital sem dupla inversão (órbita apenas na câmera, $z = \pm r$).
-  - Descarte seguro do `materialsPool` isolado por cena Three.js ao invocar `destroy3DScene`.
+## 🚀 1. Estado Atual do Projeto (v7.0 Entregue & Estabilizada)
+
+O **StrongLog Pro v7.0 (Arquitetura Integral Astro 7+, Content Layer API, HUD Holográfico Dual-Mode, Three.js com Podium & Isolamento de GPU)** está 100% implementado, testado e validado em produção.
+
+### 🌟 Principais Entregas da v7.0:
+1. **HUD Holográfico de Telemetria (Dual-Mode)**:
+   - **Modo Biblioteca**: 100% de foco no grupo muscular primário selecionado.
+   - **Modo Treino**: Cálculo dinâmico em tempo real de $\% \text{ Volume Efetivo } (V_{\text{eff}})$ por grupo muscular ativo.
+2. **Podium Circular Three.js & Emissão Dinâmica**:
+   - Chão holográfico com `THREE.RingGeometry` + grid sci-fi.
+   - `emissiveIntensity` dinâmico por grupo muscular usando a paleta tática Neon Mint (`#00FF9D`) e Ciano Cibernético (`#00E5FF`).
+3. **Isolamento de `materialsPool` por Cena (Anti Memory-Leak)**:
+   - Repositório de materiais instanciado de forma estritamente independente por cena (`app.threeScenes[sceneKey].materialsPool`).
+   - Ciclo de vida robusto com `.dispose()` em geometrias e materiais no descarte de cenas (`destroy3DScene`), eliminando vazamentos de contexto WebGL e memória GPU.
+4. **Mapa 2D SVG Orgânico & Filtros HUD**:
+   - Curvas de Bézier cúbicas suaves mapeadas nos 19 grupos anatômicos (zero polígonos/retângulos toscos).
+   - Filtro SVG `hud-glow` integrado e sincronização tripla em tempo real: **Mapa 2D $\leftrightarrow$ Modelo 3D $\leftrightarrow$ Chips Rápidos $\leftrightarrow$ Catálogo de Exercícios**.
+5. **Acessibilidade Móvel WCAG 2.2 AAA**:
+   - Hitboxes ampliadas $\ge 44 \times 44\text{px}$ (`.touch-target-44`) com pseudo-elementos em nós e botões.
+   - Semântica e leitores de tela: `role="timer"` e `aria-live="polite"` nos cronômetros de descanso, atributos `aria-label` e `aria-expanded` universais.
+6. **Arquitetura Astro 7+ & Content Layer API**:
+   - Catálogo de 1.324 exercícios e ontologia de 19 grupos tipados estritamente com Zod em `src/content.config.ts`.
+   - BaseLayout centralizado (`src/layouts/Layout.astro`) e modularização do monolito `index.astro` (de 685 para 55 linhas) em componentes reutilizáveis.
 
 ---
 
-## ⏳ Pendências & Roadmap Futuro (Prioridade Decrescente)
+## 🧪 2. Matriz de Validação & Status dos Testes (100% GREEN)
 
-### 🟢 P1 — Próximo Ciclo (Polish & Análise)
-1. **Histórico de Treinos com Gráficos Miniaturizados (Sparklines P2-Searcher)**:
-   - Exibir pequenas curvas de evolução de carga diretamente no card de cada exercício no histórico.
+Suíte completa auditada e aprovada pelo **Sentinel**:
+- `npm run check`: **0 erros / 0 warnings** (TypeScript e Astro templates íntegros).
+- `node scripts/verify_9_items.js`: **9/9 PASS** (Auditoria de acessibilidade, contraste e ciclo de vida).
+- `node scripts/run_e2e_qa_suite.js`: **24/24 PASS** (Fluxo ponta a ponta, 1RM, persistência Dexie.js e telemetria).
+- `node scripts/test_rf01_3d_harmonization.js`: **16/16 PASS** (Three.js, GLB, GLTFLoader, RingGeometry, materialsPool).
+- `node scripts/test_rf02_svg_map_redesign.js`: **13/13 PASS** (SVG Bézier, hud-glow, hitboxes circulares $r=14$, $d \ge 28\text{px}$).
+- `node scripts/test_rf_overlays_v56.js`: **8/8 PASS** (Isolamento de overlays `.hidden { display: none !important; }`).
+- `node scripts/verify_v7_mission.js`: **19/19 PASS** (Ontologia dos 19 grupos e paridade biomecânica).
+
+---
+
+## 🔴 3. APRENDIZADO CRÍTICO (Armadilha de Build & Deploy — Persistir para Não Repetir)
+
+> [!CAUTION]
+> **O Desacoplamento entre `src/` (Source of Truth) e `public/` / `./dist` no Astro:**
+> Durante o ciclo v7.0, o Forge editou os assets estáticos canônicos em `src/` (que é o *source-of-truth* dos testes e das diretrizes em `AGENTS.md`). No entanto, o Astro serve arquivos estáticos a partir de `public/` (que são copiados *verbatim* para `./dist` no build).
+> Sem um pipeline de sincronização, o `astro build` compilava com arquivos defasados de `public/`, e o usuário final receberia o app antigo mesmo com testes passando em `src/` (recorrência da armadilha das versões v5.3–v5.5).
+> Além disso, o workflow de deploy (`.github/workflows/deploy.yml`) anteriormente subia a pasta `./src` crua sem executar o build do Astro.
+
+### 🛠️ Solução Canônica Implementada:
+1. **Script de Pré-Build (`scripts/sync_static_assets.js`)**:
+   - Executado automaticamente via hooks `"predev"` e `"prebuild"` no `package.json`.
+   - Propaga cirurgicamente os arquivos editados de `src/` para `public/` (`app.js`, `sw.js`, `styles.css`, `manifest.json`, `data/`, `assets/`, `vendor/`).
+2. **Correção do Workflow GitHub Actions (`deploy.yml`)**:
+   - Atualizado para executar `npm install && npm run build` e publicar o diretório compilado `./dist`.
+3. **Nova Regra de Governança**:
+   - **Edição**: Sempre editar os arquivos fonte em `src/`.
+   - **Sincronização**: O prebuild / predev garante a paridade de `public/` e `./dist`.
+
+---
+
+## ⏳ 4. Roadmap Futuro & Próximos Passos (Prioridade Decrescente)
+
+### 🟢 P1 — Próximo Ciclo (Polish Visual & Análise Avançada)
+1. **Histórico de Treinos com Micro-Gráficos (Sparklines SVG)**:
+   - Exibir pequenas curvas de evolução de carga e volume diretamente no card de cada exercício no Histórico.
 2. **Visualizador de Recuperação Semanal (Heatmap de Fadiga $e^{-\lambda t}$)**:
-   - Exibir mapa de calor dos últimos 7 dias na aba de Histórico baseado na atenuação metabólica.
+   - Exibir mapa de calor corporal dos últimos 7 dias na aba de Histórico baseado no decaimento metabólico.
 
 ### 🟡 P2 — Médio Prazo (Recursos Avançados)
 1. **Exportação Tabular em CSV / Excel**:
-   - Exportação completa do histórico de treinos e métricas de volume para planilhas.
+   - Exportação completa do histórico de treinos e métricas de volume para análise externa.
 2. **Giroscópio no Modelo 3D (`DeviceOrientation`)**:
-   - Reação sutil do holograma 3D à inclinação física do smartphone na mão do usuário.
+   - Reação física sutil do holograma 3D à inclinação e movimentação do smartphone na mão do atleta.
 
 ---
 
-## 🔴 Armadilhas e Alertas Técnicos
-* **GLTFLoader UMD vs ES Module**: O script em `src/vendor/three/GLTFLoader.js` é a versão standalone compatível com Three.js r128 global (`window.THREE.GLTFLoader`). Não importar como módulo ES em `app.js` sem empacotador.
-* **Tamanho do GLB**: O binário `human_body_sci_fi.glb` deve permanecer estritamente abaixo de 250KB para garantir download instantâneo e tempo de parsing Three.js $< 50\text{ms}$ no mobile.
-* **Overlays e Modais**: NUNCA ocultar overlays usando apenas transformações CSS (`translate-y-[-100%]`, `opacity: 0`). Eles continuam ocupando a árvore de acessibilidade e interceptam eventos de ponteiro/toque. Sempre aplicar a classe `.hidden` com `display: none !important`.
-* **Onboarding Multi-Flag**: O teste de onboarding checa múltiplas chaves no `localStorage` (`onboarding_done`, `stronglog_onboarded_v5`, `stronglog_onboarded`). Nunca confiar em uma única chave sem fallback.
-* **Ciclo de Vida Three.js**: Sempre garantir que `app.destroy3DScene('library')` seja executado no fechamento do modal da biblioteca para cancelar o `requestAnimationFrame` e liberar a GPU.
-
----
-
-## 🧩 Contexto Técnico & Deploy
-* **Deploy Host**: `https://gfsleme.github.io/stronglog-pro/`
-* **Repositório Git**: `C:\Users\Gabriel\OneDrive\Desktop\Projetos Python\StrongLog`
-* **Versão Ativa**: v6.0 • Suíte TDD: 100% Aprovados (0 FAIL) + 9/9 Auditoria Sentinel/Specter
-
+## 🧩 5. Contexto Operacional
+- **Deploy Host**: `https://gfsleme.github.io/stronglog-pro/`
+- **Repositório Git**: `C:\Users\Gabriel\OneDrive\Desktop\Projetos Python\StrongLog`
+- **Versão Ativa**: v7.0.0 (Commit `de4369d`)
