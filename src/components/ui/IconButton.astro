@@ -1,0 +1,49 @@
+---
+// Componente de Botão com Ícone / Touch Target Compliant — StrongLog Pro
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'button'> {
+  icon: string;
+  iconClass?: string;
+  variant?: 'glass' | 'accent' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'touch44';
+  class?: string;
+}
+
+const {
+  icon,
+  iconClass = 'w-5 h-5',
+  variant = 'glass',
+  size = 'touch44',
+  class: className = '',
+  type = 'button',
+  ...rest
+} = Astro.props;
+
+const variantClasses: Record<string, string> = {
+  glass: 'glass text-gray-400 hover:text-white',
+  accent: 'glass text-[#00FF9D] hover:bg-[#00FF9D]/10',
+  danger: 'glass text-red-400 hover:text-red-300 active:bg-red-500/10',
+  ghost: 'text-gray-400 hover:text-white',
+};
+
+const sizeClasses: Record<string, string> = {
+  sm: 'p-2 rounded-xl active:scale-95 transition-all',
+  md: 'p-3 rounded-2xl active:scale-95 transition-all',
+  touch44: 'w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all',
+};
+---
+
+<button
+  type={type}
+  class:list={[
+    'flex items-center justify-center transition-all',
+    variantClasses[variant] || '',
+    sizeClasses[size] || '',
+    className
+  ]}
+  {...rest}
+>
+  <i data-lucide={icon} class={iconClass} />
+  <slot />
+</button>

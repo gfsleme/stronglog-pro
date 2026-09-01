@@ -1,0 +1,25 @@
+---
+// Modal de Confirmação de Ação — StrongLog Pro
+import Button from '../ui/Button.astro';
+---
+
+<div id="confirm-dialog-modal" class="fixed inset-0 z-[550] bg-black/90 backdrop-blur-xl hidden text-white">
+    <div class="flex items-center justify-center min-h-[100dvh] p-6">
+        <div class="glass w-full max-w-sm p-7 space-y-5 border-white/10 shadow-2xl animate-fade">
+            <div class="flex items-center gap-3">
+                <div id="confirm-dialog-icon" class="p-3 rounded-xl bg-red-500/10 text-red-400">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 id="confirm-dialog-title" class="text-base font-black italic tracking-tight uppercase">Confirmar Ação</h3>
+                    <p id="confirm-dialog-subtitle" class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Atenção</p>
+                </div>
+            </div>
+            <p id="confirm-dialog-msg" class="text-xs text-gray-300 font-medium leading-relaxed">Mensagem de confirmação...</p>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <Button id="confirm-dialog-btn-cancel" variant="glass" size="md" class="p-3.5 text-gray-400 active:bg-white/5" onclick="app.closeModal('confirm-dialog-modal')">Cancelar</Button>
+                <Button id="confirm-dialog-btn-confirm" variant="danger" size="md" class="p-3.5 rounded-xl" onclick="app.onConfirmDialogOk && app.onConfirmDialogOk()">Confirmar</Button>
+            </div>
+        </div>
+    </div>
+</div>

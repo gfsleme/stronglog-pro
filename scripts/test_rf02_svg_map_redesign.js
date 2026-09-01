@@ -331,8 +331,19 @@ it('styles.css deve conter animação de pulso/glow neon mint para nós muscular
     );
 });
 
+// TESTE 12: [RF02-v7.0] Filtro SVG <filter id="hud-glow"> para brilho luminoso nos nós ativos
+it('O SVG deve conter elemento <filter id="hud-glow"> para efeito luminoso de telemetria', () => {
+    const anteriorSvg = loadedApp.getSvgAnatomicalPaths('anterior', null, null);
+    const posteriorSvg = loadedApp.getSvgAnatomicalPaths('posterior', null, null);
+    assert(
+        anteriorSvg.includes('id="hud-glow"') || posteriorSvg.includes('id="hud-glow"'),
+        'Filtro <filter id="hud-glow"> não encontrado nas definições do mapa SVG'
+    );
+});
+
 console.log('\n----------------------------------------------------------------');
 console.log(`RESULTADO RF02: ${passed} PASS / ${failed} FAIL`);
 console.log('----------------------------------------------------------------\n');
 process.exit(failed > 0 ? 1 : 0);
+
 

@@ -275,6 +275,7 @@
                         </div>
                     </div>
                     <div class="hologram-stage h-48 sm:h-56 w-full flex items-center justify-center relative">
+                        <div id="library-3d-hud" class="absolute top-2 left-2 right-2 z-10 pointer-events-none"></div>
                         <div class="hologram-grid"></div>
                         <canvas id="library-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                         <div class="absolute bottom-2 left-3 text-[8px] font-mono text-[#00FF9D]/70 uppercase tracking-widest pointer-events-none">● Gire 360° com o dedo · Zoom por pinça/scroll</div>
@@ -452,6 +453,7 @@
 
                     <!-- 3D Stage Container -->
                     <div id="summary-3d-container" class="hologram-stage h-64 w-full flex items-center justify-center relative">
+                        <div id="summary-3d-hud" class="absolute top-2 left-2 right-2 z-10 pointer-events-none"></div>
                         <div class="hologram-grid"></div>
                         <canvas id="summary-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                         <div class="absolute bottom-2 left-3 text-[8px] font-mono text-[#00FF9D]/60 uppercase tracking-widest">● Gire 360° com o dedo</div>

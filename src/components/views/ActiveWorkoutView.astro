@@ -1,0 +1,51 @@
+---
+// Componente de Tela: Treino Ativo — StrongLog Pro
+import Button from '../ui/Button.astro';
+---
+
+<section id="view-active-workout" class="hidden space-y-6 animate-fade">
+    <!-- No Active Workout State -->
+    <div id="workout-inactive-card" class="glass p-8 text-center space-y-5 rounded-3xl border-white/10 hidden animate-fade">
+        <div class="w-16 h-16 rounded-3xl bg-[#00FF9D]/10 border border-[#00FF9D]/20 flex items-center justify-center mx-auto text-[#00FF9D]">
+            <i data-lucide="dumbbell" class="w-8 h-8"></i>
+        </div>
+        <div class="space-y-1.5">
+            <h3 class="text-xl font-black italic uppercase tracking-tighter text-white">Nenhum Treino em Andamento</h3>
+            <p class="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed">Inicie um treino avulso imediatamente ou selecione uma rotina na tela inicial.</p>
+        </div>
+        <div class="flex flex-col gap-2.5 max-w-xs mx-auto pt-2">
+            <Button variant="primary" size="full" class="py-4 text-xs tracking-widest" onclick="app.startFreeWorkout()">⚡ Iniciar Treino Livre</Button>
+            <Button variant="glass" size="full" class="py-3.5 text-gray-400 hover:text-white text-[10px] tracking-widest rounded-2xl" onclick="app.setView('dashboard')">Ver Minhas Rotinas</Button>
+        </div>
+    </div>
+
+    <!-- Active Workout Running View -->
+    <div id="workout-active-content" class="space-y-6">
+        <div class="flex items-center justify-between sticky top-[72px] bg-[#0a0a0a]/95 backdrop-blur-xl py-3 z-50 border-b border-white/5">
+            <div class="flex flex-col">
+                <h2 id="active-workout-name" class="text-2xl font-black tracking-tighter italic text-white leading-tight">--</h2>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="w-2 h-2 bg-[#00FF9D] rounded-full animate-pulse"></span>
+                    <span id="timer-display" role="timer" aria-live="polite" class="text-xs font-mono text-gray-400 font-bold tracking-widest uppercase">00:00:00</span>
+                    <span id="wakelock-indicator" class="hidden text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#00FF9D]/10 text-[#00FF9D] border border-[#00FF9D]/30 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-ping"></span> Tela Ativa</span>
+                </div>
+            </div>
+            <Button variant="outline-danger" size="sm" class="p-2.5 px-3 flex items-center gap-1.5 text-[10px]" onclick="app.cancelWorkout()" title="Descartar Sessão" icon="trash-2" iconClass="w-3.5 h-3.5 text-red-400">Descartar</Button>
+        </div>
+
+        <!-- In-Workout Muscle Recruitment Summary -->
+        <div id="workout-muscle-recruitment-bar" class="glass p-3 rounded-2xl flex items-center justify-between gap-2 text-xs border-[#00FF9D]/10 bg-white/[0.01]">
+            <div class="flex items-center gap-2 shrink-0">
+                <i data-lucide="activity" class="w-4 h-4 text-[#00FF9D]"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest text-gray-400">Músculos Focados:</span>
+            </div>
+            <div id="workout-active-muscles-tags" class="flex flex-wrap gap-1 justify-end"></div>
+        </div>
+
+        <div id="exercise-list" class="space-y-6"></div>
+        <div class="space-y-3 pt-6 pb-12">
+            <Button variant="dashed" size="full" onclick="app.showExerciseLibrary('workout')" icon="plus" iconClass="w-4 h-4 text-[#00FF9D]">Injetar Exercício</Button>
+            <Button variant="primary" size="lg" class="w-full" onclick="app.finishWorkout()">Finalizar Sessão</Button>
+        </div>
+    </div>
+</section>

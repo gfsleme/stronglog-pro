@@ -1,28 +1,23 @@
 # 🔁 Handover — StrongLog Pro
 
-> Atualizado em: 2026-08-30 16:10 | Por: Chronicler (Memory Archivist) & Equipe Maestri (Maestro, Forge, Sentinel, Specter, Compass, Searcher)
+> Atualizado em: 2026-08-31 21:40 | Por: Antigravity IDE (Pair Programming) & Mission Control v4.2
 
 ## Estado atual do projeto
-O **StrongLog Pro v6.0 (Refatoração Anatômica: Modelo 3D GLB Ultraleve, GLTFLoader Local, SVG Orgânico & Anti-Lockout TDD)** está 100% implementado, testado e validado.
+O **StrongLog Pro v7.0 (Arquitetura Integral Astro 7+, Content Layer API, BaseLayout & Modularização Total de Componentes)** está 100% implementado, testado e validado.
 
 O sistema consolidou uma importante evolução em relação às versões anteriores:
-- **v5.4**: Three.js com proxy colliders invisíveis, chips de grupos musculares, fullscreen sheet 100dvh com auto-colapso e fallbacks defensivos.
-- **v5.5**: Service Worker resiliente com desacoplamento de CDNs e navegação `network-first`.
-- **v5.6**: Blindagem global de overlays com `.hidden` explícito, onboarding com flag multi-key e fechamento correto de rotinas.
-- **v5.7**: Acessibilidade WCAG 2.2 com hitboxes de 44px (`.touch-target-44`), `min-h-[100dvh]`, correção de contraste, `role="timer"` e `aria-live="polite"`.
-- **v6.0 (Entrega Atual)**:
-  - **Asset 3D GLB Ultraleve**: Substituição da silhueta procedural por modelo humanoide glTF 2.0 binário (`src/assets/models/human_body_sci_fi.glb`, 166.72 KB < 250KB) contendo os 19 sub-meshes nomeados rigorosamente pela ontologia oficial.
-  - **Vendor Local do GLTFLoader**: `src/vendor/three/GLTFLoader.js` (Three.js r128 UMD/global, 96.5KB) incluído no repositório, carregado em `src/index.html` e cacheado em `src/sw.js` (100% offline-first).
-  - **Fallback Defensivo & Anti-Leak GPU**: `app.loadHologramGLB` com timeout de 2.5s (2500ms), fallback transparente para silhueta paramétrica e flag `isSceneAlive` na cena Three.js para abortar inserção de meshes caso o modal seja fechado antes do carregamento.
-  - **Materiais Sci-Fi & Pooling Isolado**: Pooling de materiais encapsulado por cena (`app.threeScenes[sceneKey].materialsPool`), realce emissivo Neon Mint `#00FF9D` (`emissiveIntensity: 1.8`) e heatmap térmico de 4 níveis com descarte seguro (`.dispose()`) em `app.destroy3DScene`.
-  - **Mapa 2D SVG Orgânico**: Substituição de `<polygon>` e `<rect>` por `<path d="...">` com curvaturas anatômicas reais (frente e costas) para os 19 grupos musculares, com classes `.active-selected`, `.dimmed-node` e `.heat-[1-4]`.
-  - **Preservação de Hitboxes Táteis**: Ancoragem dos centros de toque (`cx`/`cy`) com distância mínima $\ge 28\text{px}$ entre grupos adjacentes (zero colisão), hitboxes `.touch-target-44` e vibração tátil `navigator.vibrate(20)`.
-  - **Evolução de Testes (Anti-Lockout)**: Atualização das asserções de `test_rf01_3d_harmonization.js`, `test_rf02_svg_map_redesign.js`, `test_rf05_fallback_and_cache.js`, `test_rf_overlays_v56.js` e `run_e2e_qa_suite.js` para validar a nova arquitetura sem bloqueio.
-  - **Status dos Testes**: **100% PASS, 0 FAIL** em todos os scripts da suíte (`test_rf01`: 13/13, `test_rf02`: 12/12, `verify_9_items`: 9/9, `run_e2e_qa_suite`: 24/24, `test_rf_overlays_v56`: 8/8, `test_rf_residual_v56`: 6/6, `test_exercise_picker_flow`: 10/10, `test_rf03`: 8/8, `test_rf04`: 9/9).
+- **v6.0**: Three.js com modelo 3D GLB ultraleve (<250KB), GLTFLoader local UMD, SVG orgânico 2D e anti-lockout TDD.
+- **v7.0 (Entrega Atual)**:
+  - **Astro Docs MCP & Configuração Global**: Integração do MCP `astro-docs` em `~/.gemini/config/mcp_config.json`.
+  - **Content Layer API (`src/content.config.ts`)**: Tipagem estrita com Zod para o catálogo de 1.324 exercícios (`exercises.min.json`) e ontologia de 19 grupos musculares (`muscle_ontology.json`).
+  - **BaseLayout Centralizado (`src/layouts/Layout.astro`)**: Eliminação de duplicações de `<head>`, metadados PWA, CSP e CSS.
+  - **Decomposição Modular de Componentes**: Decomposição do `index.astro` (de 685 para 55 linhas), distribuído em `src/components/ui/`, `src/components/layout/`, `src/components/views/` e `src/components/modals/`.
+  - **Path Aliases TypeScript**: Configuração do `tsconfig.json` com `@components/*`, `@layouts/*`, `@data/*` e `@assets/*`.
+  - **Status dos Testes**: **100% PASS, 0 FAIL** em todos os scripts da suíte (`npm run build`: OK em 1.7s, `verify_9_items`: 9/9, `run_e2e_qa_suite`: 24/24, `test_rf01`: 13/13, `test_rf02`: 12/12, `test_rf_overlays`: 8/8, `test_rf_residual`: 6/6, `test_exercise_picker_flow`: 10/10).
 
 ---
 
-## O que foi feito recentemente (v6.0)
+## O que foi feito recentemente (v7.0)
 * **Asset 3D GLB & Loader Local**:
   - Script autônomo `scripts/generate_human_body_glb.py` gerando binário glTF 2.0 padrão com posições, normais e índices para os 19 grupos musculares.
   - Integração do `THREE.GLTFLoader` local em `src/vendor/three/GLTFLoader.js` e cache Service Worker `stronglog-pro-v6.0`.

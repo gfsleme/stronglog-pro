@@ -1,0 +1,65 @@
+---
+// Modal de Detalhes do Exercício (Biomecânica, GIF & Histórico de Cargas) — StrongLog Pro
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="exercise-detail-modal" class="fixed inset-0 z-[400] bg-black/95 backdrop-blur-xl hidden text-white">
+    <div class="absolute bottom-0 left-0 right-0 glass h-[92dvh] rounded-t-[45px] p-8 space-y-5 flex flex-col shadow-2xl border-white/10">
+        <div class="flex justify-between items-center">
+            <span class="text-[9px] text-[#00FF9D] font-black uppercase tracking-[0.2em]" id="detail-exercise-category">CATEGORIA</span>
+            <IconButton icon="x" size="md" onclick="app.closeModal('exercise-detail-modal')" />
+        </div>
+        
+        <div class="space-y-1.5">
+            <h2 id="detail-exercise-name" class="text-xl font-black italic tracking-tighter uppercase leading-tight text-white">--</h2>
+            <div class="flex flex-wrap gap-2 animate-fade" id="detail-exercise-tags"></div>
+        </div>
+
+        <!-- Stats & PR Card -->
+        <div id="detail-exercise-stats" class="grid grid-cols-2 gap-2 shrink-0">
+            <div class="glass p-3 rounded-2xl border-[#00FF9D]/20 bg-white/[0.01]">
+                <span class="text-[8px] text-[#00FF9D] font-black uppercase tracking-widest block mb-0.5">Recorde Pessoal (PR)</span>
+                <div class="text-base font-black italic text-white leading-none" id="detail-pr-display">--</div>
+            </div>
+            <div class="glass p-3 rounded-2xl border-white/5 bg-white/[0.01]">
+                <span class="text-[8px] text-gray-500 font-black uppercase tracking-widest block mb-0.5">1RM Estimada</span>
+                <div class="text-base font-black italic text-gray-300 leading-none" id="detail-1rm-display">--</div>
+            </div>
+        </div>
+
+        <!-- GIF de Execução -->
+        <div class="w-full h-44 bg-white/5 rounded-2xl overflow-hidden flex items-center justify-center border border-white/5 relative shrink-0">
+            <div id="detail-gif-loading" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10">
+                <div class="w-8 h-8 border-4 border-[#00FF9D]/30 border-t-[#00FF9D] rounded-full animate-spin"></div>
+            </div>
+            <img id="detail-exercise-gif" src="" alt="Execução do exercício" class="h-full w-auto object-contain hidden" onload="document.getElementById('detail-gif-loading').classList.add('hidden'); this.classList.remove('hidden');" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2964/2964514.png'; document.getElementById('detail-gif-loading').classList.add('hidden'); this.classList.remove('hidden');" />
+        </div>
+
+        <!-- Tabs: Biomecânica vs Histórico de Cargas -->
+        <div class="flex gap-2 border-b border-white/5 pb-2 shrink-0">
+            <button id="tab-btn-steps" onclick="app.switchDetailTab('steps')" class="text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-lg text-[#00FF9D] bg-[#00FF9D]/10">Biomecânica</button>
+            <button id="tab-btn-history" onclick="app.switchDetailTab('history')" class="text-xs font-black uppercase tracking-wider py-1.5 px-3 rounded-lg text-gray-400">Histórico de Cargas</button>
+        </div>
+
+        <!-- Tab Content: Instruções Biomecânicas -->
+        <div id="detail-tab-steps" class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-6">
+            <div>
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Como Executar</h3>
+                <ol id="detail-exercise-steps" class="space-y-3 list-decimal list-outside pl-6 text-sm text-gray-300 font-medium leading-relaxed">
+                    <!-- Passos da instrução virão aqui -->
+                </ol>
+            </div>
+            <div id="detail-secondary-muscles-container" class="hidden">
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Músculos Secundários</h3>
+                <p id="detail-exercise-secondary" class="text-xs text-gray-400 font-bold uppercase tracking-wide"></p>
+            </div>
+        </div>
+
+        <!-- Tab Content: Histórico de Cargas -->
+        <div id="detail-tab-history" class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2 pb-6 hidden">
+            <div id="detail-history-list" class="space-y-2.5">
+                <!-- Logs passados do exercício virão aqui -->
+            </div>
+        </div>
+    </div>
+</div>

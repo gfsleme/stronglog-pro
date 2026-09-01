@@ -9,11 +9,12 @@
 - **Projeto**: StrongLog Pro — PWA de Musculação & Biomecânica Científica Offline-First.
 - **Repositório**: `c:\Users\Gabriel\OneDrive\Desktop\Projetos Python\StrongLog`
 - **Stack**:
-  - **Estrutura & UI**: HTML5 Semântico, CSS Vanilla (`src/styles.css`), Tailwind CSS via CDN.
+  - **Framework & Build**: Astro (^7.2) com suporte a SSR/SSG, ilhas de componentes e comandos `npm run dev` / `npm run build`.
+  - **Estrutura & UI**: Astro Components (`src/pages/`, `src/layouts/`), HTML5 Semântico, CSS Vanilla (`src/styles.css`), Tailwind CSS.
   - **Lógica & Estado**: JavaScript Vanilla modular (`src/app.js`), IndexedDB via `Dexie.js`.
   - **Gráficos & Visualização**: Three.js (r128) + `OrbitControls.js` + `GLTFLoader.js`, Chart.js.
   - **PWA & Cache**: Service Worker (`src/sw.js`), Manifest (`src/manifest.json`), 100% funcional offline.
-  - **Test Runner**: Node.js puro sem frameworks pesados (scripts em `scripts/`).
+  - **Test Runner**: Node.js test runner via `npm test` (`scripts/verify_9_items.js` + `scripts/run_e2e_qa_suite.js`).
 - **Idioma Padrão**: Responder sempre em **Português (BR)** (código e logs técnicos em inglês/técnico).
 
 ---
@@ -94,3 +95,17 @@ Todo modelo (2D ou 3D) deve mapear estritamente estes 19 identificadores:
 - **Braços**: `biceps` (Bíceps), `triceps` (Tríceps), `forearms` (Antebraços).
 - **Core / Centro**: `abs` (Abdômen/Oblíquos), `cardio` (Cardiovascular/Centro).
 - **Membros Inferiores**: `glutes` (Glúteos), `quads` (Quadríceps), `hamstrings` (Posterior de Coxa), `calves` (Panturrilhas), `adductors` (Adutores), `abductors` (Abdutores).
+
+---
+
+## 🚀 7. Regras do Projeto Astro
+
+- **Consulte o Astro Docs MCP**: Sempre consulte o MCP `astro-docs` antes de utilizar ou modificar APIs do Astro.
+- **Zero Frameworks Desnecessários**: Não adicione React ou outra biblioteca de UI sem justificar previamente.
+- **Componentes Astro Estáticos**: Prefira componentes Astro (`.astro`) para conteúdo e casca estrutural estática.
+- **Hidratação Sob Demanda**: Use hidratação client-side apenas quando houver interatividade real de negócio.
+- **Layout Centralizado**: Reutilize o layout principal (`src/layouts/Layout.astro`) em todas as páginas.
+- **Sem Duplicação de SEO**: Não duplique metadados SEO, tags de `<head>` ou manifesto PWA.
+- **Verificação Contínua**: Execute `npm run check` e `npm run build` após quaisquer alterações relevantes de componentes ou rotas.
+- **Governança de Dependências**: Não altere nem instale dependências sem explicar claramente o motivo técnico.
+

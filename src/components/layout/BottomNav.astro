@@ -1,0 +1,18 @@
+---
+// Componente de Barra de Navegação Inferior — StrongLog Pro
+---
+
+<nav class="fixed bottom-6 bottom-nav-safe left-1/2 -translate-x-1/2 w-[92%] max-w-sm glass p-2 flex justify-around items-center z-[150] shadow-2xl shadow-black ring-1 ring-white/10 rounded-3xl">
+    <button onclick="app.setView('dashboard')" class="nav-item flex flex-col items-center py-2 px-4 rounded-2xl active:scale-95" data-view="dashboard">
+        <i data-lucide="layout-grid" class="w-5 h-5"></i>
+        <span class="text-[8px] font-black uppercase tracking-wider mt-1">Início</span>
+    </button>
+    <button onclick="app.setView('active-workout')" class="nav-item flex flex-col items-center py-2 px-4 rounded-2xl active:scale-95" data-view="active-workout">
+        <i data-lucide="dumbbell" class="w-5 h-5"></i>
+        <span class="text-[8px] font-black uppercase tracking-wider mt-1">Treino</span>
+    </button>
+    <button onclick="app.setView('history')" class="nav-item flex flex-col items-center py-2 px-4 rounded-2xl active:scale-95" data-view="history">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+        <span class="text-[8px] font-black uppercase tracking-wider mt-1">Histórico</span>
+    </button>
+</nav>

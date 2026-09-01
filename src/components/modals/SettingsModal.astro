@@ -1,0 +1,58 @@
+---
+// Modal de Ajustes, Gráficos & Gerenciamento de Dados — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="settings-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden text-white">
+    <div class="flex items-center justify-center min-h-[100dvh] p-6">
+        <div class="glass w-full max-w-sm p-8 space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black italic tracking-tighter uppercase">Ajustes & Sistema</h2>
+                <IconButton icon="x" size="md" onclick="app.closeModal('settings-modal')" />
+            </div>
+
+            <!-- Update & Version Hub -->
+            <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#00FF9D]"></span>
+                        <span class="text-[10px] font-black uppercase text-white tracking-wider">Versão do App</span>
+                    </div>
+                    <span id="pwa-version-display" class="text-[10px] font-mono font-bold text-[#00FF9D] bg-[#00FF9D]/10 px-2.5 py-0.5 rounded-md">v5.0</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <Button variant="glass" size="sm" class="p-2.5 flex items-center justify-center gap-1.5 text-[9px] active:bg-white/10" onclick="app.checkForUpdates(true)" icon="refresh-cw" iconClass="w-3.5 h-3.5 text-[#00FF9D]">Verificar</Button>
+                    <Button variant="glass" size="sm" class="p-2.5 flex items-center justify-center gap-1.5 text-[9px] text-amber-400 border-amber-500/20 active:bg-amber-500/10" onclick="app.forcePwaReload()" icon="zap" iconClass="w-3.5 h-3.5 text-amber-400">Forçar Reload</Button>
+                </div>
+            </div>
+
+            <!-- Hardware Tiering & 3D Settings -->
+            <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="cpu" class="w-4 h-4 text-[#00FF9D]"></i>
+                        <span class="text-[10px] font-black uppercase text-white tracking-wider">Modo Gráfico & 3D</span>
+                    </div>
+                    <span id="tier-badge" class="text-[8px] font-mono font-bold text-[#00FF9D] bg-[#00FF9D]/10 px-2 py-0.5 rounded">Tier 0 (60 FPS)</span>
+                </div>
+                <select id="setting-graphic-mode" onchange="app.setGraphicMode(this.value)" class="w-full bg-[#111] border border-white/5 p-3 rounded-xl text-xs font-bold text-gray-300 focus:outline-none">
+                    <option value="tier_0">3D Completo (Holograma 60 FPS)</option>
+                    <option value="tier_1">3D Econômico (Render sob toque)</option>
+                    <option value="tier_2">2D SVG Puro (Economia Extrema)</option>
+                </select>
+            </div>
+
+            <div class="space-y-2.5">
+                <Button variant="glass" size="full" class="p-4 flex items-center gap-3 text-xs text-[#00FF9D] active:bg-[#00FF9D]/10" onclick="app.showOnboarding(true)" icon="compass" iconClass="w-4 h-4 text-[#00FF9D]">Ver Tour / Tutorial do App</Button>
+                <Button variant="glass" size="full" class="p-4 flex items-center gap-3 text-xs active:bg-white/5" onclick="app.showHelpModal()" icon="help-circle" iconClass="w-4 h-4 text-[#00FF9D]">Central de Ajuda & Biomecânica</Button>
+                <Button variant="glass" size="full" class="p-4 flex items-center gap-3 text-xs active:bg-white/5" onclick="app.showExerciseManager()" icon="library" iconClass="w-4 h-4 text-gray-400">Gerenciar Biblioteca</Button>
+                <Button variant="glass" size="full" class="p-4 flex items-center gap-3 text-xs active:bg-white/5" onclick="app.exportData()" icon="database" iconClass="w-4 h-4 text-[#00FF9D]">Exportar Backup (JSON)</Button>
+                <Button variant="glass" size="full" class="p-4 flex items-center gap-3 text-xs active:bg-white/5" onclick="app.importDataTrigger()" icon="download-cloud" iconClass="w-4 h-4 text-[#00FF9D]">Importar Backup</Button>
+                <input type="file" id="import-input" class="hidden" accept=".json" onchange="app.importData(event)" />
+                <Button variant="outline-danger" size="full" class="p-4 text-red-500 text-[10px] tracking-widest border-red-500/20 active:bg-red-500/10" onclick="app.confirmClearAllData()" icon="trash-2" iconClass="w-4 h-4 inline-block mr-1">Limpar todo o App</Button>
+            </div>
+            <p class="text-[8px] text-center text-gray-600 font-bold tracking-[0.3em] uppercase">StrongLog Pro PWA • v5.1</p>
+        </div>
+    </div>
+</div>

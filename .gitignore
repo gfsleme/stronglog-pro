@@ -17,5 +17,11 @@ Thumbs.db
 *.json.backup
 .maestri/
 
+# Node / Astro Build Artifacts
+node_modules/
+dist/
+.astro/
+
 # QA Evidence Artifacts (snapshots gerados em auditorias)
 audit_snapshots/
+

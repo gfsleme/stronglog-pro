@@ -1,0 +1,19 @@
+---
+// Modal Compacto de Seleção de Tipo de Série — StrongLog Pro
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="set-type-picker-modal" class="fixed inset-0 z-[520] bg-black/90 backdrop-blur-xl hidden text-white">
+    <div class="glass w-full max-w-sm p-6 space-y-4 border-white/10 shadow-2xl animate-fade m-auto">
+        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+            <div>
+                <h3 class="text-base font-black italic uppercase tracking-tight text-white">Tipo de Série</h3>
+                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Selecione o objetivo biomecânico</p>
+            </div>
+            <IconButton icon="x" size="sm" class="p-2" onclick="app.closeModal('set-type-picker-modal')" />
+        </div>
+        <div class="space-y-2.5" id="set-type-options-list">
+            <!-- Opções geradas via JS com descrições ricas -->
+        </div>
+    </div>
+</div>

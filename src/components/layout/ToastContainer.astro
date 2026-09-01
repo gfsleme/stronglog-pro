@@ -1,0 +1,16 @@
+---
+// Componente de Notificações Toast & PWA Update — StrongLog Pro
+import Button from '../ui/Button.astro';
+---
+
+<!-- Toast Notifications Container -->
+<div id="toast-container"></div>
+
+<!-- Update Toast Floating -->
+<div id="update-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[500] glass p-3 px-5 flex items-center gap-3.5 border-[#00FF9D]/40 shadow-2xl bg-black/90 hidden animate-fade">
+    <div class="flex items-center gap-2">
+        <span class="w-2 h-2 bg-[#00FF9D] rounded-full animate-ping"></span>
+        <span class="text-xs font-black uppercase tracking-wider text-white">Nova Versão Pronta</span>
+    </div>
+    <Button variant="primary" size="sm" class="py-1.5 px-3 rounded-full italic" onclick="app.applyPwaUpdate()">Atualizar Agora</Button>
+</div>

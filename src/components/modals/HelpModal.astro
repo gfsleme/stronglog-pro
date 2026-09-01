@@ -1,0 +1,31 @@
+---
+// Modal da Central de Ajuda & Base de Conhecimento Biomecânica — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="help-modal" class="fixed inset-0 z-[480] bg-black/95 backdrop-blur-2xl hidden text-white">
+    <div class="absolute bottom-0 left-0 right-0 glass h-[92dvh] rounded-t-[45px] p-6 pb-8 space-y-5 flex flex-col shadow-2xl border-white/10">
+        <div class="flex justify-between items-center px-1">
+            <div>
+                <h2 class="text-2xl font-black italic tracking-tighter uppercase text-white">Central de Ajuda</h2>
+                <p class="text-[9px] text-[#00FF9D] font-black uppercase tracking-widest">Guia & Biomecânica StrongLog</p>
+            </div>
+            <IconButton icon="x" size="md" onclick="app.closeModal('help-modal')" />
+        </div>
+
+        <!-- Help Tabs -->
+        <div class="flex bg-white/5 p-1 rounded-2xl gap-1 shrink-0">
+            <button id="help-tab-guide-btn" onclick="app.switchHelpTab('guide')" class="flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider bg-[#00FF9D]/15 text-[#00FF9D] transition-all">Guia Rápido</button>
+            <button id="help-tab-rpe-btn" onclick="app.switchHelpTab('rpe')" class="flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all">Séries & RPE</button>
+            <button id="help-tab-bio-btn" onclick="app.switchHelpTab('bio')" class="flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all">Anatomia 3D</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="help-modal-tab-content" class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2 pb-6">
+            <!-- Conteúdo das abas injetado dinamicamente -->
+        </div>
+
+        <Button variant="glass" size="full" class="py-3.5 text-xs text-[#00FF9D] border-[#00FF9D]/30 shrink-0" onclick="app.showOnboarding(true); app.closeModal('help-modal');" icon="compass" iconClass="w-4 h-4 inline-block mr-1">Rever Tour Interativo de Boas-Vindas</Button>
+    </div>
+</div>

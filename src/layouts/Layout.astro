@@ -1,0 +1,45 @@
+---
+// StrongLog Pro — BaseLayout Universal
+// Centralização de Metadados PWA, CSP, Scripts Vendor e CSS Global
+interface Props {
+  title?: string;
+}
+
+const { title = "StrongLog Pro — PWA de Musculação & Biomecânica Científica" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- Security: CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn-icons-png.flaticon.com https://static.exercisedb.dev https://raw.githubusercontent.com; connect-src 'self' https://assets.mixkit.co;" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png" />
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <title>{title}</title>
+
+    <!-- Tailwind, Dexie, Chart.js, Lucide, Three.js & Styles -->
+    <script is:inline src="https://cdn.tailwindcss.com"></script>
+    <script is:inline src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script is:inline src="https://unpkg.com/lucide@latest"></script>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script is:inline src="/vendor/three/GLTFLoader.js"></script>
+    <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="min-h-[100dvh] pb-32 bg-[#0a0a0a] text-white antialiased">
+    <slot />
+    <script is:inline src="/app.js"></script>
+</body>
+</html>

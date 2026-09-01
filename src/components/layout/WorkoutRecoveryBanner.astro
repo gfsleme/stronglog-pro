@@ -1,0 +1,18 @@
+---
+// Componente de Banner de Recuperação de Treino — StrongLog Pro
+import Button from '../ui/Button.astro';
+---
+
+<div id="workout-recovery-banner" class="glass p-5 flex items-center justify-between border-[#00FF9D]/30 hidden animate-fade">
+    <div class="space-y-0.5">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-[#00FF9D] rounded-full animate-pulse"></span>
+            <h3 class="text-xs font-black text-white uppercase italic tracking-wide">Treino em Andamento</h3>
+        </div>
+        <p id="recovery-workout-name" class="text-[10px] text-gray-400 font-bold uppercase"></p>
+    </div>
+    <div class="flex gap-2">
+        <Button variant="outline-danger" size="sm" onclick="app.discardRecoveredWorkout()">Descartar</Button>
+        <Button variant="primary" size="sm" class="p-2.5 px-4 rounded-xl uppercase italic tracking-wider" onclick="app.resumeRecoveredWorkout()">Continuar</Button>
+    </div>
+</div>

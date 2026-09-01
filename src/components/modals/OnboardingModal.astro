@@ -1,0 +1,35 @@
+---
+// Modal de Onboarding & Tour Interativo — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="onboarding-modal" class="fixed inset-0 z-[500] bg-black/95 backdrop-blur-2xl hidden text-white">
+    <div class="absolute bottom-0 left-0 right-0 glass h-[90vh] rounded-t-[45px] p-6 pb-8 space-y-5 flex flex-col shadow-2xl border-white/10">
+        <div class="flex justify-between items-center px-1">
+            <div class="flex items-center gap-2">
+                <span class="p-2 rounded-xl bg-[#00FF9D]/20 text-[#00FF9D]"><i data-lucide="sparkles" class="w-4 h-4"></i></span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-[#00FF9D]">Guia do StrongLog Pro</span>
+            </div>
+            <IconButton icon="x" size="sm" class="p-2.5" onclick="app.closeOnboarding()" title="Fechar" />
+        </div>
+
+        <!-- Slide Container -->
+        <div id="onboarding-slides-wrapper" class="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col justify-between space-y-4">
+            <div id="onboarding-slide-content" class="space-y-4 animate-fade">
+                <!-- Conteúdo dinâmico injetado via JS -->
+            </div>
+        </div>
+
+        <!-- Onboarding Controls Footer -->
+        <div class="space-y-3 pt-2 border-t border-white/5 shrink-0">
+            <div class="flex justify-center items-center gap-2" id="onboarding-dots-container">
+                <!-- Dots gerados via JS -->
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <Button id="onboarding-prev-btn" variant="glass" size="md" class="w-full p-3.5 text-gray-400 active:bg-white/5" onclick="app.prevOnboardingSlide()">Voltar</Button>
+                <Button id="onboarding-next-btn" variant="primary" size="md" class="w-full p-3.5 shadow-lg shadow-[#00FF9D]/20" onclick="app.nextOnboardingSlide()">Próximo</Button>
+            </div>
+        </div>
+    </div>
+</div>

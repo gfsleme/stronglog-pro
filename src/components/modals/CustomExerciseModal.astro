@@ -1,0 +1,37 @@
+---
+// Modal de Cadastro de Exercício Customizado — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="custom-exercise-modal" class="fixed inset-0 z-[400] bg-black/95 backdrop-blur-xl hidden text-white">
+    <div class="flex items-center justify-center min-h-[100dvh] p-6">
+        <div class="glass w-full max-w-sm p-8 space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black italic tracking-tighter uppercase">Novo Exercício</h2>
+                <IconButton icon="x" size="md" onclick="app.closeModal('custom-exercise-modal')" />
+            </div>
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Nome do Exercício</label>
+                    <input id="custom-ex-name" type="text" class="w-full glass p-4 text-sm font-bold text-white focus:outline-none" placeholder="Ex: Supino Articulado Inclinado" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Grupo Muscular Principal</label>
+                    <select id="custom-ex-group" class="w-full bg-[#111] border border-white/5 p-4 rounded-xl text-xs font-bold text-gray-300 focus:outline-none">
+                        <option value="Peito">Peito</option>
+                        <option value="Costas">Costas</option>
+                        <option value="Pernas">Pernas</option>
+                        <option value="Ombros">Ombros</option>
+                        <option value="Braços">Braços</option>
+                        <option value="Cintura">Cintura / Abdômen</option>
+                        <option value="Panturrilhas">Panturrilhas</option>
+                        <option value="Cardio">Cardio</option>
+                        <option value="Antebraços">Antebraços</option>
+                    </select>
+                </div>
+                <Button variant="primary" size="lg" class="w-full rounded-[20px] tracking-widest" onclick="app.saveCustomExerciseFromModal()">Cadastrar Exercício</Button>
+            </div>
+        </div>
+    </div>
+</div>

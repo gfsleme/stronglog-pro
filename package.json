@@ -1,0 +1,30 @@
+{
+  "name": "stronglog-pro",
+  "type": "module",
+  "version": "7.0.0",
+  "description": "StrongLog Pro - PWA de Musculação & Biomecânica Científica Offline-First",
+  "scripts": {
+    "predev": "node scripts/sync_static_assets.js",
+    "dev": "astro dev",
+    "start": "astro dev",
+    "prebuild": "node scripts/sync_static_assets.js",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "test": "node scripts/verify_9_items.js && node scripts/run_e2e_qa_suite.js",
+    "test:verify": "node scripts/verify_9_items.js",
+    "test:e2e": "node scripts/run_e2e_qa_suite.js"
+  },
+  "dependencies": {
+    "astro": "^7.2.10"
+  },
+  "allowScripts": {
+    "esbuild": true
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.4.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,14 @@
+---
+// Modal de Recordes Pessoais (Hall of Fame) — StrongLog Pro
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="records-modal" class="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl hidden">
+    <div class="absolute bottom-0 left-0 right-0 glass h-[85vh] rounded-t-[45px] p-8 space-y-6 flex flex-col shadow-2xl border-white/10">
+        <div class="flex justify-between items-center text-white">
+            <h2 class="text-3xl font-black italic tracking-tighter uppercase">Hall of Fame</h2>
+            <IconButton icon="x" size="md" onclick="app.closeModal('records-modal')" />
+        </div>
+        <div id="records-list" class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2 pb-32 safe-bottom"></div>
+    </div>
+</div>

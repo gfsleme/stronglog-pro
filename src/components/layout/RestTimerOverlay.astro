@@ -1,0 +1,24 @@
+---
+// Componente de Overlay de Descanso Flutuante — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="rest-timer-overlay" class="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass px-5 py-4 flex items-center justify-between z-[200] shadow-2xl shadow-black/80 border-[#00FF9D]/10 translate-y-[-200%] transition-all duration-500 hidden">
+    <Button variant="glass" size="sm" class="p-2.5 text-xs font-bold text-gray-400" onclick="app.adjustRestTime(-15)">-15s</Button>
+    
+    <div class="flex flex-col items-center justify-center relative min-w-[100px]">
+        <span class="text-[8px] text-[#00FF9D] font-bold uppercase tracking-[0.2em] mb-0.5">Descanso ativo</span>
+        <div class="text-2xl font-mono font-black text-white leading-none tracking-tight" id="overlay-timer" role="timer" aria-live="polite">00:00</div>
+    </div>
+    
+    <div class="flex items-center gap-1.5">
+        <Button variant="glass" size="sm" class="p-2.5 text-xs font-bold text-gray-400" onclick="app.adjustRestTime(15)">+15s</Button>
+        <IconButton icon="skip-forward" variant="danger" size="sm" class="p-2.5" onclick="app.stopRestTimer()" iconClass="w-4 h-4 text-red-500" />
+    </div>
+    
+    <!-- Linha de progresso animada na base -->
+    <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/5 overflow-hidden rounded-b-3xl">
+        <div id="rest-progress-bar" class="h-full bg-[#00FF9D] transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+    </div>
+</div>

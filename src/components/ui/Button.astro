@@ -1,0 +1,52 @@
+---
+// Componente de Botão Universal — StrongLog Pro
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'button'> {
+  variant?: 'primary' | 'accent' | 'glass' | 'danger' | 'outline-danger' | 'dashed' | 'ghost';
+  size?: 'sm' | 'md' | 'lg' | 'full';
+  icon?: string;
+  iconClass?: string;
+  class?: string;
+}
+
+const {
+  variant = 'glass',
+  size = 'md',
+  icon,
+  iconClass = 'w-4 h-4',
+  class: className = '',
+  type = 'button',
+  ...rest
+} = Astro.props;
+
+const variantClasses: Record<string, string> = {
+  primary: 'btn-accent text-black bg-[#00FF9D] font-black uppercase tracking-wider shadow-lg shadow-[#00FF9D]/20 active:scale-95 transition-all',
+  accent: 'btn-accent text-black bg-[#00FF9D] font-black uppercase tracking-wider shadow-lg shadow-[#00FF9D]/20 active:scale-95 transition-all',
+  glass: 'glass text-white font-bold uppercase tracking-wider active:bg-white/5 active:scale-95 transition-all',
+  danger: 'bg-red-500 text-white font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all',
+  'outline-danger': 'glass text-red-400 font-black uppercase tracking-wider active:bg-red-500/10 transition-all',
+  dashed: 'border-2 border-dashed border-white/10 glass text-gray-300 font-black tracking-widest uppercase active:bg-white/5 transition-all rounded-2xl flex items-center justify-center gap-2',
+  ghost: 'bg-transparent text-gray-400 hover:text-white transition-all',
+};
+
+const sizeClasses: Record<string, string> = {
+  sm: 'text-[10px] py-1.5 px-3 rounded-xl',
+  md: 'text-xs py-3 px-4 rounded-xl',
+  lg: 'text-xs p-5 rounded-[22px] tracking-[0.2em]',
+  full: 'w-full py-4 text-xs font-black uppercase tracking-widest rounded-2xl',
+};
+---
+
+<button
+  type={type}
+  class:list={[
+    variantClasses[variant] || '',
+    sizeClasses[size] || '',
+    className
+  ]}
+  {...rest}
+>
+  {icon && <i data-lucide={icon} class={iconClass} />}
+  <slot />
+</button>

@@ -110,6 +110,7 @@ const mockTHREE = {
     IcosahedronGeometry: class extends MockGeometry { constructor(...args) { super('IcosahedronGeometry', args); } },
     DodecahedronGeometry: class extends MockGeometry { constructor(...args) { super('DodecahedronGeometry', args); } },
     OctahedronGeometry: class extends MockGeometry { constructor(...args) { super('OctahedronGeometry', args); } },
+    RingGeometry: class extends MockGeometry { constructor(...args) { super('RingGeometry', args); } },
     BufferGeometry: class extends MockGeometry { constructor(...args) { super('BufferGeometry', args); } },
     Vector2: class { constructor(x,y){this.x=x;this.y=y;} },
     Vector3: MockVector3,
@@ -145,10 +146,34 @@ global.window = { devicePixelRatio: 1, addEventListener: () => {}, removeEventLi
 global.navigator = { 
     serviceWorker: { register: () => Promise.resolve({ addEventListener: () => {} }), addEventListener: () => {} } 
 };
+const domElements = {};
+const mockElement = (id = '') => {
+    const el = {
+        id: id,
+        value: '',
+        innerHTML: '',
+        innerText: '',
+        classList: {
+            classes: new Set(),
+            add: function(...c) { c.forEach(item => this.classes.add(item)); },
+            remove: function(...c) { c.forEach(item => this.classes.delete(item)); },
+            toggle: function(c) { if (this.classes.has(c)) this.classes.delete(c); else this.classes.add(c); },
+            contains: function(c) { return this.classes.has(c); }
+        },
+        style: {},
+        appendChild: () => {},
+        setAttribute: () => {},
+        scrollIntoView: () => {}
+    };
+    if (id) domElements[id] = el;
+    return el;
+};
+
 global.document = {
-    getElementById: () => null,
-    querySelector: () => null,
-    querySelectorAll: () => []
+    createElement: (tag) => mockElement(),
+    getElementById: (id) => domElements[id] || mockElement(id),
+    querySelector: (sel) => null,
+    querySelectorAll: (sel) => []
 };
 
 let loadedApp = null;
@@ -361,7 +386,53 @@ it('app.selectMuscleFilter deve sincronizar visão 3D auto-rotacionando câmera 
     loadedApp.clearMuscleFilter();
 });
 
+// 13. [RF01-v7.0] Podium circular holográfico com THREE.RingGeometry na base
+it('buildHologramBodyMesh / init3DScene deve instanciar podium circular holográfico com RingGeometry', () => {
+    const bodyMesh = loadedApp.buildHologramBodyMesh(mockTHREE, null, 'library');
+    const podiumMesh = bodyMesh.children.find(m => m.geometry && m.geometry.type === 'RingGeometry' || (m.userData && m.userData.isPodium));
+    assert(podiumMesh, 'Podium holográfico com THREE.RingGeometry não encontrado no bodyMesh/cena 3D');
+    assert(podiumMesh.position.y <= -1.2, `Podium deve estar posicionado na base dos pés (y <= -1.2), obtido: ${podiumMesh.position.y}`);
+});
+
+// 14. [RF01-v7.0] Fibras musculares base com grafite/titânio 0x0e1520
+it('buildHologramBodyMesh deve utilizar fibras neutras em grafite/titânio 0x0e1520', () => {
+    const bodyMesh = loadedApp.buildHologramBodyMesh(mockTHREE, null, 'library');
+    const pool = loadedApp.threeScenes['library']?.materialsPool || bodyMesh.userData?.materialsPool;
+    assert(pool && pool.defaultNeutralMat, 'Materials pool deve conter defaultNeutralMat');
+    const colorHex = pool.defaultNeutralMat.color?.hex !== undefined ? pool.defaultNeutralMat.color.hex : pool.defaultNeutralMat.color;
+    assert.strictEqual(colorHex, 0x0e1520, `Cor base de fibras neutras deve ser grafite/titânio 0x0e1520, obtido: 0x${colorHex ? colorHex.toString(16) : '0'}`);
+});
+
+// 15. [RF01-v7.0] HUD Flutuante de Telemetria sobreposto ao canvas
+it('app.update3DHUD deve atualizar telemetria de ativação dual-mode (100% biblioteca vs % volume treino)', () => {
+    assert(typeof loadedApp.update3DHUD === 'function', 'app.update3DHUD deve existir');
+    const hudContainer = mockElement('library-3d-hud');
+    domElements['library-3d-hud'] = hudContainer;
+    
+    // Modo Biblioteca: ativação 100% no grupo selecionado
+    loadedApp.activeMuscleFilter = 'chest';
+    loadedApp.update3DHUD('library', 'library');
+    assert(hudContainer.innerHTML.includes('100%') || hudContainer.innerText.includes('100%'), 'HUD no modo biblioteca deve exibir 100% de ativação para grupo primário');
+    assert(hudContainer.innerHTML.includes('Peitoral') || hudContainer.innerHTML.includes('chest'), 'HUD deve exibir nome do grupo muscular');
+
+    // Modo Treino / Resumo: calcula % volume efetivo
+    const summaryHud = mockElement('summary-3d-hud');
+    domElements['summary-3d-hud'] = summaryHud;
+    loadedApp.activeWorkout = {
+        exercises: [
+            { primary_muscle_group: 'chest', sets: [{ weight: 100, reps: 10, completed: true }] },
+            { primary_muscle_group: 'back', sets: [{ weight: 100, reps: 10, completed: true }] }
+        ]
+    };
+    loadedApp.update3DHUD('summary', 'workout');
+    assert(summaryHud.innerHTML.includes('50%') || summaryHud.innerText.includes('50%'), 'HUD no modo treino deve calcular % do volume efetivo da sessão (50%)');
+    
+    loadedApp.activeWorkout = null;
+    loadedApp.activeMuscleFilter = null;
+});
+
 console.log('\n----------------------------------------------------------------');
 console.log(`RESULTADO RF01: ${passed} PASS / ${failed} FAIL`);
 console.log('----------------------------------------------------------------\n');
 process.exit(failed > 0 ? 1 : 0);
+

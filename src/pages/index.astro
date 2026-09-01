@@ -1,0 +1,76 @@
+---
+// StrongLog Pro — PWA de Musculação & Biomecânica Científica
+// Ponto de Entrada Principal Modularizado em Astro v7+
+import Layout from '@layouts/Layout.astro';
+import Header from '@components/layout/Header.astro';
+import BottomNav from '@components/layout/BottomNav.astro';
+import ToastContainer from '@components/layout/ToastContainer.astro';
+import WorkoutRecoveryBanner from '@components/layout/WorkoutRecoveryBanner.astro';
+import RestTimerOverlay from '@components/layout/RestTimerOverlay.astro';
+
+// Views / Telas
+import DashboardView from '@components/views/DashboardView.astro';
+import ActiveWorkoutView from '@components/views/ActiveWorkoutView.astro';
+import HistoryView from '@components/views/HistoryView.astro';
+import PlanEditorView from '@components/views/PlanEditorView.astro';
+
+// Modals / Diálogos
+import RecordsModal from '@components/modals/RecordsModal.astro';
+import ExerciseLibraryModal from '@components/modals/ExerciseLibraryModal.astro';
+import ExerciseDetailModal from '@components/modals/ExerciseDetailModal.astro';
+import WorkoutSummaryModal from '@components/modals/WorkoutSummaryModal.astro';
+import CustomExerciseModal from '@components/modals/CustomExerciseModal.astro';
+import SettingsModal from '@components/modals/SettingsModal.astro';
+import OnboardingModal from '@components/modals/OnboardingModal.astro';
+import HelpModal from '@components/modals/HelpModal.astro';
+import SetTypePickerModal from '@components/modals/SetTypePickerModal.astro';
+import RpePickerModal from '@components/modals/RpePickerModal.astro';
+import ConfirmDialogModal from '@components/modals/ConfirmDialogModal.astro';
+
+const title = "StrongLog Pro — PWA de Musculação & Biomecânica Científica";
+---
+
+<Layout title={title}>
+    <!-- Notificações Toast & Update -->
+    <ToastContainer />
+
+    <!-- Cabeçalho Superior Fixo -->
+    <Header />
+
+    <!-- Container Principal das Telas -->
+    <main id="app-container" class="px-4 py-4 space-y-6 pb-40">
+        <!-- Banner de Treino em Andamento / Recuperação -->
+        <WorkoutRecoveryBanner />
+
+        <!-- 1. Dashboard / Visão Geral -->
+        <DashboardView />
+
+        <!-- 2. Treino Ativo -->
+        <ActiveWorkoutView />
+
+        <!-- 3. Histórico de Treinos -->
+        <HistoryView />
+
+        <!-- 4. Criador / Editor de Planos -->
+        <PlanEditorView />
+    </main>
+
+    <!-- Barra de Navegação Inferior -->
+    <BottomNav />
+
+    <!-- Modais do Sistema -->
+    <RecordsModal />
+    <ExerciseLibraryModal />
+    <ExerciseDetailModal />
+    <WorkoutSummaryModal />
+    <CustomExerciseModal />
+    <SettingsModal />
+    <OnboardingModal />
+    <HelpModal />
+    <SetTypePickerModal />
+    <RpePickerModal />
+    <ConfirmDialogModal />
+
+    <!-- Overlay Flutuante de Timer de Descanso -->
+    <RestTimerOverlay />
+</Layout>

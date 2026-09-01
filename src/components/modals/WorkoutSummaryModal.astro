@@ -1,0 +1,70 @@
+---
+// Modal de Resumo de Treino & Heatmap 3D/2D — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<div id="workout-summary-modal" class="fixed inset-0 z-[450] bg-black/95 backdrop-blur-2xl hidden text-white overflow-y-auto custom-scrollbar">
+    <div class="min-h-full p-4 flex flex-col justify-center items-center py-8">
+        <div class="glass w-full max-w-lg rounded-[36px] p-6 space-y-5 border-[#00FF9D]/30 shadow-2xl bg-black/90 animate-fade my-auto">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="p-2.5 rounded-2xl bg-[#00FF9D]/20 text-[#00FF9D]"><i data-lucide="award" class="w-6 h-6"></i></span>
+                    <div>
+                        <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[#00FF9D]">Treino Concluído</span>
+                        <h2 id="summary-workout-title" class="text-xl font-black italic tracking-tighter uppercase text-white">Sessão Finalizada</h2>
+                    </div>
+                </div>
+                <IconButton icon="x" size="md" onclick="app.closeModal('workout-summary-modal')" />
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-3 gap-2">
+                <div class="glass p-3 rounded-2xl text-center border-white/5 bg-white/[0.01]">
+                    <span class="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Volume Total</span>
+                    <span id="summary-volume" class="text-base font-black italic text-[#00FF9D]">0 kg</span>
+                </div>
+                <div class="glass p-3 rounded-2xl text-center border-white/5 bg-white/[0.01]">
+                    <span class="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Séries</span>
+                    <span id="summary-sets" class="text-base font-black italic text-white">0</span>
+                </div>
+                <div class="glass p-3 rounded-2xl text-center border-white/5 bg-white/[0.01]">
+                    <span class="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Duração</span>
+                    <span id="summary-duration" class="text-base font-black italic text-white">00:00</span>
+                </div>
+            </div>
+
+            <!-- Heatmap 3D / 2D Hologram Viewer -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center px-1">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-gray-400">Heatmap de Recrutamento</span>
+                    <div class="flex gap-1 text-[9px] font-black">
+                        <button id="summary-toggle-3d-btn" onclick="app.switchSummaryHeatmapMode('3d')" class="px-2.5 py-1 rounded-lg bg-[#00FF9D]/15 text-[#00FF9D]">3D Hologram</button>
+                        <button id="summary-toggle-2d-btn" onclick="app.switchSummaryHeatmapMode('2d')" class="px-2.5 py-1 rounded-lg text-gray-500">2D Mapa</button>
+                    </div>
+                </div>
+
+                <!-- 3D Stage Container -->
+                <div id="summary-3d-container" class="hologram-stage h-64 w-full flex items-center justify-center relative">
+                    <div id="summary-3d-hud" class="absolute top-2 left-2 right-2 z-10 pointer-events-none"></div>
+                    <div class="hologram-grid"></div>
+                    <canvas id="summary-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                    <div class="absolute bottom-2 left-3 text-[8px] font-mono text-[#00FF9D]/60 uppercase tracking-widest">● Gire 360° com o dedo</div>
+                </div>
+
+                <!-- 2D SVG Stage Container -->
+                <div id="summary-2d-container" class="glass h-64 w-full p-2 rounded-2xl hidden flex items-center justify-center relative">
+                    <div id="summary-svg-wrapper" class="h-full w-full flex items-center justify-around"></div>
+                </div>
+            </div>
+
+            <!-- Muscle Breakdown List -->
+            <div class="space-y-2">
+                <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 px-1">Ativação Muscular por Grupo</span>
+                <div id="summary-muscles-list" class="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1"></div>
+            </div>
+
+            <Button variant="primary" size="lg" class="w-full" onclick="app.closeModal('workout-summary-modal'); app.setView('history');">Ver no Histórico Completo</Button>
+        </div>
+    </div>
+</div>

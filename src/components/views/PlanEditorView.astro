@@ -1,0 +1,24 @@
+---
+// Componente de Tela: Editor / Criador de Rotinas — StrongLog Pro
+import Button from '../ui/Button.astro';
+import IconButton from '../ui/IconButton.astro';
+---
+
+<section id="view-plan-editor" class="hidden space-y-6 animate-fade pb-safe">
+    <div class="flex items-center gap-4">
+        <IconButton icon="chevron-left" iconClass="w-6 h-6" size="md" onclick="app.closePlanEditor()" title="Voltar" />
+        <h2 id="plan-editor-title" class="text-2xl font-black italic text-white">Novo Plano</h2>
+    </div>
+    <div class="space-y-8 pb-32">
+        <div class="space-y-3 px-1">
+            <label class="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Nome da Rotina</label>
+            <input id="plan-name-input" type="text" class="w-full glass p-5 font-bold text-white focus:outline-none" placeholder="Ex: Treino A - Peitoral e Tríceps" />
+        </div>
+        <div class="space-y-4">
+            <label class="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-1 text-white">Exercícios</label>
+            <div id="selected-exercises-list" class="space-y-2"></div>
+            <Button variant="dashed" size="full" class="py-5 rounded-[22px] text-gray-400" onclick="app.showExerciseLibrary('editor')" icon="plus" iconClass="w-4 h-4 text-[#00FF9D]">Buscar na Biblioteca</Button>
+        </div>
+        <Button variant="primary" size="lg" class="w-full p-6 text-xs tracking-[0.3em]" onclick="app.savePlan()">SALVAR ROTINA</Button>
+    </div>
+</section>
